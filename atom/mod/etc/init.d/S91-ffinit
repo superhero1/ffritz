@@ -18,7 +18,7 @@ PATH=$PATH:$FFINSTDIR/bin
 touch $FFLOG
 chmod 666 $FFLOG
 
-CP="$FFINSTDIR/bin/rpc_cp -s -t10 -- "
+CP="$FFINSTDIR/bin/rpc_cp"
 
 $FFINSTDIR/etc/mkusers
 
