@@ -1,22 +1,13 @@
 
-Firmware 6.50 fuer FritzBox-6490 Cable mit telnet aktiviert
+Firmware 6.50 fuer FritzBox-6490 Cable mit telnet u.A. aktiviert
 ===========================================================
-
-Das image ist aus einem Update-Image extrahiert. Die einzige Modifikation ist
-ein symlink von /bin/busybox auf /usr/sbin/telnetd um den telnet daemon zu starten.
-
-Wer kein telnet will (aus Sicherheitesgruenden) nehme das Original Image (original_141.06.50.tar).
-Ob davon ein weiterer Update moeglich ist ist fraglich.
 
 Inhalt
 ======
-fb6490_6.50_telnet-2.tar	- Modifiziertes install-image
-original_141.06.50.tar		- Original install image
+fb6490_6.50_telnet-XXX.tar	- Modifiziertes install-image
 telnet-1.tar			- Pseudo rootfs (from koyaanisqatsi@ip-phone-forum.de)
 mksquashfs4-lzma-avm-be
 unsquashfs4_avm_x86		- Squashfs binaries fuer ARM (Freetz project)
-
-
 
 Installation
 ============
@@ -103,27 +94,4 @@ TODO
 ====
 - IPv6 native
 - /var/flash/debug.cfg 
-
-
-HISTORY
-=======
-
-NEXT (UNTESTED)
----------------
-- Add dropbear binaries (very rudimentary)
-- Add packages directories with toolchain, tools (only modified files in mod subdir)
-- Start telnetd on atom core
-- patch to enable native IPV6 selection
-
-release 2 [fb6490_6.50_telnet-2.tar]
-------------------------------------
-- Changed etc/init.d/rc.tail.sh
-	- Explicitly start telnetd from here (obviously the existence of /usr/sbin/telnetd is not always sufficient)
-- Added unsquashfs4_avm_x86/mksquashfs4-lzma-avm-be binaries (from Freetz)
-- Fixed html tags in README
-- Remove LCR download in telnet-1.tar
-
-release 1 [fb6490_6.50_telnet.tar]
-----------------------------------
-- Initial release
 

@@ -1,3 +1,9 @@
+This is a repository containing my modifications for FritzBox-6490 Cable.
+You still need the original image (original_141.06.50.tar) to build a
+modified install image, and you need a way to upgrade.
+
+
+
 NOTES
 =====
 
