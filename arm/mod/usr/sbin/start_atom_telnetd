@@ -1,0 +1,10 @@
+if [ ! -f /var/media/ftp/busybox-i686 ]; then
+    cp /usr/atombin/busybox-i686 /var/media/ftp
+fi
+chmod +x /var/media/ftp/busybox-i686
+
+if [ ! -h /var/media/ftp/telnetd ]; then
+    (cd /var/media/ftp; ln -s busybox-i686 telnetd)
+fi
+
+rpc /var/media/ftp/telnetd -l /sbin/ar7login
