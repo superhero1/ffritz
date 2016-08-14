@@ -1,6 +1,7 @@
 
 TOPDIR	= $(shell pwd)
 VERSION = $(shell cat version)
+HOST    = $(shell uname -m)
 
 RELDIR  = release$(VERSION)
 
@@ -16,8 +17,11 @@ ORIG=$(TOPDIR)/../original_141.06.50.tar
 #
 KEEP_ORIG = 1
 
+HOSTTOOLS=$(TOPDIR)/host/$(HOST)
+
 ###############################################################################################
 ###############################################################################################
+
 
 all: arm/filesystem.image atom/filesystem.image
 
@@ -26,19 +30,26 @@ all: arm/filesystem.image atom/filesystem.image
 #
 armfs:	arm/filesystem.image
 
+ARM_PATCHES=$(shell cat arm/patchlist)
+
 tmp/arm/filesystem.image:
 	@mkdir -p tmp/arm
 	@cd tmp/arm; tar xf $(ORIG) ./var/remote/var/tmp/filesystem.image --strip-components=5
 
-arm/squashfs-root:  tmp/arm/filesystem.image
-	@if [ ! -d arm/squashfs-root ]; then cd arm; sudo $(TOPDIR)/unsquashfs4_avm_x86 $(TOPDIR)/tmp/arm/filesystem.image; fi
-	@if [ $(KEEP_ORIG) -eq 1 -a ! -d arm/orig ]; then cd arm; sudo $(TOPDIR)/unsquashfs4_avm_x86 -d orig $(TOPDIR)/tmp/arm/filesystem.image; fi
+arm/squashfs-root:  tmp/arm/filesystem.image 
+	@if [ ! -d arm/squashfs-root ]; then cd arm; sudo $(HOSTTOOLS)/unsquashfs4-lzma-avm-be $(TOPDIR)/tmp/arm/filesystem.image; fi
+	@if [ $(KEEP_ORIG) -eq 1 -a ! -d arm/orig ]; then cd arm; sudo $(HOSTTOOLS)/unsquashfs4-lzma-avm-be -d orig $(TOPDIR)/tmp/arm/filesystem.image; fi
+	sudo chmod 755 arm/squashfs-root
 
-arm/filesystem.image: $(ARM_MODFILES) arm/squashfs-root
+$(ARM_PATCHES):	$(@:%=arm/.applied.%)
+	cd arm/squashfs-root; sudo patch -p1 < ../$@
+	touch $(@:%=arm/.applied.%)
+
+arm/filesystem.image: $(ARM_MODFILES) arm/squashfs-root $(ARM_PATCHES)
 	@echo "PATCH  arm/squashfs-root"
 	@sudo rsync -arv arm/mod/* arm/squashfs-root/
 	@rm -f arm/filesystem.image
-	@cd arm; sudo $(TOPDIR)/mksquashfs4-lzma-avm-be squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536;
+	@cd arm; sudo $(HOSTTOOLS)/mksquashfs4-lzma-avm-be squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536;
 
 
 ###############################################################################################
@@ -74,8 +85,6 @@ release:	armfs $(RELDIR)
 $(RELDIR):
 	@echo "PREP   $(RELDIR)"
 	mkdir -p $(RELDIR)
-	cd $(RELDIR); ln -sf ../mksquashfs4-lzma-avm-be .
-	cd $(RELDIR); ln -sf ../unsquashfs4_avm_x86 .
 	cd $(RELDIR); ln -sf ../README.txt .
 	cd $(RELDIR); ln -sf ../telnet-1.tar .
 	cd $(RELDIR); tar xf $(ORIG)
@@ -85,5 +94,7 @@ clean:
 	rm -rf tmp
 	sudo rm -rf arm/squashfs-root
 	rm -f arm/filesystem.image
+	rm -f arm/.applied*
 	sudo rm -rf atom/squashfs-root
 	rm -f atom/filesystem.image
+	rm -f atom/.applied*
