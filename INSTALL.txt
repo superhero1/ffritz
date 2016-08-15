@@ -1,4 +1,3 @@
-
 Firmware 6.50 fuer FritzBox-6490 Cable mit telnet u.A. aktiviert
 ===========================================================
 
@@ -6,8 +5,6 @@ Inhalt
 ======
 fb6490_6.50_telnet-XXX.tar	- Modifiziertes install-image
 telnet-1.tar			- Pseudo rootfs (from koyaanisqatsi@ip-phone-forum.de)
-mksquashfs4-lzma-avm-be
-unsquashfs4_avm_x86		- Squashfs binaries fuer ARM (Freetz project)
 
 Installation
 ============
@@ -89,9 +86,4 @@ ARM-FS entpacken (var/remote/var/tmp/filesystem.image)
 
 ARM-FS einpacken:
 	mksquashfs4-lzma-avm-be squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536
-
-TODO
-====
-- IPv6 native
-- /var/flash/debug.cfg 
 

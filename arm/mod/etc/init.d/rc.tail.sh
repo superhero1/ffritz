@@ -52,7 +52,38 @@ fi
 /usr/sbin/telnetd -l /sbin/ar7login
 
 #########################################################################
-# MOD: .. also on atom core
+# MOD: Start a SSH daemon (dropbear)
+#   - We want to be able to store root password persistently:
+#	- Create a copy for /etc/shadow to /nvram/shadow (if not yet done)
+#	- Link /etc/shadow to /nvram/shadow
+#   - Same for the certificates:
+#	- Create /var/media/ftp/.dropbear (if it does not yet exist)
+#	- Link /var/tmp/dropbear to /var/media/ftp/.dropbear
+#   - Start the daemon. -R will create certificates on demand
+#
+#   TODO: use box password for root, or add GUI to edit ssh pwd
+#   
+#########################################################################
+if [ -x /usr/local/sbin/dropbear ]; then
+    if [ ! -f /nvram/shadow ]; then
+	cp /etc/shadow /nvram/shadow
+    fi
+    rm -f /var/tmp/shadow
+    ln -sf /nvram/shadow /var/tmp/shadow
+
+    if [ ! -d /var/media/ftp/.dropbear ]; then
+	mkdir /var/media/ftp/.dropbear
+	chmod 700 /var/media/ftp/.dropbear
+    fi
+
+    rm -rf /var/tmp/dropbear
+    ln -sf /var/media/ftp/.dropbear /var/tmp/dropbear
+
+    /usr/local/sbin/dropbear -R
+fi
+
+#########################################################################
+# MOD: telnetd also on atom core
 #########################################################################
 /usr/sbin/start_atom_telnetd
 

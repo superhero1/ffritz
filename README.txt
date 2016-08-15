@@ -3,7 +3,6 @@ You still need the original image (original_141.06.50.tar) to build a
 modified install image, and you need a way to upgrade.
 
 
-
 NOTES
 =====
 
@@ -14,16 +13,13 @@ matches the uClibc version used in FB frimware 6.50).
 
 There seems to be a problem with locale support, since dropber binaries complain
 about missing symbols (caused by usage of ctype.h macros like isalnum, toupper, ...).
+Workaround is to link statically, or to not use ctype.h macros from dropbear ..
 
 Tools
 -----
 dropbear (dropbear-2016.74/)
-    - Need to apply some patches to emlinate isspace, isalnum, toupper (see above).
-
     - To start (debug, in chroot):
     /usr/local/sbin/dropbear -R -F -E -B
-
-    ssh root@192.168.0.1 /sbin/ar7login
 
 
 DEVELOPMENT
@@ -49,40 +45,30 @@ chroot root
 Usage
 =====
 
-ssh
----
-To start the dropbear daemon you need /etc/dropbear. By default it points
-to /var/tmp, which is tmpfs, i.e. the host keys are deleted at each reboot.
-
-To use permanent host keys:
-mkdir -p /var/media/ftp/.dropbear
-chmod 700 /var/media/ftp/.dropbear
-rm -f /var/tmp/dropbear
-ln -s /var/media/ftp/.dropbear /var/tmp/dropbear
-
-Then, start dropbear:
-    /usr/local/sbin/dropbear -R -F -E -B
-or in background
-    /usr/local/sbin/dropbear -R -E -B
-
-This is still very raw. Login shells don't get a proper tty,
-passwords dont work.
-
-To connect anyway:
-ssh root@192.168.178.1 /bin/sh
+ssh/scp
+-------
+- By default, root has no password, and other users do not have rights to get a tty, so
+  no login possible by default.
+- A root password can be given via a telnet login (passwd).
+- The system startup script makes sure it's persistent by storing /etc/shadow in /nvram
+- The box certificates are created on demand (first ssh login) and stored in
+    /var/media/tmp/.dropbox
+  Whether this is a good idea i don't know, but certificates in volatile RAM are aven 
+  worse, and i don't want to clutter /nvram
 
 
 TODO
 ====
-- full dropbear integration 
-    - Get a proper pty
-    - Start via inetd
-- IPv6 native (untested, patched lua to enable selection)
 - /var/flash/debug.cfg 
 
 
 HISTORY
 =======
+
+release 4
+---------
+- IPV6 native tested, seems to work
+- Better dropbear integration, ssh daemon started by default
 
 release 3
 ---------------

@@ -2,6 +2,7 @@
 TOPDIR	= $(shell pwd)
 VERSION = $(shell cat version)
 HOST    = $(shell uname -m)
+SUDO	= sudo
 
 RELDIR  = release$(VERSION)
 
@@ -31,26 +32,28 @@ all: arm/filesystem.image atom/filesystem.image
 armfs:	arm/filesystem.image
 
 ARM_PATCHES=$(shell cat arm/patchlist)
+ARM_PATCHST=$(ARM_PATCHES:%=arm/.applied.%)
 
 tmp/arm/filesystem.image:
 	@mkdir -p tmp/arm
 	@cd tmp/arm; tar xf $(ORIG) ./var/remote/var/tmp/filesystem.image --strip-components=5
 
 arm/squashfs-root:  tmp/arm/filesystem.image 
-	@if [ ! -d arm/squashfs-root ]; then cd arm; sudo $(HOSTTOOLS)/unsquashfs4-lzma-avm-be $(TOPDIR)/tmp/arm/filesystem.image; fi
-	@if [ $(KEEP_ORIG) -eq 1 -a ! -d arm/orig ]; then cd arm; sudo $(HOSTTOOLS)/unsquashfs4-lzma-avm-be -d orig $(TOPDIR)/tmp/arm/filesystem.image; fi
-	sudo chmod 755 arm/squashfs-root
+	@if [ ! -d arm/squashfs-root ]; then cd arm; $(SUDO) $(HOSTTOOLS)/unsquashfs4-lzma-avm-be $(TOPDIR)/tmp/arm/filesystem.image; fi
+	@if [ $(KEEP_ORIG) -eq 1 -a ! -d arm/orig ]; then cd arm; $(SUDO) $(HOSTTOOLS)/unsquashfs4-lzma-avm-be -d orig $(TOPDIR)/tmp/arm/filesystem.image; fi
+	@$(SUDO) chmod 755 arm/squashfs-root
 
-$(ARM_PATCHES):	$(@:%=arm/.applied.%)
-	cd arm/squashfs-root; sudo patch -p1 < ../$@
-	touch $(@:%=arm/.applied.%)
+$(ARM_PATCHST):	$(@:arm/.applied.%=%)
+	@echo APPLY $(@:arm/.applied.%=%)
+	@cd arm/squashfs-root; $(SUDO) patch -p1 < $(@:arm/.applied.%=../%)
+	@touch $@
 
-arm/filesystem.image: $(ARM_MODFILES) arm/squashfs-root $(ARM_PATCHES)
+arm/filesystem.image: $(ARM_MODFILES) arm/squashfs-root $(ARM_PATCHST)
 	@echo "PATCH  arm/squashfs-root"
-	@sudo rsync -arv arm/mod/* arm/squashfs-root/
+	@$(SUDO) rsync -a arm/mod/* arm/squashfs-root/
 	@rm -f arm/filesystem.image
-	@cd arm; sudo $(HOSTTOOLS)/mksquashfs4-lzma-avm-be squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536;
-
+	@echo "PACK  arm/squashfs-root"
+	@cd arm; $(SUDO) $(HOSTTOOLS)/mksquashfs4-lzma-avm-be squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 >/dev/null
 
 ###############################################################################################
 ## Unpack, patch and repack ATOM FS (UNTESTED)
@@ -62,15 +65,15 @@ tmp/atom/filesystem.image:
 	@cd tmp/atom; tar xf $(ORIG) ./var/remote/var/tmp/x86/filesystem.image --strip-components=6
 
 atom/squashfs-root:  tmp/atom/filesystem.image
-	@if [ ! -d atom/squashfs-root ]; then cd atom; sudo unsquashfs $(TOPDIR)/tmp/atom/filesystem.image; fi
-	@if [ $(KEEP_ORIG) -eq 1 -a ! -d atom/orig ]; then cd atom; sudo unsquashfs -d orig $(TOPDIR)/tmp/atom/filesystem.image; fi
+	@if [ ! -d atom/squashfs-root ]; then cd atom; $(SUDO) unsquashfs $(TOPDIR)/tmp/atom/filesystem.image; fi
+	@if [ $(KEEP_ORIG) -eq 1 -a ! -d atom/orig ]; then cd atom; $(SUDO) unsquashfs -d orig $(TOPDIR)/tmp/atom/filesystem.image; fi
 
 atom/filesystem.image: $(ATOM_MODFILES) atom/squashfs-root
 	@echo "PATCH  atom/squashfs-root"
-	@sudo rsync -arv atom/mod/* atom/squashfs-root/
+	@$(SUDO) rsync -a atom/mod/* atom/squashfs-root/
 	@rm -f atom/filesystem.image
 	@echo XXX atom fs UNTESTED
-	@cd atom; sudo mksquashfs squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536;
+	@cd atom; $(SUDO) mksquashfs squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 >/dev/null
 
 
 .PHONY:		$(RELDIR)
@@ -84,17 +87,18 @@ release:	armfs $(RELDIR)
 
 $(RELDIR):
 	@echo "PREP   $(RELDIR)"
-	mkdir -p $(RELDIR)
-	cd $(RELDIR); ln -sf ../README.txt .
-	cd $(RELDIR); ln -sf ../telnet-1.tar .
-	cd $(RELDIR); tar xf $(ORIG)
+	@mkdir -p $(RELDIR)
+	@cd $(RELDIR); ln -sf ../README.txt .
+	@cd $(RELDIR); ln -sf ../INSTALL.txt .
+	@cd $(RELDIR); ln -sf ../telnet-1.tar .
+	@cd $(RELDIR); tar xf $(ORIG)
 
 ###############################################################################################
 clean:
 	rm -rf tmp
-	sudo rm -rf arm/squashfs-root
+	$(SUDO) rm -rf arm/squashfs-root
 	rm -f arm/filesystem.image
 	rm -f arm/.applied*
-	sudo rm -rf atom/squashfs-root
+	$(SUDO) rm -rf atom/squashfs-root
 	rm -f atom/filesystem.image
 	rm -f atom/.applied*
