@@ -12,6 +12,7 @@ ATOM_MODFILES = $(shell find atom/mod/ -type f -o -type d)
 # The original firmware tarball
 #
 ORIG=$(TOPDIR)/../original_141.06.50.tar
+#ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.61.image
 
 # Keep original rootfs for diff?
 # sudo dirdiff arm/orig/ arm/squashfs-root/
@@ -21,10 +22,19 @@ KEEP_ORIG = 1
 HOSTTOOLS=$(TOPDIR)/host/$(HOST)
 
 ###############################################################################################
+FWVER=$(shell if [ -f .fwver.cache ]; then cat .fwver.cache; else strings $(ORIG) | grep -i ^newFWver=|sed -e 's/.*=//' | tee .fwver.cache; fi)
 ###############################################################################################
 
+ifeq ($(FWVER),)
+$(error Could not determine firmware version)
+else
+ifneq ($(FWVER),06.50)
+$(warning !!!! Firmware version $(FWVER) not tested !!!!)
+endif
+endif
 
-all: arm/filesystem.image atom/filesystem.image
+
+all: arm/filesystem.image #atom/filesystem.image
 
 ###############################################################################################
 ## Unpack, patch and repack ARM FS
@@ -80,9 +90,9 @@ atom/filesystem.image: $(ATOM_MODFILES) atom/squashfs-root
 
 ###############################################################################################
 release:	armfs $(RELDIR) 
-	@echo "PACK   $(RELDIR)/fb6490_6.50_telnet-$(VERSION).tar"
+	@echo "PACK   $(RELDIR)/fb6490_$(FWVER)-$(VERSION).tar"
 	@cp arm/filesystem.image $(RELDIR)/var/remote/var/tmp/filesystem.image
-	@cd $(RELDIR); tar cf fb6490_6.50_telnet-$(VERSION).tar var
+	@cd $(RELDIR); tar cf fb6490_$(FWVER)-$(VERSION).tar var
 	@rm -rf $(RELDIR)/var
 
 $(RELDIR):
@@ -97,8 +107,11 @@ $(RELDIR):
 clean:
 	rm -rf tmp
 	$(SUDO) rm -rf arm/squashfs-root
+	$(SUDO) rm -rf arm/orig
 	rm -f arm/filesystem.image
 	rm -f arm/.applied*
 	$(SUDO) rm -rf atom/squashfs-root
+	$(SUDO) rm -rf atom/orig
 	rm -f atom/filesystem.image
 	rm -f atom/.applied*
+	rm -f .fwver.cache
