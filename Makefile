@@ -11,8 +11,9 @@ ATOM_MODFILES = $(shell find atom/mod/ -type f -o -type d)
 
 # The original firmware tarball
 #
-ORIG=$(TOPDIR)/../original_141.06.50.tar
+#ORIG=$(TOPDIR)/../original_141.06.50.tar
 #ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.61.image
+ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.62.image
 
 # Keep original rootfs for diff?
 # sudo dirdiff arm/orig/ arm/squashfs-root/
@@ -27,10 +28,6 @@ FWVER=$(shell if [ -f .fwver.cache ]; then cat .fwver.cache; else strings $(ORIG
 
 ifeq ($(FWVER),)
 $(error Could not determine firmware version)
-else
-ifneq ($(FWVER),06.50)
-$(warning !!!! Firmware version $(FWVER) not tested !!!!)
-endif
 endif
 
 

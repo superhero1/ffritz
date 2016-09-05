@@ -52,7 +52,7 @@ ssh/scp
 - A root password can be given via a telnet login (passwd).
 - The system startup script makes sure it's persistent by storing /etc/shadow in /nvram
 - The box host keys are created on demand (first ssh login) and stored in
-    /var/media/ftp/.dropbox
+    /var/media/ftp/.dropbear
   Whether this is a good idea i don't know, but keys in volatile RAM are aven 
   worse, and i don't want to clutter /nvram.
 
