@@ -1,12 +1,15 @@
---- orig/etc/init.d/rc.tail.sh	2016-03-02 19:39:24.000000000 +0000
-+++ mod/etc/init.d/rc.tail.sh	2016-09-04 09:27:43.240275632 +0000
-@@ -47,4 +47,49 @@
+--- orig/etc/init.d/rc.tail.sh	2016-08-23 14:30:24.000000000 +0000
++++ squashfs-root/etc/init.d/rc.tail.sh	2016-09-05 15:33:20.072340001 +0000
+@@ -46,5 +46,47 @@
+ set_m_sleep=$((10*60))
  nohup sh -c "echo \"\$0[\$\$]: ++++fork set_modulemen, sleep ${set_m_sleep}++++\" > /dev/console ; sleep ${set_m_sleep}; echo \"\$0[\$\$]: ++++do set_modulemen++++\" > /dev/console; /bin/set_modulemem;" &
  fi
++
  #########################################################################
-+# MOD: Make sure telnetd is started
++# MOD: Make sure telnetd is started after startup for 5 mins
 +#########################################################################
 +/usr/sbin/telnetd -l /sbin/ar7login
++nohup sh -c "sleep 300; echo killing telnetd > /dev/console; sleep 10; killall telnetd" &
 +
 +#########################################################################
 +# MOD: Start a SSH daemon (dropbear)
@@ -14,8 +17,8 @@
 +#	- Create a copy for /etc/shadow to /nvram/shadow (if not yet done)
 +#	- Link /etc/shadow to /nvram/shadow
 +#   - Same for the certificates:
-+#	- Create /var/media/ftp/.dropbear (if it does not yet exist)
-+#	- Link /var/tmp/dropbear to /var/media/ftp/.dropbear
++#	- Create /nvram/dropbear (if it does not yet exist)
++#	- Link /var/tmp/dropbear to /nvram/dropbear
 +#   - Start the daemon. -R will create certificates on demand
 +#
 +#   TODO: use box password for root, or add GUI to edit ssh pwd
@@ -24,29 +27,24 @@
 +if [ -x /usr/local/sbin/dropbear ]; then
 +    if [ ! -f /nvram/shadow ]; then
 +	cp /etc/shadow /nvram/shadow
++	chmod 600 /nvram/shadow
 +    fi
 +    rm -f /var/tmp/shadow
 +    ln -sf /nvram/shadow /var/tmp/shadow
 +
-+    if [ ! -d /var/media/ftp/.dropbear ]; then
-+	mkdir /var/media/ftp/.dropbear
-+	chmod 700 /var/media/ftp/.dropbear
++    if [ ! -d /nvram/dropbear ]; then
++	if [ -d /var/media/ftp/.dropbear ]; then
++		mv /var/media/ftp/.dropbear /nvram/dropbear
++	else
++		mkdir /nvram/dropbear
++		chmod 700 /nvram/dropbear
++	fi
 +    fi
 +
 +    rm -rf /var/tmp/dropbear
-+    ln -sf /var/media/ftp/.dropbear /var/tmp/dropbear
++    ln -sf /nvram/dropbear /var/tmp/dropbear
 +
 +    /usr/local/sbin/dropbear -R
 +fi
-+
-+#########################################################################
-+# MOD: telnetd also on atom core
-+#########################################################################
-+/usr/sbin/start_atom_telnetd
-+
-+#########################################################################
-+# MOD: call debug.cfg, if present
-+#########################################################################
-+. /var/flash/debug.cfg
 +
  exit 0

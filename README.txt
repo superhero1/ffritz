@@ -58,10 +58,21 @@ ssh/scp
 
 TODO
 ====
-- /var/flash/debug.cfg 
+- Use box private keys for dropbear
+- Use box user management for dropbear 
 
 HISTORY
 =======
+Next
+----
+- Store/move dropbear keys to /nvram
+- Kill telnetd after 5 minutes
+- Do not start telnetd on atom by default
+- Remove execution of /var/flash/debug.cfg
+
+release 5
+---------
+- Support for 6.62
 
 release 4
 ---------
