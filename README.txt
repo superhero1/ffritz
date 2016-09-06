@@ -95,6 +95,7 @@ Next
 - Add ssh as symlink to dbclient
 - Add /.ssh as symlink to /var/tmp/root-ssh, and 
   link this to nvram at startup
+- Repack telnet-1.tar with busybox
 
 release 5
 ---------
