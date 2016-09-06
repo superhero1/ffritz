@@ -30,6 +30,14 @@ ifeq ($(FWVER),)
 $(error Could not determine firmware version)
 endif
 
+BUSYBOX	= $(shell which busybox)
+
+ifeq ($(BUSYBOX),)
+$(warning using tar to pack archive, recommend to install busybox)
+TAR	= tar
+else
+TAR	= busybox tar
+endif
 
 all: arm/filesystem.image #atom/filesystem.image
 
@@ -89,7 +97,7 @@ atom/filesystem.image: $(ATOM_MODFILES) atom/squashfs-root
 release:	armfs $(RELDIR) 
 	@echo "PACK   $(RELDIR)/fb6490_$(FWVER)-$(VERSION).tar"
 	@cp arm/filesystem.image $(RELDIR)/var/remote/var/tmp/filesystem.image
-	@cd $(RELDIR); tar cf fb6490_$(FWVER)-$(VERSION).tar var
+	@cd $(RELDIR); $(TAR) cf fb6490_$(FWVER)-$(VERSION).tar var
 	@rm -rf $(RELDIR)/var
 
 $(RELDIR):
