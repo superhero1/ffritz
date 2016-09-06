@@ -1,7 +1,19 @@
 This is a repository containing my modifications for FritzBox-6490 Cable.
-You still need the original image (original_141.06.50.tar) to build a
-modified install image, and you need a way to upgrade.
+You still need the original image to build a modified install image, and you need a way to upgrade.
+I'm assuming you already have telnet/ssh access to the box by either already running a modified image
+or having gained access (see INSTALL.txt).
 
+USAGE
+=====
+- Clone repo
+- Copy original install image (default is FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.62.image)
+  to directory above repo
+- Go to repo and "make install" (sudo required). This will create a release direcroy with a tar file inside, which can
+  be used for upgrade:
+	- Copy to box (e.g. NAS)
+	- Extract in / directory (tar xf /var/media/ftp/fb6490_6.tar)
+	- Call var/install
+	- After successful upgrade, execute "nohup sh var/post_install&"
 
 NOTES
 =====
@@ -42,8 +54,13 @@ mount --bind /proc root/proc
 chroot root
 
 
-Usage
-=====
+FEATURES
+========
+
+telnet
+------
+- telnetd is available on the ARM CPU for 5 minutes after startup, then it's killed
+- telnetd on atom CPU can be started via /usr/sbin/start_atom_telnetd from ARM
 
 ssh/scp
 -------
@@ -52,9 +69,14 @@ ssh/scp
 - A root password can be given via a telnet login (passwd).
 - The system startup script makes sure it's persistent by storing /etc/shadow in /nvram
 - The box host keys are created on demand (first ssh login) and stored in
-    /var/media/ftp/.dropbear
-  Whether this is a good idea i don't know, but keys in volatile RAM are aven 
-  worse, and i don't want to clutter /nvram.
+  /nvram/dropbear
+- The roots .ssh directory is a symlink to
+  /nvram/root-ssh
+
+IPV6
+----
+Selection of native IPv6 has been forced to be enabled in the GUI together with the general
+IPv6 availability.
 
 TODO
 ====
@@ -63,6 +85,7 @@ TODO
 
 HISTORY
 =======
+
 Next
 ----
 - Store/move dropbear keys to /nvram
