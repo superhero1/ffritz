@@ -69,6 +69,9 @@ Next
 - Kill telnetd after 5 minutes
 - Do not start telnetd on atom by default
 - Remove execution of /var/flash/debug.cfg
+- Add ssh as symlink to dbclient
+- Add /.ssh as symlink to /var/tmp/root-ssh, and 
+  link this to nvram at startup
 
 release 5
 ---------

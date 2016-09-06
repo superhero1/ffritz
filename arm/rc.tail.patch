@@ -1,6 +1,6 @@
 --- orig/etc/init.d/rc.tail.sh	2016-08-23 14:30:24.000000000 +0000
-+++ squashfs-root/etc/init.d/rc.tail.sh	2016-09-05 15:33:20.072340001 +0000
-@@ -46,5 +46,47 @@
++++ squashfs-root/etc/init.d/rc.tail.sh	2016-09-06 13:10:10.322826682 +0000
+@@ -46,5 +46,54 @@
  set_m_sleep=$((10*60))
  nohup sh -c "echo \"\$0[\$\$]: ++++fork set_modulemen, sleep ${set_m_sleep}++++\" > /dev/console ; sleep ${set_m_sleep}; echo \"\$0[\$\$]: ++++do set_modulemen++++\" > /dev/console; /bin/set_modulemem;" &
  fi
@@ -19,6 +19,7 @@
 +#   - Same for the certificates:
 +#	- Create /nvram/dropbear (if it does not yet exist)
 +#	- Link /var/tmp/dropbear to /nvram/dropbear
++#   - Same for roots .ssh directory (var/tmp/root-ssh linked to /nvram/root-ssh)
 +#   - Start the daemon. -R will create certificates on demand
 +#
 +#   TODO: use box password for root, or add GUI to edit ssh pwd
@@ -40,9 +41,15 @@
 +		chmod 700 /nvram/dropbear
 +	fi
 +    fi
-+
 +    rm -rf /var/tmp/dropbear
 +    ln -sf /nvram/dropbear /var/tmp/dropbear
++
++    if [ ! -d /nvram/root-ssh ]; then
++	mkdir /nvram/root-ssh
++	chmod 700 /nvram/root-ssh
++    fi
++    rm -rf /var/tmp/root-ssh
++    ln -sf /nvram/root-ssh /var/tmp/root-ssh
 +
 +    /usr/local/sbin/dropbear -R
 +fi
