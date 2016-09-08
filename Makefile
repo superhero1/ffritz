@@ -65,7 +65,7 @@ $(ARM_PATCHST):	$(@:arm/.applied.%=%)
 
 arm/filesystem.image: $(ARM_MODFILES) arm/squashfs-root $(ARM_PATCHST)
 	@echo "PATCH  arm/squashfs-root"
-	@$(SUDO) rsync -a arm/mod/* arm/squashfs-root/
+	@$(SUDO) rsync -a arm/mod/ arm/squashfs-root/
 	@rm -f arm/filesystem.image
 	@echo "PACK  arm/squashfs-root"
 	@cd arm; $(SUDO) $(HOSTTOOLS)/mksquashfs4-lzma-avm-be squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 >/dev/null

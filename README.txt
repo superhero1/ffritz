@@ -5,7 +5,7 @@ or having gained access (see INSTALL.txt).
 
 USAGE
 =====
-- Clone repo
+- Clone repo (use the latest release tag)
 - Copy original install image (default is FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.62.image)
   to directory above repo
 - Go to repo and "make install" (sudo required). This will create a release direcroy with a tar file inside, which can
@@ -14,6 +14,32 @@ USAGE
 	- Extract in / directory (tar xf /var/media/ftp/fb6490_6.tar)
 	- Call var/install
 	- After successful upgrade, execute "nohup sh var/post_install&"
+
+FEATURES
+========
+
+telnet
+------
+- telnetd is available on the ARM CPU for 5 minutes after startup, then it's killed
+- telnetd on atom CPU can be started via /usr/sbin/start_atom_telnetd from ARM
+
+ssh/scp
+-------
+- By default, root has no password, and other users do not have rights to get a tty, so
+  no login possible by default.
+- A root password can be assigned via a telnet login within 5 mins after bootup (passwd).
+- The system startup script makes sure it's persistent by storing /etc/shadow in /nvram,
+  so future updates do not require setting the password again
+- The box host keys are created on demand (first ssh login) and stored in
+  /nvram/dropbear
+- The roots .ssh directory is a symlink to
+  /nvram/root-ssh
+
+IPV6
+----
+Selection of native IPv6 has been forced to be enabled in the GUI together with the general
+IPv6 availability.
+
 
 NOTES
 =====
@@ -53,41 +79,17 @@ mount --bind /proc root/proc
 
 chroot root
 
-
-FEATURES
-========
-
-telnet
-------
-- telnetd is available on the ARM CPU for 5 minutes after startup, then it's killed
-- telnetd on atom CPU can be started via /usr/sbin/start_atom_telnetd from ARM
-
-ssh/scp
--------
-- By default, root has no password, and other users do not have rights to get a tty, so
-  no login possible by default.
-- A root password can be given via a telnet login (passwd).
-- The system startup script makes sure it's persistent by storing /etc/shadow in /nvram
-- The box host keys are created on demand (first ssh login) and stored in
-  /nvram/dropbear
-- The roots .ssh directory is a symlink to
-  /nvram/root-ssh
-
-IPV6
-----
-Selection of native IPv6 has been forced to be enabled in the GUI together with the general
-IPv6 availability.
-
 TODO
 ====
 - Use box private keys for dropbear
 - Use box user management for dropbear 
+- IPv6 is always disabled after box restart
 
 HISTORY
 =======
 
-Next
-----
+release 6
+---------
 - Store/move dropbear keys to /nvram
 - Kill telnetd after 5 minutes
 - Do not start telnetd on atom by default

@@ -1,9 +1,9 @@
-Firmware 6.50 fuer FritzBox-6490 Cable mit telnet u.A. aktiviert
+Firmware 6.62 fuer FritzBox-6490 Cable mit telnet/dropbear u.A. aktiviert
 ===========================================================
 
 Inhalt
 ======
-fb6490_6.50_telnet-XXX.tar	- Modifiziertes install-image
+fb6490_XXX.tar			- Modifiziertes install-image
 telnet-1.tar			- Pseudo rootfs (from koyaanisqatsi@ip-phone-forum.de)
 
 Installation
@@ -18,7 +18,7 @@ Ansonsten:
 - Image auf die Box kopieren (z.B. upload auf NAS)
 - Image auspacken
 	# cd /
-	# tar xf /var/media/ftp/fb6490_6.50_telnet.tar
+	# tar xf /var/media/ftp/fb6490_XX.tar
 
 - Installation starten
 	# var/install
