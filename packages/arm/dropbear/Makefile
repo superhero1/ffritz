@@ -1,8 +1,9 @@
+PKGTOP	= $(shell cd ../..; pwd)
+DLDIR	= $(PKGTOP)/dl
 
 ifeq ($(BUILDROOT),)
-$(error BUILDROOT (buildroot top directory) not defined)
+BUILDROOT=$(shell cd ../buildroot/buildroot-2013.08/; pwd)
 endif
-
 
 TOPDIR=$(shell pwd)
 TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
@@ -10,8 +11,8 @@ DESTDIR	    = $(TOPDIR)/output
 
 export PATH := $(TOOLCHAIN):$(PATH)
 
-URL	= $(shell cat url)
-FILE	= $(shell basename $(URL))
+URL	= $(shell cat $(PKGTOP)/url-dropbear)
+FILE	= $(DLDIR)/$(shell basename $(URL))
 
 all:	build/config.status
 	@make -C build PROGRAMS="dropbear dropbearkey dropbearconvert dbclient scp" STATIC=1 SCPPROGRESS=1 
@@ -23,11 +24,11 @@ install:
 	
 
 $(FILE):
-	@wget $(URL)
+	@cd $(DLDIR); wget $(URL)
 
 build/configure:    $(FILE)
 	@mkdir -p build
-	@cd build; tar xf ../$(FILE) --strip-components=1
+	@cd build; tar xf $(FILE) --strip-components=1
 	@cp options.h build/options.h
 	@touch build/configure
 

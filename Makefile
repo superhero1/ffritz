@@ -11,9 +11,9 @@ ATOM_MODFILES = $(shell find atom/mod/ -type f -o -type d)
 
 # The original firmware tarball
 #
-#ORIG=$(TOPDIR)/../original_141.06.50.tar
+ORIG=$(TOPDIR)/../original_141.06.50.tar
 #ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.61.image
-ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.62.image
+#ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.62.image
 
 # Keep original rootfs for diff?
 # sudo dirdiff arm/orig/ arm/squashfs-root/
@@ -27,10 +27,11 @@ FWVER=$(shell if [ -f .fwver.cache ]; then cat .fwver.cache; else strings $(ORIG
 ###############################################################################################
 
 ifeq ($(FWVER),)
-$(error Could not determine firmware version)
+$(error Could not determine firmware version ($(ORIG) missing?))
 endif
 
 BUSYBOX	= $(shell which busybox)
+RSYNC	= $(shell which rsync)
 
 ifeq ($(BUSYBOX),)
 $(warning using tar to pack archive, recommend to install busybox)
@@ -39,7 +40,11 @@ else
 TAR	= busybox tar
 endif
 
-all: arm/filesystem.image #atom/filesystem.image
+ifeq ($(RSYNC),)
+$(error rsync missing, please install)
+endif
+
+all: release
 
 ###############################################################################################
 ## Unpack, patch and repack ARM FS
@@ -65,7 +70,7 @@ $(ARM_PATCHST):	$(@:arm/.applied.%=%)
 
 arm/filesystem.image: $(ARM_MODFILES) arm/squashfs-root $(ARM_PATCHST)
 	@echo "PATCH  arm/squashfs-root"
-	@$(SUDO) rsync -a arm/mod/ arm/squashfs-root/
+	@$(SUDO) $(RSYNC) -a arm/mod/ arm/squashfs-root/
 	@rm -f arm/filesystem.image
 	@echo "PACK  arm/squashfs-root"
 	@cd arm; $(SUDO) $(HOSTTOOLS)/mksquashfs4-lzma-avm-be squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 >/dev/null
@@ -85,7 +90,7 @@ atom/squashfs-root:  tmp/atom/filesystem.image
 
 atom/filesystem.image: $(ATOM_MODFILES) atom/squashfs-root
 	@echo "PATCH  atom/squashfs-root"
-	@$(SUDO) rsync -a atom/mod/* atom/squashfs-root/
+	@$(SUDO) $(RSYNC) -a atom/mod/* atom/squashfs-root/
 	@rm -f atom/filesystem.image
 	@echo XXX atom fs UNTESTED
 	@cd atom; $(SUDO) mksquashfs squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 >/dev/null
