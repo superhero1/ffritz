@@ -40,6 +40,10 @@ IPV6
 Selection of native IPv6 has been forced to be enabled in the GUI together with the general
 IPv6 availability.
 
+FritzBox as audio player (mpd)
+------------------------------
+Work in progress. See "audio" branch and/or download section on bitbucket
+
 
 NOTES
 =====
