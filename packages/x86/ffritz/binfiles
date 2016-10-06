@@ -1,0 +1,3 @@
+../mpd/build/src/mpd
+../buildroot/build/output/target/usr/bin/aplay
+../libmaru/test/bin/test_enum

@@ -1,0 +1,7 @@
+#!/bin/sh
+#
+# Called by the mpd pipe driver for music output
+#
+. /var/media/ftp/ffplay/env.sh
+
+$FFPLAY_HOME/test_enum >/dev/null

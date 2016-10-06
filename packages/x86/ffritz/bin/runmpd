@@ -1,0 +1,9 @@
+#!/bin/sh
+#
+# Wrapper to call mpd with the proper libraries and config file
+#
+. /var/media/ftp/ffplay/env.sh
+
+export HOME=$FFPLAY_HOME
+$FFPLAY_HOME/bin/mpd $FFPLAY_HOME/etc/mpd.conf
+exit $?

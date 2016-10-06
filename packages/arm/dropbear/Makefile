@@ -2,10 +2,10 @@ PKGTOP	= $(shell cd ../..; pwd)
 DLDIR	= $(PKGTOP)/dl
 
 ifeq ($(BUILDROOT),)
-BUILDROOT=$(shell cd ../buildroot/buildroot-2013.08/; pwd)
+BUILDROOT=$(shell cd ../buildroot/build/; pwd)
 endif
 
-TOPDIR=$(shell pwd)
+TOPDIR	    = $(shell pwd)
 TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
 DESTDIR	    = $(TOPDIR)/output
 
