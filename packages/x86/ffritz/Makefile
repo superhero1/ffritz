@@ -26,6 +26,8 @@ $(IMAGE): $(BINFILES) $(LIBFILES)
 	cp -a $(BINFILES) $(STAGEDIR)/bin
 	cp -a $(LIBFILES) $(STAGEDIR)/lib
 	cp -a $(ETCFILES) $(STAGEDIR)/etc
+	cp ../../../MPD.txt output/README.txt
+	strip $(STAGEDIR)/bin/* || exit 0
 	cd output; tar cfz ../$(IMAGE) .
 	
 clean:
