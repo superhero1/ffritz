@@ -2,6 +2,6 @@
 #
 # Called by the mpd pipe driver for music output
 #
-. /var/media/ftp/ffplay/env.sh
+. /var/media/ftp/ffritz/etc/ffritz-env.sh
 
-$FFPLAY_HOME/test_enum >/dev/null
+$FFRITZ_HOME/bin/usbplay -v0 >/dev/null

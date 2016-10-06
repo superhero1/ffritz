@@ -18,3 +18,7 @@
 ../buildroot/build/output/target/usr/lib/libmad.so.0
 ../buildroot/build/output/target/usr/lib/libmad.so
 ../buildroot/build/output/target/usr/lib/libmad.so.0.2.1
+../buildroot/build/output/target/usr/lib/libbz2.so
+../buildroot/build/output/target/usr/lib/libbz2.so.1
+../buildroot/build/output/target/usr/lib/libbz2.so.1.0
+../buildroot/build/output/target/usr/lib/libbz2.so.1.0.6
