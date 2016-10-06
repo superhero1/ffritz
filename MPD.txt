@@ -1,0 +1,73 @@
+I thouhgt it would be nice to have mpd (music player daemon) running on the
+Atom core, with some USB DAC/Codec as output.
+
+Getting mpd to run is relatively easy, but playing audio via USB isn't.
+
+First attempt was to use ALSA by providing alsa-lib (easy, contained in buildroot)
+and installing the missing kernel modules from AVM source.
+The latter part would not be a problem is i had the excat kernel configuration
+AVM was using, but unfortunately they don't provide it. With guessing, the best i 
+got was to get the modules loaded and the USB DAC detected by aplay.
+But actually playing something crashed the kernel ..
+
+Plan B is to use libusb to access the USB DAC from userland. I found a rather old
+and obviously abandoned library (libmaru) that does the job.
+It provides a sample tool that dumps everythin on stdin to the first found audio device.
+As a first step, this command is configured to be used by the mpd pipe driver.
+It has the limitation that volume cant be controlled, but it's a first step.
+
+Next goal is to write a proper output/mixer plugin for mpd using libmaru.
+
+
+To build
+--------
+- Generate buildroot in packages/x86/buildroot:
+    cd packages/x86/buildroot; make
+
+- Compile mpd:
+    cd packages/x86/mpd; make
+
+- Compile libmaru:
+    cd packages/x86/libmaru; make
+
+- Pack everything:
+    cd packages/x86/ffritz; make
+
+.. and copy packages/x86/ffritz.tar.gz to the box (/var/media/ftp)
+
+To start mpd
+------------
+- Unpack ffritz.tar.gz on the box in /var/media/ftp
+- Call ffritz/bin/runmpd on atom (or via rpc on arm)
+
+It should now be possible to connect to mpd using some mpd client via the atom IP (xx.xx.xx.254). 
+Music database is /var/media/ftp/Musik by default. From there its possible to create nfs symlinks 
+or mounts to somewhere else ..
+
+Integration details
+-------------------
+- All required software is installed in /var/media/ftp/ffritz:
+    lib	    -   Contains all required shared libraries
+    bin	    -   All tools/commands Commands
+	runmpd		- Starts mpd with our config file (see below)
+
+    etc	    -	Config files:
+	ffplay-env.sh	-   Sourced by scripts to set environment correctly, esp.
+			    LD_LIBRARY_PATH for the l;ib directory
+	mpd.conf	-   mod configuration file used
+
+- runmpd redirects the HOME directory to /var/media/ftp/ffritz/.mpd. Here is where mpd creates
+    all its files (database, log, ...)
+
+- The default output is a pipe driver which calls /var/media/ftp/ffritz/bin/usb_pipe_play. This
+    script calls /var/media/ftp/ffritz/bin/test_enum (or usbplay), which is the libmaru binary
+    that forwards traffic to the first USB DAC.
+
+
+TODO
+----
+- Fix git repository so that it actually works ...
+- Do not run mpd as root, create a dedicated user (on demand at startup)
+- Replace pipe driver with a proper mpd output/mixer plugin
+- Write a box startup script (probably only on arm) that automatically starts mpd on atom.
+- Enable more features in mpd (ogg, ...)

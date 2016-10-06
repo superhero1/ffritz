@@ -17,8 +17,11 @@ src:
 ffritz.tar.gz: $(BINFILES) $(LIBFILES)
 	mkdir -p $(STAGEDIR)/bin
 	mkdir -p $(STAGEDIR)/lib
+	mkdir -p $(STAGEDIR)/etc
+	mkdir -p $(STAGEDIR)/.mpd
 	cp -a $(BINFILES) $(STAGEDIR)/bin
 	cp -a $(LIBFILES) $(STAGEDIR)/lib
+	cp -a $(ETCFILES) $(STAGEDIR)/etc
 	cd output; tar cfz ../ffritz.tar.gz .
 	
 clean:
