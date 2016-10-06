@@ -44,7 +44,6 @@ FritzBox as audio player (mpd)
 ------------------------------
 Work in progress. See "sound" branch and/or download section on bitbucket
 
-
 NOTES
 =====
 
