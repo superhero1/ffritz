@@ -7,14 +7,18 @@ ETCFILES    = $(shell ls etc/*)
 
 STAGEDIR    = $(TOPDIR)/output/ffritz
 
+VERSION     = $(shell cat version)
+
+IMAGE       = ffritz-x86-$(VERSION).tar.gz
+
 .PHONY:	src
 
-all:	src ffritz.tar.gz
+all:	src $(IMAGE)
 
 src:	
 	make -C src
 
-ffritz.tar.gz: $(BINFILES) $(LIBFILES)
+$(IMAGE): $(BINFILES) $(LIBFILES)
 	mkdir -p $(STAGEDIR)/bin
 	mkdir -p $(STAGEDIR)/lib
 	mkdir -p $(STAGEDIR)/etc
@@ -22,7 +26,9 @@ ffritz.tar.gz: $(BINFILES) $(LIBFILES)
 	cp -a $(BINFILES) $(STAGEDIR)/bin
 	cp -a $(LIBFILES) $(STAGEDIR)/lib
 	cp -a $(ETCFILES) $(STAGEDIR)/etc
-	cd output; tar cfz ../ffritz.tar.gz .
+	cp ../../../MPD.txt output/README.txt
+	strip $(STAGEDIR)/bin/* || exit 0
+	cd output; tar cfz ../$(IMAGE) .
 	
 clean:
-	rm -rf output ffritz.tar.gz
+	rm -rf output $(IMAGE)

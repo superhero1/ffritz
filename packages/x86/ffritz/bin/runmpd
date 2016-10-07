@@ -2,8 +2,8 @@
 #
 # Wrapper to call mpd with the proper libraries and config file
 #
-. /var/media/ftp/ffplay/env.sh
+. /var/media/ftp/ffritz/etc/ffritz-env.sh
 
-export HOME=$FFPLAY_HOME
-$FFPLAY_HOME/bin/mpd $FFPLAY_HOME/etc/mpd.conf
+export HOME=$FFRITZ_HOME
+$FFRITZ_HOME/bin/mpd $FFRITZ_HOME/etc/mpd.conf
 exit $?

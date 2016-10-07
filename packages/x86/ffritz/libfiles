@@ -21,3 +21,7 @@
 ../buildroot/build/output/target/usr/lib/libsamplerate.so.0
 ../buildroot/build/output/target/usr/lib/libsamplerate.so
 ../buildroot/build/output/target/usr/lib/libsamplerate.so.0.1.8
+../buildroot/build/output/target/usr/lib/libbz2.so
+../buildroot/build/output/target/usr/lib/libbz2.so.1
+../buildroot/build/output/target/usr/lib/libbz2.so.1.0
+../buildroot/build/output/target/usr/lib/libbz2.so.1.0.6

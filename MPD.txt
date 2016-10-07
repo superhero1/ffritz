@@ -50,6 +50,14 @@ Integration details
     lib	    -   Contains all required shared libraries
     bin	    -   All tools/commands Commands
 	runmpd		- Starts mpd with our config file (see below)
+	sndlist		- A tiniy tool to list all USB sound interfaces. You might have to tune
+			  mpd.conf and adjust the sample rate according to the detected device.
+	usbplay		- Reads from stdin and outputs to device.
+			  Parameters are
+				-d <num>	: Device number (first by default)
+				-s <stream>	: Stream number
+				-v <volume>	: Default output volume
+	usb_pipe_play	- Executed by mpd pipe driver to output sound via usbplay.	
 
     etc	    -	Config files:
 	ffplay-env.sh	-   Sourced by scripts to set environment correctly, esp.

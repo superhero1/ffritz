@@ -1,7 +1,12 @@
 
 TARGETS = bin/test_fifo bin/test_enum
 
+TOPDIR	    = $(shell pwd)
+BUILDROOT   = $(shell cd ../../buildroot/build; pwd)
+TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
+export PATH := $(TOOLCHAIN):$(PATH)
 CC=i686-buildroot-linux-uclibc-gcc
+
 TGT=/export/tmp/fritz/ffritz/packages/x86/buildroot/build/output/target/usr/lib
 TLIB=$(TGT)/usr/lib
 TINC=$(TGT)/usr/include
