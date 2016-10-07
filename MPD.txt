@@ -14,9 +14,6 @@ Plan B is to use libusb to access the USB DAC from userland. I found a rather ol
 and obviously abandoned library (libmaru) that does the job.
 It provides a sample tool that dumps everythin on stdin to the first found audio device.
 As a first step, this command is configured to be used by the mpd pipe driver.
-It has the limitation that volume cant be controlled, but it's a first step.
-
-Next goal is to write a proper output/mixer plugin for mpd using libmaru.
 
 
 To build
@@ -57,6 +54,9 @@ Integration details
 				-d <num>	: Device number (first by default)
 				-s <stream>	: Stream number
 				-v <volume>	: Default output volume
+				-V volfile      : volfile is polled (1/sec) in the play loop.
+						  Its content is interpreted as volume level
+						  (0..100) to be applied to the DAC.
 	usb_pipe_play	- Executed by mpd pipe driver to output sound via usbplay.	
 
     etc	    -	Config files:
@@ -71,11 +71,17 @@ Integration details
     script calls /var/media/ftp/ffritz/bin/test_enum (or usbplay), which is the libmaru binary
     that forwards traffic to the first USB DAC.
 
+- Volume control
+    The mpd pipe output driver is patched so that it supports the "volume_file" property.
+    If set, volume changes (via mixer_type "hardware") are written to this file. 
+
+    The pipe command has a change to read this file and adjust the hardware volume level.
+    usbplay will do just this (see above).
+
+    Not very elegant, but it works.
 
 TODO
 ----
-- Fix git repository so that it actually works ...
 - Do not run mpd as root, create a dedicated user (on demand at startup)
-- Replace pipe driver with a proper mpd output/mixer plugin
 - Write a box startup script (probably only on arm) that automatically starts mpd on atom.
-- Enable more features in mpd (ogg, ...)
+- Add (sh)airplay

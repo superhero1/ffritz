@@ -18,7 +18,7 @@ all:	src $(IMAGE)
 src:	
 	make -C src
 
-$(IMAGE): $(BINFILES) $(LIBFILES)
+$(IMAGE): $(BINFILES) $(LIBFILES) $(ETCFILES)
 	mkdir -p $(STAGEDIR)/bin
 	mkdir -p $(STAGEDIR)/lib
 	mkdir -p $(STAGEDIR)/etc
