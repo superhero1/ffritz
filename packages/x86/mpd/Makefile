@@ -25,4 +25,4 @@ build/configure:    $(FILE)
 	@touch build/configure
 
 build/config.status:	build/configure
-	@cd build; ./configure --host=i686-buildroot-linux-uclibc --target=i686-buildroot-linux-uclibc --with-zeroconf=no --enable-alsa --disable-pulse --enable-pipe-output --disable-icu --disable-glib --sysconfdir=/var/tmp --enable-mad
+	@cd build; ./configure --host=i686-buildroot-linux-uclibc --target=i686-buildroot-linux-uclibc --with-zeroconf=no --enable-alsa --disable-pulse --enable-pipe-output --disable-icu --disable-glib --sysconfdir=/var/tmp --enable-mad --enable-lsr
