@@ -39,11 +39,10 @@ void handle_volctl (char *volfile, maru_context *ctx)
     struct stat st;
     FILE *fh;
     int vol;
-    float fvol;
     struct timeval tv;
 
     /* volfile configured ?
-     *
+     */
     if (!volfile)
 	return;
 
@@ -104,7 +103,6 @@ main (int argc, char **argv)
     struct maru_audio_device *list;
     unsigned num_devices;
     struct timeval tv, prev_tv, start_tv;
-    int seconds = 0;
     int req_dev = -1;
     int req_stream = -1;
     int req_volume = -1;
@@ -112,14 +110,11 @@ main (int argc, char **argv)
     int err;
     maru_context *ctx;
     char *volfile = NULL;
-    struct stat *buf;
 
     int c;
-    int digit_optind = 0;
 
     while (1)
     {
-	int this_option_optind = optind ? optind : 1;
 	int option_index = 0;
 	static struct option long_options[] = {
 	    {"list", required_argument, 0, 'l'},
@@ -264,7 +259,6 @@ main (int argc, char **argv)
 
     gettimeofday (&start_tv, NULL);
     prev_tv = start_tv;
-    size_t avail;
 
     for (;;)
     {

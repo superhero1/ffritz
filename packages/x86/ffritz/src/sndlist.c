@@ -11,14 +11,12 @@ main (void)
 {
     struct maru_audio_device *list;
     unsigned num_devices;
-    struct timeval tv, prev_tv, start_tv;
-    int seconds = 0;
     maru_context *ctx;
     maru_volume cur, min, max;
     int stream;
     unsigned num_desc;
     struct maru_stream_desc *desc;
-    int i, j, k;
+    int i, j;
 
     assert (maru_list_audio_devices (&list, &num_devices) == LIBMARU_SUCCESS);
 
