@@ -1,3 +1,3 @@
-BUILDROOT_TARGETS   = toolchain boost zlib expat alsa-lib libmad libusb libfuse
+BUILDROOT_TARGETS   = toolchain boost zlib expat libmad libusb libfuse mpd
 
 include ../../buildroot.mk

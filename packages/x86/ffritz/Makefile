@@ -1,9 +1,9 @@
 TOPDIR	    = $(shell pwd)
 PKGDIR	    = $(shell cd ..; pwd)
 
-BINFILES    = $(shell cat binfiles) $(shell ls bin/*) src/sndlist src/usbplay
-LIBFILES    = $(shell cat libfiles)
-ETCFILES    = $(shell ls etc/*)
+BINFILES    = ../mpd/build/src/mpd bin/runmpd bin/usb_pipe_play src/sndlist src/usbplay
+LIBFILES    = $(shell ls ../buildroot/build/output/target/usr/lib/lib*so*) $(shell ls ../libmaru/lib*so*)
+ETCFILES    = etc/ffritz-env.sh etc/mpd.conf
 
 STAGEDIR    = $(TOPDIR)/output/ffritz
 

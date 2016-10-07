@@ -6,6 +6,96 @@
 #include <sys/time.h>
 #include <getopt.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+
+maru_volume vcur, vmin, vmax;
+int last_vol_reading;
+int last_mod;
+time_t last_check;
+
+int dev_volume (int vol)
+{
+    float fvol;
+
+    if (vol < 0)
+	return vmin;
+
+    if (vol >= 100)
+	return vmax;
+
+    /* convert to range of device
+     */
+    fvol = (float)(vmin) + ((float)vol / 100.0) * (float)(vmax - vmin) + 0.499;
+
+    return (int)fvol;
+}
+
+void handle_volctl (char *volfile, maru_context *ctx)
+{
+    int err;
+    struct stat st;
+    FILE *fh;
+    int vol;
+    float fvol;
+    struct timeval tv;
+
+    /* volfile configured ?
+     *
+    if (!volfile)
+	return;
+
+    /* poll only once per second
+     */
+    if (gettimeofday (&tv, NULL) == 0)
+    {
+	if (tv.tv_sec == last_check)
+	    return;
+	last_check = tv.tv_sec;
+    }
+
+    /* check if it exists and has been modified
+     */
+    if (stat (volfile, &st))
+	return;
+
+    if (st.st_mtime == last_mod)
+	return;
+
+    /* read it
+     */
+    fh = fopen (volfile, "r");
+    if (!fh)
+	return;
+
+    if (fscanf (fh, "%d", &vol) != 1)
+	return;
+
+    fclose (fh);
+
+    /* convert to range of device
+     */
+    vol = dev_volume (vol);
+
+    last_mod = st.st_mtime;
+
+    if (vol == vcur)
+	return;
+
+    /* adjust volume in hardware
+     */
+    err =
+	maru_stream_set_volume (ctx, LIBMARU_STREAM_MASTER, vol, 5000000);
+
+    if (err != LIBMARU_SUCCESS)
+    {
+	fprintf (stderr, "Failed to set volume to %d\n", vol/256);
+    }
+
+    vcur = vol;
+}
 
 
 int
@@ -17,11 +107,12 @@ main (int argc, char **argv)
     int seconds = 0;
     int req_dev = -1;
     int req_stream = -1;
-    int req_volume = 0;
-    maru_volume cur, min, max;
+    int req_volume = -1;
     int stream;
     int err;
     maru_context *ctx;
+    char *volfile = NULL;
+    struct stat *buf;
 
     int c;
     int digit_optind = 0;
@@ -35,10 +126,11 @@ main (int argc, char **argv)
 	    {"device", required_argument, 0, 'd'},
 	    {"stream", required_argument, 0, 's'},
 	    {"volume", required_argument, 0, 'v'},
+	    {"volfile", required_argument, 0, 'V'},
 	    {0, 0, 0, 0}
 	};
 
-	c = getopt_long (argc, argv, "ld:s:v:", long_options, &option_index);
+	c = getopt_long (argc, argv, "ld:s:v:V:", long_options, &option_index);
 
 	if (c == -1)
 	    break;
@@ -58,6 +150,10 @@ main (int argc, char **argv)
 
 	case 'v':
 	    req_volume = atoi(optarg);
+	    break;
+
+	case 'V':
+	    volfile = optarg;
 	    break;
 	}
     }
@@ -89,20 +185,28 @@ main (int argc, char **argv)
 					      16}) == LIBMARU_SUCCESS);
 
     err =
-	maru_stream_get_volume (ctx, LIBMARU_STREAM_MASTER, &cur, &min,
-				&max, 5000000);
+	maru_stream_get_volume (ctx, LIBMARU_STREAM_MASTER, &vcur, &vmin,
+				&vmax, 5000000);
 
-    if (err == LIBMARU_SUCCESS)
+    if (err != LIBMARU_SUCCESS)
     {
-	if (req_volume > max / 256)
-	    req_volume = max / 256;
+	fprintf (stderr, "usbplay: failed to get volume limits\n");
+	volfile = NULL;
+	vmin = -50*256;
+	vmax = 0;
+	req_volume = -1;
+    }
+
+    if ((req_volume != -1) && (volfile == NULL))
+    {
+	req_volume = dev_volume (req_volume);
 
 	err =
-	    maru_stream_set_volume (ctx, LIBMARU_STREAM_MASTER, req_volume * 256, 5000000);
+	    maru_stream_set_volume (ctx, LIBMARU_STREAM_MASTER, req_volume, 5000000);
 
 	if (err != LIBMARU_SUCCESS)
 	{
-	    fprintf (stderr, "Failed to set volume to %d\n", req_volume);
+	    fprintf (stderr, "Failed to set volume to %d\n", req_volume/256);
 	}
     }
 
@@ -197,6 +301,8 @@ main (int argc, char **argv)
 	    printf ("[%d] latency: %d written: %d avail: %d\n",
 		    0, 0, 0, 0);
 	}
+
+	handle_volctl (volfile, ctx);
     }
 
     assert (maru_stream_close (ctx, stream) == LIBMARU_SUCCESS);

@@ -4,4 +4,7 @@
 #
 . /var/media/ftp/ffritz/etc/ffritz-env.sh
 
-$FFRITZ_HOME/bin/usbplay -v0 >/dev/null
+# Volume level is communicated from mpd to usbplay via /var/tmp/volume
+# (see mpd.conf)
+#
+$FFRITZ_HOME/bin/usbplay -V /var/tmp/volume >/dev/null

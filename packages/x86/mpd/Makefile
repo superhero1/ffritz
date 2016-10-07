@@ -23,8 +23,8 @@ $(FILE):
 build/configure:    $(FILE)
 	@mkdir -p build
 	@cd build; tar xf $(FILE) --strip-components=1
+	@cd build; patch -p1 < ../pipe_volume_ctrl.patch
 	@touch build/configure
 
 build/config.status:	build/configure
-	@cd build; ./configure --host=i686-buildroot-linux-uclibc --target=i686-buildroot-linux-uclibc --with-zeroconf=no --enable-alsa --disable-pulse --enable-pipe-output --disable-icu --disable-glib --sysconfdir=/var/tmp --enable-mad --enable-lsr
-	@if [ ! -d $(SYSROOT)/usr/include/alsa ]; then cd $(SYSROOT)/usr/include; ln -s ../../var/alsa/include/alsa .; fi
+	@cd build; ./configure --host=i686-buildroot-linux-uclibc --target=i686-buildroot-linux-uclibc --with-zeroconf=no --disable-alsa --disable-pulse --enable-pipe-output --disable-icu --enable-glib --sysconfdir=/var/tmp --enable-mad --enable-lsr --enable-fifo --enable-flac --disable-mpg123 --enable-recorder-output --enable-sqlite --enable-vorbis --enable-aac
