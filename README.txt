@@ -8,7 +8,7 @@ USAGE
 - Clone repo (use the latest release tag)
 - Copy original install image (default is FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.62.image)
   to directory above repo
-- Go to repo and "make install" (sudo required). This will create a release direcroy with a tar file inside, which can
+- Go to repo and "make release" (sudo required). This will create a release direcroy with a tar file inside, which can
   be used for upgrade:
 	- Copy to box (e.g. NAS)
 	- Extract in / directory (tar xf /var/media/ftp/fb6490_6.tar)
