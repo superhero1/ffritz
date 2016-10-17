@@ -5,5 +5,25 @@
 . /var/media/ftp/ffritz/etc/ffritz-env.sh
 
 export HOME=$FFRITZ_HOME
-$FFRITZ_HOME/bin/mpd $FFRITZ_HOME/etc/mpd.conf
-exit $?
+
+# make sure required user/group exists
+#
+grep ffritz /etc/passwd >/dev/null || echo ffritz:x:8000:8000:ffritz:/var/media/ftp/ffritz:/bin/sh >> /etc/passwd
+grep ffritz /etc/group >/dev/null || echo ffritz:x:8000: >> /etc/group
+grep usb /etc/group >/dev/null || echo usb:x:8001:ffritz >> /etc/group
+
+# allow usb group access to usb endpoints
+#
+find /dev/bus/usb | xargs chgrp usb
+
+# make sure volume transfer file exists
+#
+touch /var/tmp/volume
+chown ffritz /var/tmp/volume
+
+# Spawn mpd in endless loop in case it crashes
+#
+while true; do
+	$FFRITZ_HOME/bin/mpd --no-daemon $FFRITZ_HOME/etc/mpd.conf
+	sleep 1
+done

@@ -70,7 +70,10 @@ void handle_volctl (char *volfile, maru_context *ctx)
 	return;
 
     if (fscanf (fh, "%d", &vol) != 1)
+    {
+	fclose (fh);
 	return;
+    }
 
     fclose (fh);
 

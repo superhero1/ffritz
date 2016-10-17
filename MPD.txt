@@ -35,7 +35,8 @@ To build
 To start mpd
 ------------
 - Unpack ffritz.tar.gz on the box in /var/media/ftp
-- Call ffritz/bin/runmpd on atom (or via rpc on arm)
+- Call ffritz/bin/runmpd on atom (or via rpc on arm):
+	nohup /var/media/ftp/ffritz/bin/runmpd&
 
 It should now be possible to connect to mpd using some mpd client via the atom IP (xx.xx.xx.254). 
 Music database is /var/media/ftp/Musik by default. From there its possible to create nfs symlinks 
