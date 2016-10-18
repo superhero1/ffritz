@@ -11,12 +11,14 @@ VERSION     = $(shell cat version)
 
 IMAGE       = ffritz-x86-$(VERSION).tar.gz
 
-.PHONY:	src
+SUBDIRS	    = ../buildroot ../mpd ../libmaru src
 
-all:	src $(IMAGE)
+.PHONY:	$(SUBDIRS)
 
-src:	
-	make -C src
+all:	$(SUBDIRS) $(IMAGE)
+
+$(SUBDIRS):	
+	make -C $@
 
 $(IMAGE): $(BINFILES) $(LIBFILES) $(ETCFILES)
 	rm -rf $(STAGEDIR)
@@ -33,3 +35,6 @@ $(IMAGE): $(BINFILES) $(LIBFILES) $(ETCFILES)
 	
 clean:
 	rm -rf output $(IMAGE)
+
+cleanall:
+	for d in $(SUBDIRS); do make -C $${d} clean; done

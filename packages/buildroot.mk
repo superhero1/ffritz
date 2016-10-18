@@ -7,19 +7,17 @@ export PATH := $(TOOLCHAIN):$(PATH)
 URL	= $(shell cat $(PKGTOP)/url-buildroot)
 FILE	= $(DLDIR)/$(shell basename $(URL))
 
-all:	.build.stamp
+all:	.build.stamp arch-patches
+	@make -C build toolchain CC=gcc-4.7 HOSTCC=gcc-4.7
 	@make -C build $(BUILDROOT_TARGETS)
 
 $(FILE):
 	@cd $(DLDIR); wget $(URL)
 
-.build.stamp:	$(FILE)
+.build.stamp:	$(FILE) 
 	mkdir -p build
+	mkdir -p $(DLDIR)
 	cd build; tar xf $(FILE) --strip-components=1
-	cp mod/config build/.config
-	cp mod/alsa-lib.mk build/package/alsa-lib/alsa-lib.mk
-	cp mod/uClibc-0.9.33.config build/toolchain/uClibc/uClibc-0.9.33.config
-	cp mod/toolchain_gcc_Config.in build/toolchain/gcc/Config.in
 	ln -sf $(DLDIR) build/dl
 	touch .build.stamp
 

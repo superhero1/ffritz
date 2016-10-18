@@ -12,4 +12,6 @@ sndlist:    sndlist.c
 usbplay:    usbplay.c
 	$(CC)  -Wall -o usbplay usbplay.c -std=c99 -I ../../libmaru -L ../../libmaru -lmaru
 
+clean:
+	rm -f sndlist usbplay
 
