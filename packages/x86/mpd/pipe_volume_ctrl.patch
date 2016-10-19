@@ -1,0 +1,154 @@
+--- mpd-0.19.19/src/output/plugins/PipeOutputPlugin.cxx	2016-07-29 10:01:52.000000000 +0200
++++ build/src/output/plugins/PipeOutputPlugin.cxx	2016-10-07 15:08:14.243820863 +0200
+@@ -22,11 +22,21 @@
+ #include "../OutputAPI.hxx"
+ #include "config/ConfigError.hxx"
+ #include "util/Error.hxx"
++#include "util/Domain.hxx"
++
++#include <stdio.h>
++#include <string.h>
++#include <unistd.h>
++#include <errno.h>
++#include <fcntl.h>
+ 
+ #include <string>
++#include <sys/types.h>
++#include <sys/wait.h>
+ 
+ #include <stdio.h>
+ 
++
+ struct PipeOutput {
+ 	AudioOutput base;
+ 
+@@ -121,6 +131,122 @@
+ 	return ret;
+ }
+ 
++/******* A simple mixer for volume control ..
++ * 
++ * If the "volume_file" property is set, it points to a file
++ * whehere the volume level (0..100) is written to in ASCII.
++ *
++ * The command started via popen has the chance to poll this file and 
++ * adjust the volume level accordingly
++ */
++#include "mixer/MixerInternal.hxx"
++#include "mixer/Listener.hxx"
++
++static constexpr Domain pipe_output_domain("pipe_output");
++
++static Mixer *
++pipe_volctrl_init(EventLoop &event_loop, gcc_unused AudioOutput &ao,
++		MixerListener &listener,
++		const config_param &param,
++		gcc_unused Error &error);
++
++const MixerPlugin pipe_volctrl_plugin = {
++	pipe_volctrl_init,
++	true,
++};
++
++class PipeMixer final : public Mixer {
++	EventLoop &event_loop;
++
++	const char *volfile;
++	unsigned last_volume;
++
++public:
++	PipeMixer(EventLoop &_event_loop, MixerListener &_listener)
++		:Mixer(pipe_volctrl_plugin, _listener),
++		 event_loop(_event_loop) {}
++
++	virtual ~PipeMixer(){};
++
++	void Configure(const config_param &param)
++	{
++	    volfile = param.GetBlockValue("volume_file", "");
++	};
++
++	/* virtual methods from class Mixer */
++	virtual bool Open(Error &error) override
++	{
++	    last_volume = 75;
++	    last_volume = GetVolume (error);
++	    return true;
++	};
++	virtual void Close() override {};
++	virtual int GetVolume(Error &error) override
++	{
++	    int vol;
++
++	    if (strlen(volfile) == 0)
++		return last_volume;
++
++	    FILE *fd = fopen (volfile, "r");
++	    if (fd == NULL)
++	    {
++		error.Format (pipe_output_domain, errno, "Failed to open volume control %s", volfile);
++		return last_volume;
++	    }
++
++	    if (fscanf (fd, "%d", &vol) != 1)
++		return last_volume;
++
++	    fclose (fd);
++
++	    return vol;
++	};
++
++	virtual bool SetVolume(unsigned volume, Error &error) override
++	{
++	    char out[20];
++
++	    if (volume == last_volume)
++		return true;
++
++	    if (strlen(volfile) == 0)
++		return false;
++
++	    FILE *fd = fopen (volfile, "w+");
++	    if (fd == NULL)
++	    {
++		error.Format (pipe_output_domain, errno, "Failed to open volume control %s", volfile);
++		return false;
++	    }
++
++	    sprintf (out, "%d", volume);
++	    if (fwrite (out, strlen(out), 1, fd) == 0)
++	    {
++		error.Format (pipe_output_domain, errno, "Failed to write volume control %s", volfile);
++		return false;
++	    }
++
++	    fclose (fd);
++
++	    last_volume = volume;
++
++	    return true;
++	};
++};
++
++static Mixer *
++pipe_volctrl_init(EventLoop &event_loop, gcc_unused AudioOutput &ao,
++		MixerListener &listener,
++		const config_param &param,
++		gcc_unused Error &error)
++{
++	PipeMixer *pm = new PipeMixer(event_loop, listener);
++	pm->Configure (param);
++
++	return pm;
++}
++
+ const struct AudioOutputPlugin pipe_output_plugin = {
+ 	"pipe",
+ 	nullptr,
+@@ -136,5 +262,5 @@
+ 	nullptr,
+ 	nullptr,
+ 	nullptr,
+-	nullptr,
++	&pipe_volctrl_plugin,
+ };
