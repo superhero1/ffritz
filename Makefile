@@ -100,7 +100,8 @@ atom/squashfs-root:  tmp/atom/filesystem.image
 atom/filesystem.image: $(ATOM_MODFILES) atom/squashfs-root $(FFRITZ_X86_PACKAGE)
 	@echo "PATCH  atom/squashfs-root"
 	@$(SUDO) $(RSYNC) -a atom/mod/ atom/squashfs-root/
-	@test -f ./$(FFRITZ_X86_PACKAGE) && tar xf $(FFRITZ_X86_PACKAGE) --strip-components=2 -C atom/squashfs-root/usr/local ./ffritz
+	@test -f ./$(FFRITZ_X86_PACKAGE) && sudo mkdir -p atom/squashfs-root/usr/local
+	@test -f ./$(FFRITZ_X86_PACKAGE) && sudo tar xf $(FFRITZ_X86_PACKAGE) --strip-components=2 -C atom/squashfs-root/usr/local ./ffritz
 	@test -f ./$(FFRITZ_X86_PACKAGE) && sudo sh -c "cd atom/squashfs-root/usr/bin; ln -sf ../local/bin/* ."
 	@rm -f atom/filesystem.image
 	@cd atom; $(SUDO) mksquashfs squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 >/dev/null
