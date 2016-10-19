@@ -147,8 +147,8 @@ TODO
 HISTORY
 =======
 
-NEXT
-----
+release 7
+---------
 - Add dropbear for atom
 - Add mpd to atom
 
