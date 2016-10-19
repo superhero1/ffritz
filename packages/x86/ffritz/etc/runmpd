@@ -5,6 +5,8 @@
 #
 . `dirname $0`/../etc/ffritz-env.sh || exit 1
 
+cd /
+
 # make sure required user/group exists
 # only required if the standalone package is installed. If ffritz is invoked via arm core
 # this is already done.
@@ -18,9 +20,10 @@ if [ ! -d ~ffritz/.mpd ]; then
 fi
 chown ffritz:ffritz ~ffritz/.mpd
 
-# allow usb group access to usb endpoints
+# allow usb group access to usb endpoints.
+# should write a proper udev rule ..
 #
-find /dev/bus/usb | xargs chgrp usb
+nohup sh -c "while true; do find /dev/bus/usb | xargs chgrp usb; sleep 10; done"&
 
 # make sure volume transfer file exists
 #
@@ -32,6 +35,7 @@ chown ffritz /var/tmp/volume
 if [ ! -f $FFRITZ_HOME/mpd.conf ]; then
     sed -e "s@FFINSTDIR@$FFINSTDIR@" < $FFINSTDIR/etc/mpd.conf > $FFRITZ_HOME/mpd.conf
 fi
+sed -i -e "s@\(.*\"\).*\(/bin/usbplay.*\)@\1$FFINSTDIR\2@" $FFRITZ_HOME/mpd.conf
 
 # Run mpd in endless loop in case it crashes
 #

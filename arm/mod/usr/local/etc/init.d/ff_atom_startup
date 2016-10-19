@@ -81,7 +81,6 @@ rundir=/usr/local
 #
 if [ -x $rundir/bin/dropbear -a ! -f /var/media/ftp/.skip_dropbear ]; then
     echo Starting dropbear >/dev/console
-    export LD_LIBRARY_PATH=$rundir/lib
     $rundir/bin/dropbear || echo dropbear startup failed >/dev/console
 else
     echo dropbear not started >/dev/console

@@ -17,7 +17,7 @@ USAGE
 
 Atom core extensions
 --------------------
-By default, only the arm core filesystem is modified. There is an additional package ("ffritz-x86") 
+By default, only the arm core filesystem is modified. There is an additional package (ffritz-x86-ver.tar.gz) 
 that contains various extensions for the atom core (mpd, dropbear at the moment).
 These extensions can either be hardcoded into the atom filesystem (edit the Makefile and 
 comment out the FFRITZ_X86_PACKAGE). Then they will be located in /usr/local.
@@ -142,6 +142,7 @@ chroot root
 TODO
 ====
 - IPv6 is always disabled after box restart
+- Write proper udev rule to adjust dev attributes
 
 HISTORY
 =======

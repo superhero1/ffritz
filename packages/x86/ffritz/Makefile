@@ -38,8 +38,9 @@ $(SUBDIRS):
 $(IMAGE): $(BINFILES) $(LIBFILES) $(ETCFILES)
 	rm -rf $(STAGEDIR)
 	make install INSTDIR=$(STAGEDIR)
-	cp ../../../MPD.txt output/README.txt
-	cd output; tar cfz ../$(IMAGE) --owner 8000 --group 8000 .
+	cp ../../../MPD.txt output/
+	cp ../../../README.txt output/
+	cd output; tar cfz ../$(IMAGE) --owner=8000 --group=8000 .
 
 # Install averything to target
 # LD_LIBRARY_PATH needs to be set correctly for binaries. This is done by the ffwrap wrapper script,
