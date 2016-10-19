@@ -11,14 +11,19 @@ ATOM_MODFILES = $(shell find atom/mod/ -type f -o -type d)
 
 # The original firmware tarball
 #
-ORIG=$(TOPDIR)/../original_141.06.50.tar
+#ORIG=$(TOPDIR)/../original_141.06.50.tar
 #ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.61.image
-#ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.62.image
+ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.62.image
 
 # Keep original rootfs for diff?
 # sudo dirdiff arm/orig/ arm/squashfs-root/
 #
 KEEP_ORIG = 1
+
+# UNCOMMENT THIS if you want to modify the ARM core filesystem, adding
+# stuff from the x86/ffritz package (dropbear, mpd)
+#
+FFRITZ_X86_PACKAGE=packages/x86/ffritz/ffritz-x86-0.3.tar.gz
 
 HOSTTOOLS=$(TOPDIR)/host/$(HOST)
 
@@ -42,6 +47,10 @@ endif
 
 ifeq ($(RSYNC),)
 $(error rsync missing, please install)
+endif
+
+ifneq ($(FFRITZ_X86_PACKAGE),)
+    ATOMFS=atomfs
 endif
 
 all: release
@@ -76,7 +85,7 @@ arm/filesystem.image: $(ARM_MODFILES) arm/squashfs-root $(ARM_PATCHST)
 	@cd arm; $(SUDO) $(HOSTTOOLS)/mksquashfs4-lzma-avm-be squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 >/dev/null
 
 ###############################################################################################
-## Unpack, patch and repack ATOM FS (UNTESTED)
+## Unpack, patch and repack ATOM FS 
 #
 atomfs:	atom/filesystem.image
 
@@ -88,18 +97,26 @@ atom/squashfs-root:  tmp/atom/filesystem.image
 	@if [ ! -d atom/squashfs-root ]; then cd atom; $(SUDO) unsquashfs $(TOPDIR)/tmp/atom/filesystem.image; fi
 	@if [ $(KEEP_ORIG) -eq 1 -a ! -d atom/orig ]; then cd atom; $(SUDO) unsquashfs -d orig $(TOPDIR)/tmp/atom/filesystem.image; fi
 
-atom/filesystem.image: $(ATOM_MODFILES) atom/squashfs-root
+atom/filesystem.image: $(ATOM_MODFILES) atom/squashfs-root $(FFRITZ_X86_PACKAGE)
 	@echo "PATCH  atom/squashfs-root"
-	@$(SUDO) $(RSYNC) -a atom/mod/* atom/squashfs-root/
+	@$(SUDO) $(RSYNC) -a atom/mod/ atom/squashfs-root/
+	@test -f ./$(FFRITZ_X86_PACKAGE) && tar xf $(FFRITZ_X86_PACKAGE) --strip-components=2 -C atom/squashfs-root/usr/local ./ffritz
+	@test -f ./$(FFRITZ_X86_PACKAGE) && sudo sh -c "cd atom/squashfs-root/usr/bin; ln -sf ../local/bin/* ."
 	@rm -f atom/filesystem.image
 	@echo XXX atom fs UNTESTED
 	@cd atom; $(SUDO) mksquashfs squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 >/dev/null
 
+## Normally the package should be pre-compiled. If not, try to rebuild it
+#
+ifneq ($(FFRITZ_X86_PACKAGE),)
+$(FFRITZ_X86_PACKAGE):
+	make -C packages/x86/ffritz $(shell basename $(FFRITZ_X86_PACKAGE))
+endif
 
 .PHONY:		$(RELDIR)
 
 ###############################################################################################
-release:	armfs $(RELDIR) 
+release:	armfs $(ATOMFS) $(RELDIR) 
 	@echo "PACK   $(RELDIR)/fb6490_$(FWVER)-$(VERSION).tar"
 	@cp arm/filesystem.image $(RELDIR)/var/remote/var/tmp/filesystem.image
 	@cd $(RELDIR); $(TAR) cf fb6490_$(FWVER)-$(VERSION).tar var

@@ -18,36 +18,30 @@ As a first step, this command is configured to be used by the mpd pipe driver.
 
 To build
 --------
-- Generate buildroot in packages/x86/buildroot:
-    cd packages/x86/buildroot; make
-
-- Compile mpd:
-    cd packages/x86/mpd; make
-
-- Compile libmaru:
-    cd packages/x86/libmaru; make
-
-- Pack everything:
-    cd packages/x86/ffritz; make
-
-.. and copy packages/x86/ffritz.tar.gz to the box (/var/media/ftp)
+packages/x86/ffritz/Makefile should do the job.
+If make is called there without argument, buildroot/mpd/etc. is compiled and everything is
+placed into a tarball that can be exctracted to /var/media/ftp.
 
 To start mpd
 ------------
 - Unpack ffritz.tar.gz on the box in /var/media/ftp
-- Call ffritz/bin/runmpd on atom (or via rpc on arm):
-	nohup /var/media/ftp/ffritz/bin/runmpd&
+- Call ffritz/etc/runmpd on atom (or via rpc on arm):
+	nohup /var/media/ftp/ffritz/etc/runmpd&
 
 It should now be possible to connect to mpd using some mpd client via the atom IP (xx.xx.xx.254). 
 Music database is /var/media/ftp/Musik by default. From there its possible to create nfs symlinks 
 or mounts to somewhere else ..
 
+To run all ffritz features, either integrate it into the atom core (see top makefile), or manually
+run the atom startup script on the arm core
+
 Integration details
 -------------------
-- All required software is installed in /var/media/ftp/ffritz:
+- All required software is installed in /var/media/ftp/ffritz (or /usr/local/ if integrated into
+  atom fs)
     lib	    -   Contains all required shared libraries
-    bin	    -   All tools/commands Commands
-	runmpd		- Starts mpd with our config file (see below)
+    bin	    -   All tools/commands. For binaries, these are shell wrappers into the exec sub-
+		directory in order to set LD_LIBRARY_PATH correctly.
 	sndlist		- A tiniy tool to list all USB sound interfaces. You might have to tune
 			  mpd.conf and adjust the sample rate according to the detected device.
 	usbplay		- Reads from stdin and outputs to device.
@@ -58,31 +52,38 @@ Integration details
 				-V volfile      : volfile is polled (1/sec) in the play loop.
 						  Its content is interpreted as volume level
 						  (0..100) to be applied to the DAC.
-	usb_pipe_play	- Executed by mpd pipe driver to output sound via usbplay.	
+	mpd		- Music Player Daemon
+	others ...
+    etc	    -	Config/init files:
+	runmpd		-   Starts mpd with our config file (see below)
+	ffplay-env.sh	-   Sourced by scripts to set environment correctly.
+	mpd.conf	-   Mpd configuration file used. This is a template, the actual
+			    runtime file is generated at first start in 
+			    /var/media/ftp/ffritz/mpd.conf.
 
-    etc	    -	Config files:
-	ffplay-env.sh	-   Sourced by scripts to set environment correctly, esp.
-			    LD_LIBRARY_PATH for the l;ib directory
-	mpd.conf	-   mod configuration file used
+- mpd runs as user ffritz, group usb for security reasons. For this, all required usb endopint
+    devices are chgrp'ed to group usb.
 
-- runmpd redirects the HOME directory to /var/media/ftp/ffritz/.mpd. Here is where mpd creates
-    all its files (database, log, ...)
+- Regardless where the binaries are installed, all mpd runtime data is stored in
+    /var/media/ftp/ffritz/.mpd (database, etc.)
 
-- The default output is a pipe driver which calls /var/media/ftp/ffritz/bin/usb_pipe_play. This
-    script calls /var/media/ftp/ffritz/bin/test_enum (or usbplay), which is the libmaru binary
-    that forwards traffic to the first USB DAC.
+- The default output is a pipe driver which calls /var/media/ftp/ffritz/bin/usbplay.
+    This is the libmaru binary that forwards traffic to the USB DAC. By default this is
+    the first DAC found, with a rate of 48000Hz / 16bit.
+    If you have a different DAC, determine the attributes using the "sndlist" tool and
+    edit mpd.conf:
+	- Edit the format attribute of the pipe audio_output
 
 - Volume control
     The mpd pipe output driver is patched so that it supports the "volume_file" property.
-    If set, volume changes (via mixer_type "hardware") are written to this file. 
+    If set, volume changes (via mixer_type "hardware") are written to this file (as
+    string value 0..100).
 
-    The pipe command has a change to read this file and adjust the hardware volume level.
-    usbplay will do just this (see above).
+    The usbplay command will read this file when it is modified and adjust the hardware
+    volume level.
 
     Not very elegant, but it works.
 
 TODO
 ----
-- Do not run mpd as root, create a dedicated user (on demand at startup)
-- Write a box startup script (probably only on arm) that automatically starts mpd on atom.
-- Add (sh)airplay
+- Add (sh)airport

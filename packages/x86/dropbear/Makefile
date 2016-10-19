@@ -7,7 +7,10 @@ endif
 
 TOPDIR	    = $(shell pwd)
 TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
-DESTDIR	    = $(TOPDIR)/output
+
+ifeq ($(DESTDIR),)
+    DESTDIR	    = $(TOPDIR)/output
+endif
 
 export PATH := $(TOOLCHAIN):$(PATH)
 
@@ -15,10 +18,10 @@ URL	= $(shell cat $(PKGTOP)/url-dropbear)
 FILE	= $(DLDIR)/$(shell basename $(URL))
 
 all:	build/config.status
-	@make -C build PROGRAMS="dropbear dropbearkey dropbearconvert dbclient scp" STATIC=1 SCPPROGRESS=1 
+	@make -C build PROGRAMS="dropbear dropbearkey dropbearconvert dbclient scp" SCPPROGRESS=1 
 
 install:
-	@make -C build PROGRAMS="dropbear dropbearkey dropbearconvert dbclient scp" STATIC=1 SCPPROGRESS=1 install DESTDIR=$(DESTDIR)
+	@make -C build PROGRAMS="dropbear dropbearkey dropbearconvert dbclient scp" SCPPROGRESS=1 install DESTDIR=$(DESTDIR)
 	strip $(DESTDIR)/usr/local/bin/*
 	strip $(DESTDIR)/usr/local/sbin/*
 	
@@ -33,7 +36,7 @@ build/configure:    $(FILE)
 	@touch build/configure
 
 build/config.status:	build/configure
-	@cd build; ./configure --host=armeb-buildroot-linux-uclibcgnueabi --target=armeb-buildroot-linux-uclibcgnueabi --with-gnu-ld --disable-nls --disable-pam --disable-syslog --enable-shadow --disable-lastlog --disable-utmp --disable-utmpx --disable-wtmp --disable-wtmpx --disable-loginfunc --disable-pututline --disable-pututxline --enable-bundled-libtom --disable-largefile --disable-zlib --disable-openpty CFLAGS=-DUSE_DEV_PTMX
+	@cd build; ./configure --host=i686-buildroot-linux-uclibc --target=i686-buildroot-linux-uclibc --with-gnu-ld --disable-nls --disable-pam --disable-syslog --enable-shadow --disable-lastlog --disable-utmp --disable-utmpx --disable-wtmp --disable-wtmpx --disable-loginfunc --disable-pututline --disable-pututxline --enable-bundled-libtom --disable-largefile --disable-zlib --disable-openpty CFLAGS=-DUSE_DEV_PTMX
 
 clean:
 	rm -rf build

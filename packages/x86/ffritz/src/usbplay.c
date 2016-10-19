@@ -99,6 +99,8 @@ void handle_volctl (char *volfile, maru_context *ctx)
     vcur = vol;
 }
 
+const char *usage =
+"usbplay [-d device#] [-s stream#] [-v volume-level] [-V volume-file] [-h]\n";
 
 int
 main (int argc, char **argv)
@@ -120,24 +122,21 @@ main (int argc, char **argv)
     {
 	int option_index = 0;
 	static struct option long_options[] = {
-	    {"list", required_argument, 0, 'l'},
 	    {"device", required_argument, 0, 'd'},
 	    {"stream", required_argument, 0, 's'},
 	    {"volume", required_argument, 0, 'v'},
 	    {"volfile", required_argument, 0, 'V'},
+	    {"help", 0, 0, 'h'},
 	    {0, 0, 0, 0}
 	};
 
-	c = getopt_long (argc, argv, "ld:s:v:V:", long_options, &option_index);
+	c = getopt_long (argc, argv, "hd:s:v:V:", long_options, &option_index);
 
 	if (c == -1)
 	    break;
 
 	switch (c)
 	{
-	case 'l':
-	    break;
-	
 	case 'd':
 	    req_dev = atoi(optarg);
 	    break;
@@ -153,6 +152,14 @@ main (int argc, char **argv)
 	case 'V':
 	    volfile = optarg;
 	    break;
+
+	case 'h':
+	    printf (usage);
+	    exit (0);
+
+	default:
+	    fprintf (stderr, usage);
+	    exit (1);
 	}
     }
 

@@ -1,0 +1,97 @@
+#!/bin/sh
+#
+# Startup preparations for ffritz on atom.
+#
+#	- creating/transferring passwords and users
+#	- creating dropbear host keys if required
+#	- transferring dropbear host keys from persistent memory
+#	- transferring roots .ssh from persistent memory
+#	
+#
+# Executed on arm at startup, and on atom by means of this
+# script.
+#
+
+mach=`uname -m`
+
+echo ffritz_startup on $mach >/dev/console
+
+# Create ffritz user/group on both arm and atom
+# Audio group required to allow access to usb devices
+#
+grep ffritz /etc/passwd >/dev/null || echo ffritz:x:8000:8000:ffritz user:/var/media/ftp/ffritz:/bin/sh >> /etc/passwd
+grep ffritz /etc/group >/dev/null  || echo ffritz:x:8000: >> /etc/group
+grep usb /etc/group >/dev/null     || echo usb:x:8001: >> /etc/group
+
+        
+if [ $mach == armv6b ]; then
+	## ARM
+	#
+
+	## Transfer passwords to x86
+	#
+	cp /etc/shadow /var/remote/var/tmp/shadow
+
+	## create host keys for atom 
+	# Since atom does not have a non-volatile storage, and i dont want to use
+	# the ftp directory, store them in nvram on arm and transfer them
+	# at boot time
+	#
+	if [ ! -d /nvram/dropbear_x86 ]; then
+	    mkdir /nvram/dropbear_x86 || echo failed to create /nvram/dropbear_x86 >/dev/console
+	fi
+	chmod 700 /nvram/dropbear_x86 || echo failed to create /nvram/dropbear_x86 >/dev/console
+	
+	for key in rsa dss ecdsa; do
+		if [ ! -f /nvram/dropbear_x86/dropbear_${key}_host_key ]; then
+			echo creating /nvram/dropbear_x86/dropbear_${key}_host_key >/dev/console
+			dropbearkey -t $key -f /nvram/dropbear_x86/dropbear_${key}_host_key || echo dropbearkey failed >/dev/console
+		fi
+	done
+	rm -rf /var/remote/var/tmp/dropbear
+	cp -ar /nvram/dropbear_x86 /var/remote/var/tmp/dropbear
+
+	## same for root's .ssh
+	#
+	if [ ! -d /nvram/root-ssh_x86 ]; then
+	    mkdir /nvram/root-ssh_x86 || echo failed to create /nvram/root-ssh_x86 >/dev/console
+	    chmod 700 /nvram/root-ssh_x86
+	fi
+	cp -ar /nvram/root-ssh_x86 /var/remote/var/tmp/root-ssh
+	chmod 700 /var/remote/var/tmp/root-ssh
+
+	# Call this script on atom to finalize startup
+	#
+	cp $0 /var/remote/var/tmp/ffprep || echo failed to install /var/remote/var/tmp/ffprep from $0 >/dev/console
+	chmod +x /var/remote/var/tmp/ffprep
+
+	rpc /var/tmp/ffprep
+
+	exit 0
+fi
+
+## Executing on Atom
+##
+# This will only autostart binaries in the squashfs, not those that might be present in /var/media/ftp
+#
+#rundir=/var/media/ftp/ffritz
+rundir=/usr/local
+
+# run dropbear
+#
+if [ -x $rundir/bin/dropbear -a ! -f /var/media/ftp/.skip_dropbear ]; then
+    echo Starting dropbear >/dev/console
+    export LD_LIBRARY_PATH=$rundir/lib
+    $rundir/bin/dropbear || echo dropbear startup failed >/dev/console
+else
+    echo dropbear not started >/dev/console
+fi
+
+# run mpd
+#
+if [ -x $rundir/etc/runmpd -a ! -f /var/media/ftp/.skip_mpd ]; then
+    echo Starting mpd >/dev/console
+    nohup $rundir/etc/runmpd&
+else
+    echo mpd not started >/dev/console
+fi

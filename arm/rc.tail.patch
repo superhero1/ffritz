@@ -1,6 +1,6 @@
---- orig/etc/init.d/rc.tail.sh	2016-08-23 14:30:24.000000000 +0000
-+++ squashfs-root/etc/init.d/rc.tail.sh	2016-09-06 13:10:10.322826682 +0000
-@@ -46,5 +46,54 @@
+--- orig/etc/init.d/rc.tail.sh	2016-08-23 16:30:24.000000000 +0200
++++ squashfs-root/etc/init.d/rc.tail.sh	2016-10-19 16:01:32.531099094 +0200
+@@ -46,5 +46,58 @@
  set_m_sleep=$((10*60))
  nohup sh -c "echo \"\$0[\$\$]: ++++fork set_modulemen, sleep ${set_m_sleep}++++\" > /dev/console ; sleep ${set_m_sleep}; echo \"\$0[\$\$]: ++++do set_modulemen++++\" > /dev/console; /bin/set_modulemem;" &
  fi
@@ -21,8 +21,6 @@
 +#	- Link /var/tmp/dropbear to /nvram/dropbear
 +#   - Same for roots .ssh directory (var/tmp/root-ssh linked to /nvram/root-ssh)
 +#   - Start the daemon. -R will create certificates on demand
-+#
-+#   TODO: use box password for root, or add GUI to edit ssh pwd
 +#   
 +#########################################################################
 +if [ -x /usr/local/sbin/dropbear ]; then
@@ -52,6 +50,12 @@
 +    ln -sf /nvram/root-ssh /var/tmp/root-ssh
 +
 +    /usr/local/sbin/dropbear -R
++fi
++
++# Do the atom startup
++#
++if [ -x /usr/local/etc/init.d/ff_atom_startup ]; then
++    /usr/local/etc/init.d/ff_atom_startup
 +fi
 +
  exit 0
