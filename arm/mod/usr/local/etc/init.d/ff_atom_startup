@@ -21,7 +21,7 @@ echo ffritz_startup on $mach >/dev/console
 #
 grep ffritz /etc/passwd >/dev/null || echo ffritz:x:8000:8000:ffritz user:/var/media/ftp/ffritz:/bin/sh >> /etc/passwd
 grep ffritz /etc/group >/dev/null  || echo ffritz:x:8000: >> /etc/group
-grep usb /etc/group >/dev/null     || echo usb:x:8001: >> /etc/group
+grep usb /etc/group >/dev/null     || echo usb:x:8001:ffritz >> /etc/group
 
         
 if [ $mach == armv6b ]; then

@@ -20,10 +20,11 @@ if [ ! -d ~ffritz/.mpd ]; then
 fi
 chown ffritz:ffritz ~ffritz/.mpd
 
-# allow usb group access to usb endpoints.
-# should write a proper udev rule ..
+# if there is no udev rule, explicitly allow usb group access to usb endpoints.
 #
-nohup sh -c "while true; do find /dev/bus/usb | xargs chgrp usb; sleep 10; done"&
+if [ ! -f /etc/udev/rules.d/39-ffritz.rules ]; then
+    find /dev/bus/usb | xargs chgrp usb
+fi
 
 # make sure volume transfer file exists
 #
