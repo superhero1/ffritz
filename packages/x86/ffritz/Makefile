@@ -12,12 +12,14 @@
 TOPDIR	    = $(shell pwd)
 PKGDIR	    = $(shell cd ..; pwd)
 
-BR_TGT	    = $(shell cd ../buildroot/build/output/target; pwd)
+BR_TGT	    = ../buildroot/build/output/target
+BR_TGT_LIB  = $(BR_TGT)/usr/lib
+BR_TGT_BIN  = $(BR_TGT)/usr/bin
+BR_TGT_SBIN = $(BR_TGT)/usr/sbin
 
 BINFILES    = ../mpd/build/src/mpd src/sndlist src/usbplay
-BINFILES   += $(BR_TGT)/usr/bin/strace $(BR_TGT)/usr/bin/ldd $(BR_TGT)/usr/sbin/tcpdump 
-BINFILES   += $(BR_TGT)/usr/bin/tcpbridge $(BR_TGT)/usr/bin/tcpprep $(BR_TGT)/usr/bin/tcpreplay $(BR_TGT)/usr/bin/tcpreplay-edit $(BR_TGT)/usr/bin/tcprewrite
-LIBFILES    = $(shell ls ../buildroot/build/output/target/usr/lib/lib*so*) $(shell ls ../libmaru/lib*so*)
+BINFILES   += $(BR_TGT_BIN)/strace $(BR_TGT_BIN)/ldd $(BR_TGT_SBIN)/tcpdump 
+BINFILES   += $(BR_TGT_BIN)/tcpbridge $(BR_TGT_BIN)/tcpprep $(BR_TGT_BIN)/tcpreplay $(BR_TGT_BIN)/tcpreplay-edit $(BR_TGT_BIN)/tcprewrite
 ETCFILES    = etc/ffritz-env.sh etc/mpd.conf etc/runmpd etc/ff_atom_startup
 
 STAGEDIR    = $(TOPDIR)/output/ffritz
@@ -40,7 +42,7 @@ $(SUBDIRS):
 	mkdir -p ../../dl
 	make -C $@
 
-$(IMAGE): $(BINFILES) $(LIBFILES) $(ETCFILES)
+$(IMAGE): $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_LIB)/lib*so*) $(shell ls ../libmaru/lib*so*)
 	rm -rf $(STAGEDIR)
 	make install INSTDIR=$(STAGEDIR)
 	cp ../../../MPD.txt output/
@@ -52,12 +54,12 @@ $(IMAGE): $(BINFILES) $(LIBFILES) $(ETCFILES)
 # which is linked to for each binary. This makes the package position independent, i.e.
 # it can be installed to /var/media/ftp, or integrated into the atom squashfs (to /usr/local).
 #
-install: $(SUBDIRS) $(BINFILES) $(LIBFILES) $(ETCFILES)
+install: $(SUBDIRS) $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_LIB)/lib*so*) $(shell ls ../libmaru/lib*so*)
 	mkdir -p $(INSTDIR)/bin/exec
 	mkdir -p $(INSTDIR)/lib
 	mkdir -p $(INSTDIR)/etc
 	cp -a $(BINFILES) $(INSTDIR)/bin
-	cp -a $(LIBFILES) $(INSTDIR)/lib
+	cp -a  $(shell ls ../buildroot/build/output/target/usr/lib/lib*so*) $(shell ls ../libmaru/lib*so*) $(INSTDIR)/lib
 	cp $(ETCFILES) $(INSTDIR)/etc
 	sed -i -e 's@^rundir=.*@rundir=/var/media/ftp/ffritz@' $(INSTDIR)/etc/ff_atom_startup
 	chmod +x $(INSTDIR)/etc/ff_atom_startup
