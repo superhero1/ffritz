@@ -37,6 +37,7 @@ if [ ! -f $FFRITZ_HOME/mpd.conf ]; then
     sed -e "s@FFINSTDIR@$FFINSTDIR@" < $FFINSTDIR/etc/mpd.conf > $FFRITZ_HOME/mpd.conf
 fi
 sed -i -e "s@\(.*\"\).*\(/bin/usbplay.*\)@\1$FFINSTDIR\2@" $FFRITZ_HOME/mpd.conf
+chown ffritz:ffritz $FFRITZ_HOME/mpd.conf
 
 # Run mpd in endless loop in case it crashes
 #
