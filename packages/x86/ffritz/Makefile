@@ -12,7 +12,11 @@
 TOPDIR	    = $(shell pwd)
 PKGDIR	    = $(shell cd ..; pwd)
 
+BR_TGT	    = $(shell cd ../buildroot/build/output/target; pwd)
+
 BINFILES    = ../mpd/build/src/mpd src/sndlist src/usbplay
+BINFILES   += $(BR_TGT)/usr/bin/strace $(BR_TGT)/usr/bin/ldd $(BR_TGT)/usr/sbin/tcpdump 
+BINFILES   += $(BR_TGT)/usr/bin/tcpbridge $(BR_TGT)/usr/bin/tcpprep $(BR_TGT)/usr/bin/tcpreplay $(BR_TGT)/usr/bin/tcpreplay-edit $(BR_TGT)/usr/bin/tcprewrite
 LIBFILES    = $(shell ls ../buildroot/build/output/target/usr/lib/lib*so*) $(shell ls ../libmaru/lib*so*)
 ETCFILES    = etc/ffritz-env.sh etc/mpd.conf etc/runmpd etc/ff_atom_startup
 

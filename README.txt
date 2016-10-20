@@ -108,7 +108,7 @@ Atom libraries
 Toolchain
 ---------
 Cross-compile toolchain for ARM is buildroot-2013.08 (it's the first one i looked for that
-matches the uClibc version used in FB frimware 6.50).
+matches the uClibc version used in FB firmware 6.50).
 
 There seems to be a problem with locale support, since dropber binaries complain
 about missing symbols (caused by usage of ctype.h macros like isalnum, toupper, ...).
@@ -116,31 +116,12 @@ Workaround is to link statically, or to not use ctype.h macros from dropbear ..
 
 For Atom, the toolchain is buildroot-2013.02.
 
-Tools
------
-dropbear (dropbear-2016.74/)
-    - To start (debug, in chroot):
-    /usr/local/sbin/dropbear -R -F -E -B
+Build Host
+----------
 
+My build host is Debian 8.2.
+Compiling the atom toolchain requires gcc-4.7 installed.
 
-DEVELOPMENT
-===========
-It's convenient to mirror the root file system to /var/media/ftp/root and chroot into it:
-
-cd /var/media/ftp/root
-mount --bind / /var/media/ftp/root
-tar cf root.tar root
-umount root
-
-tar xf root.tar	    (best on ATOM for speed)
-mkdir root/var/tmp
-cp -a /var/tmp/* root/var/tmp
-
-mount --bind /sys root/sys
-mount --bind /dev root/dev
-mount --bind /proc root/proc
-
-chroot root
 
 TODO
 ====
@@ -149,6 +130,19 @@ TODO
 
 HISTORY
 =======
+
+release 8
+---------
+- add udev rule to give usb devices proper permissions (usb group)
+    Remove clumsy permission fixup in runmpd
+- put ffritz user into usb group by default
+- fix permission of mpd.conf
+- Add some tools:
+    strace
+    ldd
+    tcpdump
+    tcpreplay
+
 
 release 7
 ---------

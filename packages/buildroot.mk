@@ -7,6 +7,10 @@ export PATH := $(TOOLCHAIN):$(PATH)
 URL	= $(shell cat $(PKGTOP)/url-buildroot)
 FILE	= $(DLDIR)/$(shell basename $(URL))
 
+## For some reason i need gcc-4.7, otherwise cross gcc does not
+# compile ..
+#
+
 all:	.build.stamp arch-patches
 	@make -C build toolchain CC=gcc-4.7 HOSTCC=gcc-4.7
 	@make -C build $(BUILDROOT_TARGETS)
