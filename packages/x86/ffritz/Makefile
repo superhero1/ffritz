@@ -33,6 +33,7 @@ SUBDIRS	    = ../buildroot ../mpd ../libmaru ../dropbear src
 all:	$(SUBDIRS) $(IMAGE)
 
 $(SUBDIRS):	
+	mkdir -p ../../dl
 	make -C $@
 
 $(IMAGE): $(BINFILES) $(LIBFILES) $(ETCFILES)
