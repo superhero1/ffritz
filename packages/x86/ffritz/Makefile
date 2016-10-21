@@ -17,9 +17,10 @@ BR_TGT_LIB  = $(BR_TGT)/usr/lib
 BR_TGT_BIN  = $(BR_TGT)/usr/bin
 BR_TGT_SBIN = $(BR_TGT)/usr/sbin
 
-BINFILES    = ../mpd/build/src/mpd src/sndlist src/usbplay
+BINFILES    = ../mpd/build/src/mpd src/sndlist src/usbplay src/usbplayd
 BINFILES   += $(BR_TGT_BIN)/strace $(BR_TGT_BIN)/ldd $(BR_TGT_SBIN)/tcpdump 
 BINFILES   += $(BR_TGT_BIN)/tcpbridge $(BR_TGT_BIN)/tcpprep $(BR_TGT_BIN)/tcpreplay $(BR_TGT_BIN)/tcpreplay-edit $(BR_TGT_BIN)/tcprewrite
+BINFILES   += ../shairport/build/shairport
 ETCFILES    = etc/ffritz-env.sh etc/mpd.conf etc/runmpd etc/ff_atom_startup
 
 STAGEDIR    = $(TOPDIR)/output/ffritz
@@ -32,7 +33,7 @@ ifeq ($(INSTDIR),)
     INSTDIR=$(STAGEDIR)
 endif
 
-SUBDIRS	    = ../buildroot ../mpd ../libmaru ../dropbear src
+SUBDIRS	    = ../buildroot ../mpd ../libmaru ../dropbear ../shairport src
 
 .PHONY:	$(SUBDIRS)
 
@@ -59,7 +60,7 @@ install: $(SUBDIRS) $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls 
 	mkdir -p $(INSTDIR)/lib
 	mkdir -p $(INSTDIR)/etc
 	cp -a $(BINFILES) $(INSTDIR)/bin
-	cp -a  $(shell ls ../buildroot/build/output/target/usr/lib/lib*so*) $(shell ls ../libmaru/lib*so*) $(INSTDIR)/lib
+	cp -a  $(shell ls  $(BR_TGT_LIB)/lib*so*) $(shell ls ../libmaru/lib*so*) $(INSTDIR)/lib
 	cp $(ETCFILES) $(INSTDIR)/etc
 	sed -i -e 's@^rundir=.*@rundir=/var/media/ftp/ffritz@' $(INSTDIR)/etc/ff_atom_startup
 	chmod +x $(INSTDIR)/etc/ff_atom_startup

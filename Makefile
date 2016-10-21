@@ -23,7 +23,7 @@ KEEP_ORIG = 1
 # UNCOMMENT THIS if you want to modify the ARM core filesystem, adding
 # stuff from the x86/ffritz package (dropbear, mpd)
 #
-FFRITZ_X86_PACKAGE=packages/x86/ffritz/ffritz-x86-0.3.tar.gz
+FFRITZ_X86_PACKAGE=packages/x86/ffritz/ffritz-x86-0.4.tar.gz
 
 HOSTTOOLS=$(TOPDIR)/host/$(HOST)
 
