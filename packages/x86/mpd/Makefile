@@ -1,5 +1,3 @@
-#export CXX := i586-buildroot-linux-uclibc-cc
-
 PKGTOP	= $(shell cd ../..; pwd)
 DLDIR	= $(PKGTOP)/dl
 
@@ -9,13 +7,11 @@ TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
 DESTDIR	    = $(TOPDIR)/output
 SYSROOT	    = $(BUILDROOT)/output/host/usr/i686-buildroot-linux-uclibc/sysroot
 
-export PATH := $(TOOLCHAIN):$(PATH)
-
 URL	= $(shell cat $(PKGTOP)/url-mpd)
 FILE	= $(DLDIR)/$(shell basename $(URL))
 
 all:	build/config.status
-	@make -C build 
+	@make -C build PATH=$(TOOLCHAIN):$(PATH)
 
 $(FILE):
 	@cd $(DLDIR); wget $(URL)
@@ -26,8 +22,13 @@ build/configure:    $(FILE)
 	@cd build; patch -p1 < ../pipe_volume_ctrl.patch
 	@touch build/configure
 
+autoconf: 
+	cd build; autoreconf
+	cd build; aclocal
+	cd build; automake
+
 build/config.status:	build/configure
-	@cd build; ./configure --host=i686-buildroot-linux-uclibc --target=i686-buildroot-linux-uclibc --with-zeroconf=no --disable-oss --disable-alsa --disable-pulse --enable-pipe-output --disable-icu --enable-glib --sysconfdir=/var/tmp --enable-mad --enable-lsr --enable-fifo --enable-flac --disable-mpg123 --enable-recorder-output --enable-sqlite --enable-vorbis --enable-aac
+	@cd build; export PATH=$(TOOLCHAIN):$(PATH); ./configure --host=i686-buildroot-linux-uclibc --target=i686-buildroot-linux-uclibc --with-zeroconf=no --disable-oss --disable-alsa --disable-pulse --enable-pipe-output --disable-icu --enable-glib --sysconfdir=/var/tmp --enable-mad --enable-lsr --enable-fifo --enable-flac --disable-mpg123 --enable-recorder-output --enable-sqlite --enable-vorbis --enable-aac
 
 clean:
 	rm -rf build

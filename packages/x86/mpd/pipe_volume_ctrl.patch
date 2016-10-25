@@ -1,9 +1,41 @@
---- mpd-0.19.19/src/output/plugins/PipeOutputPlugin.cxx	2016-07-29 10:01:52.000000000 +0200
-+++ build/src/output/plugins/PipeOutputPlugin.cxx	2016-10-07 15:08:14.243820863 +0200
-@@ -22,11 +22,21 @@
- #include "../OutputAPI.hxx"
- #include "config/ConfigError.hxx"
- #include "util/Error.hxx"
+
+diff -urN -x '*dep*' -x '*.o' -x '*~' -x '*~' mpd-0.19.19/src/mixer/MixerList.hxx build/src/mixer/MixerList.hxx
+--- mpd-0.19.19/src/mixer/MixerList.hxx	2016-07-29 10:01:52.000000000 +0200
++++ build/src/mixer/MixerList.hxx	2016-10-24 09:38:48.662531045 +0200
+@@ -33,5 +33,6 @@
+ extern const MixerPlugin roar_mixer_plugin;
+ extern const MixerPlugin pulse_mixer_plugin;
+ extern const MixerPlugin winmm_mixer_plugin;
++extern const MixerPlugin volfile_volctrl_plugin;
+ 
+ #endif
+diff -urN -x '*dep*' -x '*.o' -x '*~' -x '*~' mpd-0.19.19/src/mixer/plugins/VolfileMixerPlugin.cxx build/src/mixer/plugins/VolfileMixerPlugin.cxx
+--- mpd-0.19.19/src/mixer/plugins/VolfileMixerPlugin.cxx	1970-01-01 01:00:00.000000000 +0100
++++ build/src/mixer/plugins/VolfileMixerPlugin.cxx	2016-10-24 09:57:38.440725028 +0200
+@@ -0,0 +1,152 @@
++/*
++ * Copyright (C) 2003-2014 The Music Player Daemon Project
++ * http://www.musicpd.org
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++#include "config.h"
++#include "config/ConfigError.hxx"
++#include "config/ConfigData.hxx"
++#include "util/Error.hxx"
 +#include "util/Domain.hxx"
 +
 +#include <stdio.h>
@@ -11,21 +43,13 @@
 +#include <unistd.h>
 +#include <errno.h>
 +#include <fcntl.h>
- 
- #include <string>
++
++#include <string>
 +#include <sys/types.h>
 +#include <sys/wait.h>
- 
- #include <stdio.h>
- 
 +
- struct PipeOutput {
- 	AudioOutput base;
- 
-@@ -121,6 +131,122 @@
- 	return ret;
- }
- 
++#include <stdio.h>
++
 +/******* A simple mixer for volume control ..
 + * 
 + * If the "volume_file" property is set, it points to a file
@@ -37,16 +61,16 @@
 +#include "mixer/MixerInternal.hxx"
 +#include "mixer/Listener.hxx"
 +
-+static constexpr Domain pipe_output_domain("pipe_output");
++static constexpr Domain volfile_output_domain("volfile_output");
 +
 +static Mixer *
-+pipe_volctrl_init(EventLoop &event_loop, gcc_unused AudioOutput &ao,
++volfile_volctrl_init(EventLoop &event_loop, gcc_unused AudioOutput &ao,
 +		MixerListener &listener,
 +		const config_param &param,
 +		gcc_unused Error &error);
 +
-+const MixerPlugin pipe_volctrl_plugin = {
-+	pipe_volctrl_init,
++const MixerPlugin volfile_volctrl_plugin = {
++	volfile_volctrl_init,
 +	true,
 +};
 +
@@ -58,7 +82,7 @@
 +
 +public:
 +	PipeMixer(EventLoop &_event_loop, MixerListener &_listener)
-+		:Mixer(pipe_volctrl_plugin, _listener),
++		:Mixer(volfile_volctrl_plugin, _listener),
 +		 event_loop(_event_loop) {}
 +
 +	virtual ~PipeMixer(){};
@@ -86,7 +110,7 @@
 +	    FILE *fd = fopen (volfile, "r");
 +	    if (fd == NULL)
 +	    {
-+		error.Format (pipe_output_domain, errno, "Failed to open volume control %s", volfile);
++		error.Format (volfile_output_domain, errno, "Failed to open volume control %s", volfile);
 +		return last_volume;
 +	    }
 +
@@ -111,14 +135,14 @@
 +	    FILE *fd = fopen (volfile, "w+");
 +	    if (fd == NULL)
 +	    {
-+		error.Format (pipe_output_domain, errno, "Failed to open volume control %s", volfile);
++		error.Format (volfile_output_domain, errno, "Failed to open volume control %s", volfile);
 +		return false;
 +	    }
 +
 +	    sprintf (out, "%d", volume);
 +	    if (fwrite (out, strlen(out), 1, fd) == 0)
 +	    {
-+		error.Format (pipe_output_domain, errno, "Failed to write volume control %s", volfile);
++		error.Format (volfile_output_domain, errno, "Failed to write volume control %s", volfile);
 +		return false;
 +	    }
 +
@@ -131,7 +155,7 @@
 +};
 +
 +static Mixer *
-+pipe_volctrl_init(EventLoop &event_loop, gcc_unused AudioOutput &ao,
++volfile_volctrl_init(EventLoop &event_loop, gcc_unused AudioOutput &ao,
 +		MixerListener &listener,
 +		const config_param &param,
 +		gcc_unused Error &error)
@@ -141,14 +165,65 @@
 +
 +	return pm;
 +}
-+
- const struct AudioOutputPlugin pipe_output_plugin = {
- 	"pipe",
+Binary files mpd-0.19.19/src/mpd and build/src/mpd differ
+diff -urN -x '*dep*' -x '*.o' -x '*~' -x '*~' mpd-0.19.19/src/output/plugins/FifoOutputPlugin.cxx build/src/output/plugins/FifoOutputPlugin.cxx
+--- mpd-0.19.19/src/output/plugins/FifoOutputPlugin.cxx	2016-07-29 10:01:52.000000000 +0200
++++ build/src/output/plugins/FifoOutputPlugin.cxx	2016-10-24 09:40:34.349986961 +0200
+@@ -28,6 +28,7 @@
+ #include "util/Domain.hxx"
+ #include "Log.hxx"
+ #include "open.h"
++#include "mixer/MixerList.hxx"
+ 
+ #include <sys/stat.h>
+ #include <errno.h>
+@@ -303,5 +304,5 @@
  	nullptr,
-@@ -136,5 +262,5 @@
+ 	fifo_output_cancel,
+ 	nullptr,
+-	nullptr,
++	&volfile_volctrl_plugin,
+ };
+diff -urN -x '*dep*' -x '*.o' -x '*~' -x '*~' mpd-0.19.19/src/output/plugins/PipeOutputPlugin.cxx build/src/output/plugins/PipeOutputPlugin.cxx
+--- mpd-0.19.19/src/output/plugins/PipeOutputPlugin.cxx	2016-07-29 10:01:52.000000000 +0200
++++ build/src/output/plugins/PipeOutputPlugin.cxx	2016-10-24 09:39:56.078182697 +0200
+@@ -22,11 +22,22 @@
+ #include "../OutputAPI.hxx"
+ #include "config/ConfigError.hxx"
+ #include "util/Error.hxx"
++#include "util/Domain.hxx"
++#include "mixer/MixerList.hxx"
++
++#include <stdio.h>
++#include <string.h>
++#include <unistd.h>
++#include <errno.h>
++#include <fcntl.h>
+ 
+ #include <string>
++#include <sys/types.h>
++#include <sys/wait.h>
+ 
+ #include <stdio.h>
+ 
++
+ struct PipeOutput {
+ 	AudioOutput base;
+ 
+@@ -136,5 +147,5 @@
  	nullptr,
  	nullptr,
  	nullptr,
 -	nullptr,
-+	&pipe_volctrl_plugin,
++	&volfile_volctrl_plugin,
  };
+--- mpd-0.19.19/Makefile.am	2016-08-05 17:48:36.000000000 +0200
++++ build/Makefile.am	2016-10-24 11:05:26.864820128 +0200
+@@ -1242,6 +1242,7 @@
+ 	src/mixer/MixerInternal.hxx
+ 
+ libmixer_plugins_a_SOURCES = \
++	src/mixer/plugins/VolfileMixerPlugin.cxx \
+ 	src/mixer/plugins/SoftwareMixerPlugin.cxx \
+ 	src/mixer/plugins/SoftwareMixerPlugin.hxx
+ libmixer_plugins_a_CPPFLAGS = $(AM_CPPFLAGS) \

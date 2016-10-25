@@ -16,6 +16,8 @@ mach=`uname -m`
 
 echo ffritz_startup on $mach >/dev/console
 
+rundir=/usr/local
+
 # Create ffritz user/group on both arm and atom
 # Audio group required to allow access to usb devices
 #
@@ -23,7 +25,6 @@ grep ffritz /etc/passwd >/dev/null || echo ffritz:x:8000:8000:ffritz user:/var/m
 grep ffritz /etc/group >/dev/null  || echo ffritz:x:8000: >> /etc/group
 grep usb /etc/group >/dev/null     || echo usb:x:8001:ffritz >> /etc/group
 
-        
 if [ $mach == armv6b ]; then
 	## ARM
 	#
@@ -70,12 +71,11 @@ if [ $mach == armv6b ]; then
 	exit 0
 fi
 
-## Executing on Atom
-##
-# This will only autostart binaries in the squashfs, not those that might be present in /var/media/ftp
+# Run user mounts
 #
-#rundir=/var/media/ftp/ffritz
-rundir=/usr/local
+if [ -f /var/media/ftp/ffritz/.mtab ]; then
+    $rundir/etc/usrmount /var/media/ftp/ffritz/.mtab
+fi
 
 # run dropbear
 #
@@ -84,6 +84,15 @@ if [ -x $rundir/bin/dropbear -a ! -f /var/media/ftp/.skip_dropbear ]; then
     $rundir/bin/dropbear || echo dropbear startup failed >/dev/console
 else
     echo dropbear not started >/dev/console
+fi
+
+# run shairport
+#
+if [ -x $rundir/etc/run_shairport -a ! -f /var/media/ftp/.skip_shairport ]; then
+    echo Starting shairport >/dev/console
+    $rundir/etc/run_shairport
+else
+    echo shairport skipped > /dev/console
 fi
 
 # run mpd

@@ -15,7 +15,7 @@ TLIB=$(TGT)/usr/lib
 TINC=$(TGT)/usr/include
 
 CFLAGS += -O2 -g -pthread -fPIC -std=gnu99 -Wall -I.. -I$(TINC)
-LDFLAGS += -shared -pthread -fPIC -lrt -L$(TLIB) -lusb-1.0 -lfuse -Wl,-no-undefined -Wl,-soname,$(SONAME)
+LDFLAGS += -shared -pthread -fPIC -lrt -L$(TLIB) -lusb-1.0 -Wl,-no-undefined -Wl,-soname,$(SONAME)
 
 SOURCES := $(wildcard *.c)
 OBJECTS := $(SOURCES:.c=.o)
@@ -26,6 +26,7 @@ $(TARGET): $(OBJECTS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 	ln -sf $@ $(SONAME)
 	ln -sf $(SONAME) libmaru.so
+	ar crus libmaru.a $^
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)

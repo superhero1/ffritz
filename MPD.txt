@@ -1,89 +1,125 @@
-I thouhgt it would be nice to have mpd (music player daemon) running on the
-Atom core, with some USB DAC/Codec as output.
+I thouhgt it would be nice to have mpd (music player daemon) and shairport
+(AirPlay receiver) running on the Atom core of the FritzBox, with some
+USB DAC/Codec as output.
 
-Getting mpd to run is relatively easy, but playing audio via USB isn't.
+Getting mpd/shairport to run is relatively easy, but playing audio via USB isn't.
 
 First attempt was to use ALSA by providing alsa-lib (easy, contained in buildroot)
 and installing the missing kernel modules from AVM source.
-The latter part would not be a problem is i had the excat kernel configuration
+The latter part would not be a problem if i had the excat kernel configuration
 AVM was using, but unfortunately they don't provide it. With guessing, the best i 
 got was to get the modules loaded and the USB DAC detected by aplay.
 But actually playing something crashed the kernel ..
 
 Plan B is to use libusb to access the USB DAC from userland. I found a rather old
 and obviously abandoned library (libmaru) that does the job.
-It provides a sample tool that dumps everythin on stdin to the first found audio device.
-As a first step, this command is configured to be used by the mpd pipe driver.
+Based on this i have written a daemon that allows to playback on an usb audio
+device.
 
+usbplayd
+========
 
-To build
---------
-packages/x86/ffritz/Makefile should do the job.
-If make is called there without argument, buildroot/mpd/etc. is compiled and everything is
-placed into a tarball that can be exctracted to /var/media/ftp.
+This daemon is started to provide audio output. It polls a set of named pipes
+and plays data from one of them to the selected usb audio device. If required it
+will convert the sample rate.
 
-To start mpd
-------------
-- Unpack ffritz.tar.gz on the box in /var/media/ftp
-- Call ffritz/etc/runmpd on atom (or via rpc on arm):
-	nohup /var/media/ftp/ffritz/etc/runmpd&
+usbplayd is configured in /var/media/ftp/ffritz/usbplayd.conf.
+The default content is:
 
-It should now be possible to connect to mpd using some mpd client via the atom IP (xx.xx.xx.254). 
-Music database is /var/media/ftp/Musik by default. From there its possible to create nfs symlinks 
-or mounts to somewhere else ..
+USBPLAYD_ARGS=-P /var/tmp/mpd.fifo:44100 -P /var/tmp/shairport.fifo:44100
 
-To run all ffritz features, either integrate it into the atom core (see top makefile), or manually
-run the atom startup script on the arm core
+Which means that two pipes are generated, one for mpd and one for shairport
+The default sample rate is 44100 (i.e. mpd and shairport need to provide this
+sample rate).
+
+If you have a usb audio device which only supports 48000Hz (like i do)
+usbplayd will resample the "fifo rate" to the "device rate" using
+libsamplerate.
+
+If you have a device that supports configurable rates you might
+want to add the parameter "-r 44100" to configure the usb device to this
+rate. This will avoid resampling if the default rate differs, but not all
+devices seem to support this.
+
+To get a list of usb devices and the attributes, call "usbplayd -l".
+
+The output volume of the device is adjusted in /var/tmp/volume. This file 
+is polled by usbplayd and the volume is adjusted according to the ASCII integer
+(0..100) in the file.
+The modified mpd in this package supports this, shairport does not (yet).
+
+Note that the shairport fifo has precedence over the mpd fifo, i.e. if 
+shairport starts playing, mpd is effectively muted until shairport stops.
+This behaviour is determined by the order of the -P parameters to usbplayd.
+
+Sample rate conversion
+----------------------
+
+usbplayd will use libsamplerate if pipe and device sample rate mismatches.
+The maximum supported ratio is 4 (device rate / pipe rate).
+
+libsamplerate has different algorithms:
+- SRC_SINC_BEST_QUALITY
+- SRC_SINC_MEDIUM_QUALITY
+- SRC_SINC_FASTEST
+- SRC_ZERO_ORDER_HOLD
+- SRC_LINEAR
+
+The "best quality" algorithm results in a CPU load of ca 50% (44.1KHz -> 48KHz).
+The default is SRC_SINC_FASTEST (ca. 7% load).
+Add the -c switch to USBPLAYD_ARGS to change this.
+
+MPD
+===
+
+mpd is started via etc/runmpd. By default it will use the fifo output plugin
+to write data to /var/tmp/mpd.fifo at a sample rate of 44100Hz.
+
+The configuratin file is var/media/ftp/ffritz/mpd.conf.
+mpd runtime files (database, log, etc) are stored in var/media/ftp/ffritz/.mpd.
+
+The default Music database is /var/media/ftp/Musik.
+
+mpd can be manually started with the etc/runmpd script. This script will also
+start usbplayd if required.
+
+If you do not want to start mps, create /var/media/ftp/.skip_mpd
+
+Volume Control
+--------------
+The mpd binary in this package has been modified to support hardware volume control
+in combination with the pipe/fifo output plugins by means of a "volume" file 
+(see usbplayd).
+
+This is done by setting the mixer type of pipe/fifo in mpd.conf to "hardware"
+and specifying the "volume_file" attribute.
+
+The default mpd.conf uses /var/tmp/volume as expected by usbplayd.
+
+NFS Mounts
+----------
+If you want to mount an external database, use the .mtab feature as described in README.
+For example is use this entry in /var/media/ftp/ffritz/.mtab so that mpd can access
+my music database on an external NAS:
+
+MOUNT Musik/NAS nas:Multimedia/Music
+
+Shairport
+=========
+shairport will announce itself as "fFritz". It will output data to /var/tmp/shairport.fifo.
+
+shairport can be manually started with the etc/run_shairport script. This script will also
+start usbplayd if required.
+
+Tested with Android AirAudio app.
+
+If you do not want to start shairport, create /var/media/ftp/.skip_shairport
 
 Integration details
--------------------
-- All required software is installed in /var/media/ftp/ffritz (or /usr/local/ if integrated into
-  atom fs)
-    lib	    -   Contains all required shared libraries
-    bin	    -   All tools/commands. For binaries, these are shell wrappers into the exec sub-
-		directory in order to set LD_LIBRARY_PATH correctly.
-	sndlist		- A tiniy tool to list all USB sound interfaces. You might have to tune
-			  mpd.conf and adjust the sample rate according to the detected device.
-	usbplay		- Reads from stdin and outputs to device.
-			  Parameters are
-				-d <num>	: Device number (first by default)
-				-s <stream>	: Stream number
-				-v <volume>	: Default output volume
-				-V volfile      : volfile is polled (1/sec) in the play loop.
-						  Its content is interpreted as volume level
-						  (0..100) to be applied to the DAC.
-	mpd		- Music Player Daemon
-	others ...
-    etc	    -	Config/init files:
-	runmpd		-   Starts mpd with our config file (see below)
-	ffplay-env.sh	-   Sourced by scripts to set environment correctly.
-	mpd.conf	-   Mpd configuration file used. This is a template, the actual
-			    runtime file is generated at first start in 
-			    /var/media/ftp/ffritz/mpd.conf.
-
-- mpd runs as user ffritz, group usb for security reasons. For this, all required usb endopint
-    devices are chgrp'ed to group usb.
-
-- Regardless where the binaries are installed, all mpd runtime data is stored in
-    /var/media/ftp/ffritz/.mpd (database, etc.)
-
-- The default output is a pipe driver which calls /var/media/ftp/ffritz/bin/usbplay.
-    This is the libmaru binary that forwards traffic to the USB DAC. By default this is
-    the first DAC found, with a rate of 48000Hz / 16bit.
-    If you have a different DAC, determine the attributes using the "sndlist" tool and
-    edit mpd.conf:
-	- Edit the format attribute of the pipe audio_output
-
-- Volume control
-    The mpd pipe output driver is patched so that it supports the "volume_file" property.
-    If set, volume changes (via mixer_type "hardware") are written to this file (as
-    string value 0..100).
-
-    The usbplay command will read this file when it is modified and adjust the hardware
-    volume level.
-
-    Not very elegant, but it works.
+===================
+- mpd/shairport runs as user ffritz, group usb for security reasons.
+    The required users are created on demand
 
 TODO
-----
-- Add (sh)airport
+====
+- Add volume control to shairport.

@@ -75,21 +75,33 @@ dropbear on atom
     - passwords (/etc/shadow) are shared with the arm core.
     - Startup can be inhibited by creating file /var/media/ftp/.skip_dropbear
 
+IPV6
+----
+Selection of native IPv6 has been forced to be enabled in the GUI together with the general
+IPv6 availability.
+
 Music Player Daemon (on atom)
 -----------------------------
 - Uses user space audio tool (via libusb/libmaru) to access an USB audio DAC
 - Refer to MPD.txt for details
 - Startup can be inhibited by creating /var/media/ftp/.skip_mpd
 
+ShairPort Daemon
+----------------
+- Acts as AirPort receiver
+- Refer to MPD.txt for details
 
-IPV6
-----
-Selection of native IPv6 has been forced to be enabled in the GUI together with the general
-IPv6 availability.
+nfs "automounter"
+-----------------
+The file /var/media/ftp/ffritz/.mtab exists can be created to mount specific
+nfs directories to a location below /var/media/ftp.
 
-FritzBox as audio player (mpd)
-------------------------------
-Work in progress. See "sound" branch and/or download section on bitbucket
+The format of the file is:
+MOUNT mountpoint mount-options
+
+For example, to mount the music database from an external NAS:
+
+MOUNT Musik/NAS nas:Multimedia/Music
 
 NOTES
 =====
@@ -119,14 +131,14 @@ For Atom, the toolchain is buildroot-2013.02.
 Build Host
 ----------
 
-My build host is Debian 8.2.
+My build host is Debian 8.2 / x86_64.
 Compiling the atom toolchain requires gcc-4.7 installed.
 
 
 TODO
 ====
 - IPv6 is always disabled after box restart
-- Write proper udev rule to adjust dev attributes
+- Volume control for shairport
 
 HISTORY
 =======
@@ -142,7 +154,15 @@ release 8
     ldd
     tcpdump
     tcpreplay
-
+- Replace usbplay with usbplayd, which is fifo based and accepts several inputs.
+    It also performs sample rate conversion if required.
+- Accordingly, mpd uses fifo output driver instead of pipe driver
+- Add shairport.
+    Player name is fFritz
+    Playback via shairport has precedence over mpd (i.e. mpd is stopped
+    as long a shairport is playing).
+- Added user mount table
+- Added su binary
 
 release 7
 ---------

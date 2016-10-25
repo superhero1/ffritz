@@ -1,0 +1,15 @@
+#!/bin/sh
+#
+# make sure required user/group exists
+# only required if the standalone package is installed. If ffritz is invoked via arm core
+# this is already done.
+#
+grep ffritz /etc/passwd >/dev/null || echo ffritz:x:8000:8000:ffritz:/var/media/ftp/ffritz:/bin/sh >> /etc/passwd
+grep ffritz /etc/group >/dev/null  || echo ffritz:x:8000: >> /etc/group
+grep usb /etc/group >/dev/null     || echo usb:x:8001:ffritz >> /etc/group
+
+if [ ! -d ~ffritz/.mpd ]; then
+    mkdir -p ~ffritz/.mpd
+fi
+chown ffritz:ffritz ~ffritz/.mpd
+
