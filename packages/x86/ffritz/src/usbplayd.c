@@ -509,7 +509,7 @@ int convert_samplerate (SRC_STATE *src_state,
     src_data.src_ratio = ratio;
     src_data.end_of_input = 0;
 
-    src_short_to_float_array ((const short*)buf, src_data.data_in, src_data.input_frames);
+    src_short_to_float_array ((const short*)buf, src_data.data_in, src_data.input_frames*2);
 
     if ((rc = src_process (src_state, &src_data)) != 0)
     {
@@ -520,7 +520,7 @@ int convert_samplerate (SRC_STATE *src_state,
 	return 0;
     }
 
-    src_float_to_short_array (src_data.data_out, (short*)buf, src_data.output_frames_gen);
+    src_float_to_short_array (src_data.data_out, (short*)buf, src_data.output_frames_gen*2);
 
     return src_data.output_frames_gen;
 }
@@ -822,9 +822,7 @@ main (int argc, char **argv)
 	 */
 	if (do_rate_convert)
 	{
-	    printf ("convert: input=%d -> ", read_size);
 	    read_size = convert_samplerate (src_state, buf, read_size / 4, ratio) * 4;
-	    printf ("%d\n", read_size);
 
 	    if (read_size == 0)
 		continue;

@@ -1,0 +1,19 @@
+#!/bin/sh
+#
+. `dirname $0`/../etc/ffritz-env.sh || exit 1
+
+ps|grep -v grep|grep usbplayd >/dev/null && exit 0
+
+# By default, create an input pipe for mpd and shairport (priority) each
+#
+options=
+if [ ! -f $FFRITZ_HOME/usbplayd.conf ]; then
+    options='-P /var/tmp/mpd.fifo:44100 -P /var/tmp/shairport.fifo:44100'
+    echo USBPLAYD_ARGS=$options > $FFRITZ_HOME/usbplayd.conf
+    chown ffritz:ffritz $FFRITZ_HOME/usbplayd.conf
+else
+    options=`grep USBPLAYD_ARGS $FFRITZ_HOME/usbplayd.conf | sed -e 's/.*=//'`
+fi
+
+umask 0
+$FFINSTDIR/bin/usbplayd -D -V /var/tmp/volume $options 
