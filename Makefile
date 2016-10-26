@@ -4,11 +4,10 @@ VERSION = $(shell cat version)
 HOST    = $(shell uname -m)
 SUDO	= sudo
 
-RELDIR  = release$(VERSION)
-
-ARM_MODFILES = $(shell find arm/mod/ -type f -o -type d)
-ATOM_MODFILES = $(shell find atom/mod/ -type f -o -type d)
-
+###############################################################################################
+# Configuration
+###############################################################################################
+#
 # The original firmware tarball
 #
 #ORIG=$(TOPDIR)/../original_141.06.50.tar
@@ -20,16 +19,28 @@ ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.62.image
 #
 KEEP_ORIG = 1
 
-# UNCOMMENT THIS if you want to modify the ARM core filesystem, adding
-# stuff from the x86/ffritz package (dropbear, mpd)
+# UNCOMMENT THIS if you want to modify the Atom core filesystem, adding
+# stuff from the x86/ffritz package (dropbear, mpd, shairport, tools).
+# To keep the atom FS unmodified, comment this out.
+#
+# Otherwise the ffritz-x86 package can be installed to the ftp directory, which is more 
+# flexible but unsafe.
 #
 FFRITZ_X86_PACKAGE=packages/x86/ffritz/ffritz-x86-0.4.tar.gz
+
+###############################################################################################
+
+RELDIR  = release$(VERSION)
+
+ARM_MODFILES = $(shell find arm/mod/ -type f -o -type d)
+ATOM_MODFILES = $(shell find atom/mod/ -type f -o -type d)
 
 HOSTTOOLS=$(TOPDIR)/host/$(HOST)
 
 ###############################################################################################
-FWVER=$(shell if [ -f .fwver.cache ]; then cat .fwver.cache; else strings $(ORIG) | grep -i ^newFWver=|sed -e 's/.*=//' | tee .fwver.cache; fi)
 ###############################################################################################
+
+FWVER=$(shell strings $(ORIG) | grep -i ^newFWver=|sed -e 's/.*=//')
 
 ifeq ($(FWVER),)
 $(error Could not determine firmware version ($(ORIG) missing?))

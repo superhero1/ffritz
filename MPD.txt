@@ -46,7 +46,7 @@ To get a list of usb devices and the attributes, call "usbplayd -l".
 The output volume of the device is adjusted in /var/tmp/volume. This file 
 is polled by usbplayd and the volume is adjusted according to the ASCII integer
 (0..100) in the file.
-The modified mpd in this package supports this, shairport does not (yet).
+The modified mpd/shairport binaries in this package supports this feature.
 
 Note that the shairport fifo has precedence over the mpd fifo, i.e. if 
 shairport starts playing, mpd is effectively muted until shairport stops.
@@ -67,7 +67,7 @@ libsamplerate has different algorithms:
 
 The "best quality" algorithm results in a CPU load of ca 50% (44.1KHz -> 48KHz).
 The default is SRC_SINC_FASTEST (ca. 7% load).
-Add the -c switch to USBPLAYD_ARGS to change this.
+Add the -c switch to USBPLAYD_ARGS to change the default.
 
 MPD
 ===
@@ -83,7 +83,7 @@ The default Music database is /var/media/ftp/Musik.
 mpd can be manually started with the etc/runmpd script. This script will also
 start usbplayd if required.
 
-If you do not want to start mps, create /var/media/ftp/.skip_mpd
+If you do not want to start mpd, create /var/media/ftp/.skip_mpd
 
 Volume Control
 --------------
@@ -111,15 +111,16 @@ shairport will announce itself as "fFritz". It will output data to /var/tmp/shai
 shairport can be manually started with the etc/run_shairport script. This script will also
 start usbplayd if required.
 
+The pipe output driver accepts a second parameter, which is the file where the volume 
+level is written to (/var/tmp/volume in this case).
+
 Tested with Android AirAudio app.
 
 If you do not want to start shairport, create /var/media/ftp/.skip_shairport
 
 Integration details
 ===================
-- mpd/shairport runs as user ffritz, group usb for security reasons.
-    The required users are created on demand
+- mpd/shairport run as user ffritz, group usb for security reasons.
 
 TODO
 ====
-- Add volume control to shairport.

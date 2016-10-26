@@ -3,39 +3,94 @@ You still need the original image to build a modified install image, and you nee
 I'm assuming you already have telnet/ssh access to the box by either already running a modified image
 or having gained access (see INSTALL.txt).
 
+I take no responsibility for broken devices or other problems (e.g. with your provider).
+Use this at your own risk.
+
+If you don't trust my binaries, everything (hopefully) that is required to rebuild them is
+located below packages.
+
 USAGE
 =====
-- Clone repo (use the latest release tag)
-- Copy original install image (default is FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.62.image)
-  to directory above repo
-- Go to repo and "make release" (sudo required). This will create a release direcroy with a tar file inside, which can
-  be used for upgrade:
-	- Copy to box (e.g. NAS)
-	- Extract in / directory (tar xf /var/media/ftp/fb6490_6.tar)
+
+Creating an install/update image
+--------------------------------
+- Obtain original install image (default is FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.62.image)
+
+- Clone repository (master branch) in the directory where the original install image is located
+    git clone https://fesc2000@bitbucket.org/fesc2000/ffritz.git
+
+- Decide whether the atom filesystem shall be modified or not (see "Atom core extensions" below)
+
+Installing the image
+--------------------
+- Go to ffritz directory and "make release" (sudo required).
+  This will create a release directory with a tar file inside, which can be used for upgrade:
+	- Copy to box, e.g. NAS (/var/media/ftp)
+	- Extract in / directory of arm core (tar xf /var/media/ftp/fb6490_XXX.tar)
 	- Call var/install
 	- After successful upgrade, execute "nohup sh var/post_install&"
 
+First use
+---------
+After first installation a ssh login password must be assigned (if you plan to use ssh).
+Since you need telnet for this, and all traffic of the telnet session can theoretically be
+sniffed, you should re-assign passwords after the session and never use telnet any more:
+
+- telnet to the box:
+    telnet 192.168.178.1
+    Password is the WEB GUI login.
+
+- Assign a password for root
+    passwd
+
+- Log out of the telnet session
+
+- ssh to the box (using the new password):
+    ssh root@192.168.178.1
+
+- Assign a different password once more:
+    passwd
+
+- If you run ssh on the atom core, copy passwords there:
+    cp /nvram/shadow /var/remote/var/tmp/shadow
+
+- Assign a new WEB GUI password
+
+The password is stored persistently in the box'es NVRAM, and is valid for both arm and atoms
+ssh service.
+
+Note: The arm core is usually accessible at x.x.x.1, the atom core at x.x.x.254
+
 Atom core extensions
 --------------------
-By default, only the arm core filesystem is modified. There is an additional package (ffritz-x86-ver.tar.gz) 
-that contains various extensions for the atom core (mpd, dropbear at the moment).
-These extensions can either be hardcoded into the atom filesystem (edit the Makefile and 
-comment out the FFRITZ_X86_PACKAGE). Then they will be located in /usr/local.
+There is a separate package (ffritz-x86-ver.tar.gz) that contains various extensions
+for the atom core (see below).
 
-Alternatively, the ffritz package can be copied to the box (/var/media/ftp) and extracted there:
-gunzip -c ffritz.tar.gz | tar xf -
+These extensions can either be hardcoded into the atom filesystem or installed to the 
+NAS directory (/var/media/ftp) later by the user.
+The latter is more flexible, but has some drawbacks:
 
-The services then need to be started manually:
-    - mpd only
-	On arm, call "rpc /var/media/ftp/ffritz/etc/runmpd"
-	
-    - dropbear and/or mpd:
-	After box startup, run this command on the arm core:
+- IT IS INSECURE!
+  There are various scripts/binaries that are (have to be) executed as root. If someone has access
+  to the box NAS storage he can modify these binaries/scripts and do evil things.
 
-	/var/media/ftp/etc/ff_atom_startup
+- The provided services are not automatically started when the box restarts.
 
-	This will do all the magic to transfer required data to the atom and start the
-	services (see below).
+To generate an install image that has the modifications in the Atom root filesystem (/usr/local):
+    Make sure FFRITZ_X86_PACKAGE is defined in the top-level Makefile
+
+
+To install the package to the box NAS (/var/media/ftp) without having it in the filesystem:
+    - Copy packages/x86/ffritz/ffritz-x86-VERSION.tar.gz to the NAS storage
+	scp packages/x86/ffritz/ffritz-x86-VERSION.tar.gz root@192.168.178.1:/var/media/ftp
+    - Log in to the arm core:
+	cd /var/media/ftp
+	gunzip -c ffritz.tar.gz | tar xf -
+
+    The services then need to be started manually:
+	/var/media/ftp/ffritz/etc/ff_atom_startup
+
+    This script will run the necessary steps on both the arm and atom core.
 
 FEATURES
 ========
@@ -45,7 +100,7 @@ telnet
 - telnetd is available on the ARM CPU for 5 minutes after startup, then it's killed
 - telnetd on atom CPU can be started via /usr/sbin/start_atom_telnetd from ARM 
 
-ssh/scp (dropbear)
+dropber/ssh/scp (arm)
 ------------------
 - By default, root has no password, and other users do not have rights to get a tty, so
   no login possible by default.
@@ -57,11 +112,12 @@ ssh/scp (dropbear)
 - The roots .ssh directory is a symlink to
   /nvram/root-ssh
 
-dropbear on atom
-----------------
+dropbear/ssh/scp (Atom)
+-----------------------
+- The atom core has no direct access to the NVRAM
 - All non-volatile data is passed from arm to atom on startup:
     - host keys for atom are stored in /nvram/dropbear_x86. They are generated on the ARM 
-      prior to starting the server on atom if they dont exist (in the ff_atom_startup
+      prior to starting the server on atom if they don't exist (in the ff_atom_startup
       script).
       The data is copied to atom:/var/tmp/dropbear at box startup.
 
@@ -72,7 +128,8 @@ dropbear on atom
 	- If public keys are added to authorized_keys, they should be saved to the arm
 	  nvram:
 	  scp /var/tmp/root-ssh/authorized_keys root@fritz.box:/nvram/root-ssh_x86
-    - passwords (/etc/shadow) are shared with the arm core.
+    - passwords (/etc/shadow) are copied from arm to atom at startup. Changing passwords
+      locally on the atom is not persistent.
     - Startup can be inhibited by creating file /var/media/ftp/.skip_dropbear
 
 IPV6
@@ -80,19 +137,20 @@ IPV6
 Selection of native IPv6 has been forced to be enabled in the GUI together with the general
 IPv6 availability.
 
-Music Player Daemon (on atom)
+Music Player Daemon (Atom)
 -----------------------------
 - Uses user space audio tool (via libusb/libmaru) to access an USB audio DAC
 - Refer to MPD.txt for details
 - Startup can be inhibited by creating /var/media/ftp/.skip_mpd
 
-ShairPort Daemon
-----------------
+ShairPort Daemon (Atom)
+-----------------------
 - Acts as AirPort receiver
 - Refer to MPD.txt for details
+- Startup can be inhibited by creating /var/media/ftp/.skip_shairport
 
-nfs "automounter"
------------------
+nfs "automounter" (Atom)
+------------------------
 The file /var/media/ftp/ffritz/.mtab exists can be created to mount specific
 nfs directories to a location below /var/media/ftp.
 
@@ -102,6 +160,14 @@ MOUNT mountpoint mount-options
 For example, to mount the music database from an external NAS:
 
 MOUNT Musik/NAS nas:Multimedia/Music
+
+Miscellaneous tools (Atom)
+--------------------------
+- ldd
+- su
+- strace
+- tcpdump
+- tcpreplay
 
 NOTES
 =====
@@ -134,40 +200,46 @@ Build Host
 My build host is Debian 8.2 / x86_64.
 Compiling the atom toolchain requires gcc-4.7 installed.
 
+Required packages are:
+    squashfs-tools
+    busybox
+    rsync
+    sudo
+
 
 TODO
 ====
 - IPv6 is always disabled after box restart
-- Volume control for shairport
 
 HISTORY
 =======
 
 release 8
 ---------
-- add udev rule to give usb devices proper permissions (usb group)
-    Remove clumsy permission fixup in runmpd
-- put ffritz user into usb group by default
-- fix permission of mpd.conf
-- Add some tools:
-    strace
-    ldd
-    tcpdump
-    tcpreplay
-- Replace usbplay with usbplayd, which is fifo based and accepts several inputs.
-    It also performs sample rate conversion if required.
-- Accordingly, mpd uses fifo output driver instead of pipe driver
-- Add shairport.
-    Player name is fFritz
-    Playback via shairport has precedence over mpd (i.e. mpd is stopped
-    as long a shairport is playing).
-- Added user mount table
-- Added su binary
+- Atom
+    - add udev rule to give usb devices proper permissions (usb group)
+	Remove clumsy permission fixup in runmpd
+    - put ffritz user into usb group by default
+    - fix permission of mpd.conf
+    - Add some tools:
+	strace
+	ldd
+	tcpdump
+	tcpreplay
+	su
+    - Replace usbplay with usbplayd, which is fifo based and accepts several inputs.
+	It also performs sample rate conversion if required.
+    - Accordingly, mpd uses fifo output driver instead of pipe driver
+    - Add shairport (AirPort audio receiver)
+    - Added user mount table
 
 release 7
 ---------
-- Add dropbear for atom
-- Add mpd to atom
+- Atom
+    - Add dropbear
+    - Add mpd
+- Arm
+    - Add startup script /usr/local/etc/init.d/ff_atom_startup
 
 release 6
 ---------

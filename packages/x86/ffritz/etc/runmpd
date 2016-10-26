@@ -21,4 +21,4 @@ chown ffritz:ffritz $FFRITZ_HOME/mpd.conf
 
 # Run mpd in endless loop in case it crashes
 #
-nohup $FFINSTDIR/etc/mpdloop&
+nohup $FFINSTDIR/bin/su ffritz $FFINSTDIR/etc/mpdloop&
