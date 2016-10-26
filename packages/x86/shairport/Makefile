@@ -22,6 +22,7 @@ all:	build/config.h
 
 build/configure:
 	git clone `cat ../../url-shairport` build
+	cd build; patch -p1 < ../pipe_volfile.patch
 	cd build; ./configure
 	
 build/config.h:	build/configure

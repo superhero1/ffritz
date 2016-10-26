@@ -40,7 +40,7 @@ AP_NAME=fFritz
 # Defaults to the first available, depends on the build options
 # Check 'shairport -h' for details
 OUTPUT=pipe
-OUTPUT_OPTS=/var/tmp/shairport.fifo
+OUTPUT_OPTS="/var/tmp/shairport.fifo /var/tmp/volume"
 
 # Force the mDNS backend
 # By default, shairport will try all backends until one works.
