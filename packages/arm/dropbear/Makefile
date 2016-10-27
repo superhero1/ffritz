@@ -1,8 +1,15 @@
 
+# Use AVM toolchain by default
+#
+ifeq ($(BUILDROOT),)
+BUILDROOT   = $(shell cd ../avm/build/prefix_sehr_sehr_sehr_sehr_sehr_sehr_sehr_sehr_sehr_lang_buildroot-2013.05/; pwd)
+endif
+
 ifeq ($(BUILDROOT),)
 $(error BUILDROOT (buildroot top directory) not defined)
 endif
 
+###############################################################################
 
 TOPDIR=$(shell pwd)
 TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
@@ -10,17 +17,16 @@ DESTDIR	    = $(TOPDIR)/output
 
 export PATH := $(TOOLCHAIN):$(PATH)
 
-URL	= $(shell cat url)
-FILE	= $(shell basename $(URL))
+URL	= $(shell cat ../../url-dropbear)
+FILE	= ../../dl/$(shell basename $(URL))
 
 all:	build/config.status
-	@make -C build PROGRAMS="dropbear dropbearkey dropbearconvert dbclient scp" STATIC=1 SCPPROGRESS=1 
+	@make -C build PROGRAMS="dropbear dropbearkey dropbearconvert dbclient scp" SCPPROGRESS=1 
 
 install:
-	@make -C build PROGRAMS="dropbear dropbearkey dropbearconvert dbclient scp" STATIC=1 SCPPROGRESS=1 install DESTDIR=$(DESTDIR)
+	@make -C build PROGRAMS="dropbear dropbearkey dropbearconvert dbclient scp" SCPPROGRESS=1 install DESTDIR=$(DESTDIR)
 	strip $(DESTDIR)/usr/local/bin/*
 	strip $(DESTDIR)/usr/local/sbin/*
-	
 
 $(FILE):
 	@wget $(URL)
