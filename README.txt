@@ -185,14 +185,12 @@ Atom libraries
 
 Toolchain
 ---------
-Cross-compile toolchain for ARM is buildroot-2013.08 (it's the first one i looked for that
-matches the uClibc version used in FB firmware 6.50).
+Cross-compile toolchain for ARM is buildroot-2013.02 from the original avm source
+tarball.
+It is installed in packages/arm/avm (just do a make there).
 
-There seems to be a problem with locale support, since dropber binaries complain
-about missing symbols (caused by usage of ctype.h macros like isalnum, toupper, ...).
-Workaround is to link statically, or to not use ctype.h macros from dropbear ..
-
-For Atom, the toolchain is buildroot-2013.02.
+For Atom, the toolchain is buildroot-2013.02 (packages/x86/buildroot).
+The atom source tarball (packages/x86/avm) does not work for me.
 
 Build Host
 ----------
@@ -231,7 +229,9 @@ release 8
 	It also performs sample rate conversion if required.
     - Accordingly, mpd uses fifo output driver instead of pipe driver
     - Add shairport (AirPort audio receiver)
-    - Added user mount table
+    - Added user mount table (var/media/ftp/ffritz/.mtab)
+- ARM
+    - Use toolchain from avm source tarball for dropbear binaries
 
 release 7
 ---------

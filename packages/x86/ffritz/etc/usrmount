@@ -1,19 +1,24 @@
 #!/bin/sh
 #
+# Simple script to do nfs mounts below /var/media/ftp
+# Input file is format
+#
+# MOUNT mountpoint options
+#
+# Lines with two ..'s are not considered to avoid remounting
+# of system directories.
+#
 
 if [ ! -r $1 ]; then
 exit 1
 fi
 
-cat $1 | while read line; do
-        set x $line
-        shift
-        if [ "$1" = "MOUNT" ]; then
-                shift
-                mountpoint=/var/media/ftp/$1
-		echo $mountpoint | grep '\.\.' > /dev/null || continue
-                shift
-                mountopts=$*
-                mount $mountopts $mountpoint
-        fi
+grep MOUNT $1 | grep -v '\.\.' | while read line; do
+        set $line
+
+	shift
+	mountpoint=/var/media/ftp/$1
+	shift
+	mountopts=$*
+	mount -t nfs $mountopts $mountpoint
 done
