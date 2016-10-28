@@ -20,6 +20,7 @@ BR_TGT_SBIN = $(BR_TGT)/usr/sbin
 BINFILES    = ../mpd/build/src/mpd src/sndlist src/usbplay src/usbplayd src/su
 BINFILES   += $(BR_TGT_BIN)/strace $(BR_TGT_BIN)/ldd $(BR_TGT_SBIN)/tcpdump 
 BINFILES   += $(BR_TGT_BIN)/tcpbridge $(BR_TGT_BIN)/tcpprep $(BR_TGT_BIN)/tcpreplay $(BR_TGT_BIN)/tcpreplay-edit $(BR_TGT_BIN)/tcprewrite
+BINFILES   += $(BR_TGT_BIN)/mpc
 BINFILES   += ../shairport/build/shairport
 ETCFILES    = etc/ffritz-env.sh etc/mpd.conf etc/runmpd etc/mpdloop etc/ff_atom_startup etc/mkusers etc/run_usbplay etc/run_shairport etc/usrmount
 
@@ -33,7 +34,7 @@ ifeq ($(INSTDIR),)
     INSTDIR=$(STAGEDIR)
 endif
 
-SUBDIRS	    = ../buildroot ../mpd ../libmaru ../dropbear ../shairport src
+SUBDIRS	    = ../buildroot ../mpd ../libmaru ../dropbear ../shairport ../libmpdclient ../mpc src
 
 .PHONY:	$(SUBDIRS)
 

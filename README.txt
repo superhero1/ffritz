@@ -150,26 +150,27 @@ dropbear/ssh/scp (Atom)
 -----------------------
 - The atom core has no direct access to the NVRAM
 - All non-volatile data is passed from arm to atom on startup:
-    - host keys for atom are stored in /nvram/dropbear_x86. They are generated on the ARM 
-      prior to starting the server on atom if they don't exist (in the ff_atom_startup
-      script).
+    - host keys for atom are stored in /nvram/dropbear_x86. They are generated
+      on the ARM 
+      prior to starting the server on atom if they don't exist
+      (in the ff_atom_startup script).
       The data is copied to atom:/var/tmp/dropbear at box startup.
 
     - /.ssh
-      This is a symlink to /var/tmp/root-ssh, which is populated with the contents of
-      /nvram/root-ssh_x86 at startup. This means:
+      This is a symlink to /var/tmp/root-ssh, which is populated with the
+      contents of /nvram/root-ssh_x86 at startup. This means:
 	- All unsaved runtime data in ~root/.ssh gets lost at reboot
-	- If public keys are added to authorized_keys, they should be saved to the arm
-	  nvram:
+	- If public keys are added to authorized_keys, they should be saved to
+	  the arm nvram:
 	  scp /var/tmp/root-ssh/authorized_keys root@fritz.box:/nvram/root-ssh_x86
-    - passwords (/etc/shadow) are copied from arm to atom at startup. Changing passwords
-      locally on the atom is not persistent.
+    - passwords (/etc/shadow) are copied from arm to atom at startup. Changing
+      passwords locally on the atom is not persistent.
     - Startup can be inhibited by creating file /var/media/ftp/.skip_dropbear
 
 IPV6
 ----
-Selection of native IPv6 has been forced to be enabled in the GUI together with the general
-IPv6 availability.
+Selection of native IPv6 has been forced to be enabled in the GUI together with
+the general IPv6 availability.
 
 Music Player Daemon (Atom)
 -----------------------------
@@ -183,17 +184,17 @@ ShairPort Daemon (Atom)
 - Refer to MPD.txt for details
 - Startup can be inhibited by creating /var/media/ftp/.skip_shairport
 
-nfs "automounter" (Atom)
-------------------------
+nfs mounter (Atom)
+------------------
 The file /var/media/ftp/ffritz/.mtab exists can be created to mount specific
-nfs directories to a location below /var/media/ftp.
+nfs directories to an (existing) location below /var/media/ftp.
 
 The format of the file is:
 MOUNT mountpoint mount-options
 
 For example, to mount the music database from an external NAS:
 
-MOUNT Musik/NAS nas:Multimedia/Music
+MOUNT Musik/NAS -o soft nas:Multimedia/Music
 
 Miscellaneous tools (Atom)
 --------------------------
@@ -202,15 +203,17 @@ Miscellaneous tools (Atom)
 - strace
 - tcpdump
 - tcpreplay
+- mpc
 
 NOTES
 =====
 
 Atom libraries
 --------------
-- Espcially mpd requires a lot of additional shared libraries. Rather than integrating 
-    them into /lib / /usr/lib, they remain in their own lib directory (/usr/local/lib).
-    Also, the systems's LD_LIBRARY_PATH is not modified. This is to avoid any 
+- Espcially mpd requires a lot of additional shared libraries. Rather than
+    integrating them into /lib / /usr/lib, they remain in their own lib
+    directory (/usr/local/lib).
+    Also, the systems's LD_LIBRARY_PATH is not modified. This is to avoid any
     conflicts/incompatibilies with other box services.
 
     In order to be able to call these binaries they are invoked via a wrapper
@@ -219,8 +222,8 @@ Atom libraries
 
 Toolchain
 ---------
-Cross-compile toolchain for ARM is buildroot-2013.02 from the original avm source
-tarball.
+Cross-compile toolchain for ARM is buildroot-2013.02 from the original avm
+source tarball.
 It is installed in packages/arm/avm (just do a make there).
 
 For Atom, the toolchain is buildroot-2013.02 (packages/x86/buildroot).
@@ -259,14 +262,15 @@ release 8
 	tcpdump
 	tcpreplay
 	su
-    - Replaced usbplay with usbplayd, which is fifo based and accepts several inputs.
-	It also performs sample rate conversion if required.
+	mpc
+    - Replaced usbplay with usbplayd, which is fifo based and accepts several
+	inputs. It also performs sample rate conversion if required.
     - Accordingly, mpd uses fifo output driver instead of pipe driver
     - Added shairport (AirPort audio receiver)
     - Added user mount table (var/media/ftp/ffritz/.mtab)
 - ARM
-    - Added /usr/local/etc/switch_bootbank script to help bank switch without having
-	to invoke the bootloader.
+    - Added /usr/local/etc/switch_bootbank script to help bank switch without
+	having to invoke the bootloader.
 	Also in installer tar: var/switch_bootbank
     - Use toolchain from avm source tarball for dropbear binaries
 
@@ -307,7 +311,8 @@ release 3
 release 2 [fb6490_6.50_telnet-2.tar]
 ------------------------------------
 - Changed etc/init.d/rc.tail.sh
-	- Explicitly start telnetd from here (obviously the existence of /usr/sbin/telnetd is not always sufficient)
+	- Explicitly start telnetd from here (obviously the existence of
+	  /usr/sbin/telnetd is not always sufficient)
 - Added unsquashfs4_avm_x86/mksquashfs4-lzma-avm-be binaries (from Freetz)
 - Fixed html tags in README
 - Remove LCR download in telnet-1.tar
@@ -315,4 +320,3 @@ release 2 [fb6490_6.50_telnet-2.tar]
 release 1 [fb6490_6.50_telnet.tar]
 ----------------------------------
 - Initial release
-
