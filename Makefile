@@ -12,7 +12,8 @@ SUDO	= sudo
 #
 #ORIG=$(TOPDIR)/../original_141.06.50.tar
 #ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.61.image
-ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.62.image
+#ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.62.image
+ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.63.image
 
 # Keep original rootfs for diff?
 # sudo dirdiff arm/orig/ arm/squashfs-root/
@@ -26,7 +27,10 @@ KEEP_ORIG = 1
 # Otherwise the ffritz-x86 package can be installed to the ftp directory, which is more 
 # flexible but unsafe.
 #
-FFRITZ_X86_PACKAGE=packages/x86/ffritz/ffritz-x86-0.4.tar.gz
+# The package can be either downloaded (https://bitbucket.org/fesc2000/ffritz/downloads),
+# or built with "make package"
+#
+#FFRITZ_X86_PACKAGE=../ffritz-x86-0.4.tar.gz
 
 ###############################################################################################
 
@@ -111,9 +115,9 @@ atom/squashfs-root:  tmp/atom/filesystem.image
 atom/filesystem.image: $(ATOM_MODFILES) atom/squashfs-root $(FFRITZ_X86_PACKAGE)
 	@echo "PATCH  atom/squashfs-root"
 	@$(SUDO) $(RSYNC) -a atom/mod/ atom/squashfs-root/
-	@test -f ./$(FFRITZ_X86_PACKAGE) && sudo mkdir -p atom/squashfs-root/usr/local
-	@test -f ./$(FFRITZ_X86_PACKAGE) && sudo tar xf $(FFRITZ_X86_PACKAGE) --strip-components=2 -C atom/squashfs-root/usr/local ./ffritz
-	@test -f ./$(FFRITZ_X86_PACKAGE) && sudo sh -c "cd atom/squashfs-root/usr/bin; ln -sf ../local/bin/* ."
+	@test -f $(FFRITZ_X86_PACKAGE) && sudo mkdir -p atom/squashfs-root/usr/local
+	@test -f $(FFRITZ_X86_PACKAGE) && sudo tar xf $(FFRITZ_X86_PACKAGE) --strip-components=2 -C atom/squashfs-root/usr/local ./ffritz
+	@test -f $(FFRITZ_X86_PACKAGE) && sudo sh -c "cd atom/squashfs-root/usr/bin; ln -sf ../local/bin/* ."
 	@rm -f atom/filesystem.image
 	@echo "PACK  atom/squashfs-root"
 	@cd atom; $(SUDO) mksquashfs squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 >/dev/null
@@ -122,7 +126,12 @@ atom/filesystem.image: $(ATOM_MODFILES) atom/squashfs-root $(FFRITZ_X86_PACKAGE)
 #
 ifneq ($(FFRITZ_X86_PACKAGE),)
 $(FFRITZ_X86_PACKAGE):
-	make -C packages/x86/ffritz $(shell basename $(FFRITZ_X86_PACKAGE))
+	@echo Please download $(FFRITZ_X86_PACKAGE) from https://bitbucket.org/fesc2000/ffritz/downloads
+	@echo "(or try to build it with \"make package\")"
+	@echo
+
+package:
+	make -C packages/x86/ffritz; cp packages/x86/ffritz/$(shell basename $(FFRITZ_X86_PACKAGE)) $(FFRITZ_X86_PACKAGE)
 endif
 
 .PHONY:		$(RELDIR)
