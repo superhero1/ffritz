@@ -1,0 +1,3 @@
+## Simple udev rule to put usb devices to usb group
+#
+ENV{DEVTYPE}=="usb_device", GROUP="8001"

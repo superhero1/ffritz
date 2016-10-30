@@ -4,32 +4,47 @@ VERSION = $(shell cat version)
 HOST    = $(shell uname -m)
 SUDO	= sudo
 
-RELDIR  = release$(VERSION)
-
-ARM_MODFILES = $(shell find arm/mod/ -type f -o -type d)
-ATOM_MODFILES = $(shell find atom/mod/ -type f -o -type d)
-
+###############################################################################################
+# Configuration
+###############################################################################################
+#
 # The original firmware tarball
 #
 #ORIG=$(TOPDIR)/../original_141.06.50.tar
 #ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.61.image
-ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.62.image
+#ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.62.image
+ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.63.image
 
 # Keep original rootfs for diff?
 # sudo dirdiff arm/orig/ arm/squashfs-root/
 #
 KEEP_ORIG = 1
 
-# UNCOMMENT THIS if you want to modify the ARM core filesystem, adding
-# stuff from the x86/ffritz package (dropbear, mpd)
+# UNCOMMENT THIS if you want to modify the Atom core filesystem, adding
+# stuff from the x86/ffritz package (dropbear, mpd, shairport, tools).
+# To keep the atom FS unmodified, comment this out.
 #
-FFRITZ_X86_PACKAGE=packages/x86/ffritz/ffritz-x86-0.3.tar.gz
+# Otherwise the ffritz-x86 package can be installed to the ftp directory, which is more 
+# flexible but unsafe.
+#
+# The package can be either downloaded (https://bitbucket.org/fesc2000/ffritz/downloads),
+# or built with "make package"
+#
+#FFRITZ_X86_PACKAGE=../ffritz-x86-0.4.tar.gz
+
+###############################################################################################
+
+RELDIR  = release$(VERSION)
+
+ARM_MODFILES = $(shell find arm/mod/ -type f -o -type d)
+ATOM_MODFILES = $(shell find atom/mod/ -type f -o -type d)
 
 HOSTTOOLS=$(TOPDIR)/host/$(HOST)
 
 ###############################################################################################
-FWVER=$(shell if [ -f .fwver.cache ]; then cat .fwver.cache; else strings $(ORIG) | grep -i ^newFWver=|sed -e 's/.*=//' | tee .fwver.cache; fi)
 ###############################################################################################
+
+FWVER=$(shell strings $(ORIG) | grep -i ^newFWver=|sed -e 's/.*=//')
 
 ifeq ($(FWVER),)
 $(error Could not determine firmware version ($(ORIG) missing?))
@@ -100,17 +115,23 @@ atom/squashfs-root:  tmp/atom/filesystem.image
 atom/filesystem.image: $(ATOM_MODFILES) atom/squashfs-root $(FFRITZ_X86_PACKAGE)
 	@echo "PATCH  atom/squashfs-root"
 	@$(SUDO) $(RSYNC) -a atom/mod/ atom/squashfs-root/
-	@test -f ./$(FFRITZ_X86_PACKAGE) && sudo mkdir -p atom/squashfs-root/usr/local
-	@test -f ./$(FFRITZ_X86_PACKAGE) && sudo tar xf $(FFRITZ_X86_PACKAGE) --strip-components=2 -C atom/squashfs-root/usr/local ./ffritz
-	@test -f ./$(FFRITZ_X86_PACKAGE) && sudo sh -c "cd atom/squashfs-root/usr/bin; ln -sf ../local/bin/* ."
+	@test -f $(FFRITZ_X86_PACKAGE) && sudo mkdir -p atom/squashfs-root/usr/local
+	@test -f $(FFRITZ_X86_PACKAGE) && sudo tar xf $(FFRITZ_X86_PACKAGE) --strip-components=2 -C atom/squashfs-root/usr/local ./ffritz
+	@test -f $(FFRITZ_X86_PACKAGE) && sudo sh -c "cd atom/squashfs-root/usr/bin; ln -sf ../local/bin/* ."
 	@rm -f atom/filesystem.image
+	@echo "PACK  atom/squashfs-root"
 	@cd atom; $(SUDO) mksquashfs squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 >/dev/null
 
 ## Normally the package should be pre-compiled. If not, try to rebuild it
 #
 ifneq ($(FFRITZ_X86_PACKAGE),)
 $(FFRITZ_X86_PACKAGE):
-	make -C packages/x86/ffritz $(shell basename $(FFRITZ_X86_PACKAGE))
+	@echo Please download $(FFRITZ_X86_PACKAGE) from https://bitbucket.org/fesc2000/ffritz/downloads
+	@echo "(or try to build it with \"make package\")"
+	@echo
+
+package:
+	make -C packages/x86/ffritz; cp packages/x86/ffritz/$(shell basename $(FFRITZ_X86_PACKAGE)) $(FFRITZ_X86_PACKAGE)
 endif
 
 .PHONY:		$(RELDIR)
@@ -119,6 +140,7 @@ endif
 release:	armfs $(ATOMFS) $(RELDIR) 
 	@echo "PACK   $(RELDIR)/fb6490_$(FWVER)-$(VERSION).tar"
 	@cp arm/filesystem.image $(RELDIR)/var/remote/var/tmp/filesystem.image
+	@cp arm/mod/usr/local/etc/switch_bootbank $(RELDIR)/var
 	@test -z $(ATOMFS) || cp atom/filesystem.image $(RELDIR)/var/remote/var/tmp/x86/filesystem.image
 	@cd $(RELDIR); $(TAR) cf fb6490_$(FWVER)-$(VERSION).tar var
 	@rm -rf $(RELDIR)/var

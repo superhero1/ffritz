@@ -1,4 +1,4 @@
-BUILDROOT_TARGETS   = boost zlib expat libmad libusb libfuse mpd
+BUILDROOT_TARGETS   = boost zlib expat libmad libusb libfuse mpd strace tcpdump tcpreplay openssl
 
 include ../../buildroot.mk
 

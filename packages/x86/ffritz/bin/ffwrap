@@ -7,5 +7,4 @@ COMMAND_PATH=$( readlink -f $0 )
 EXEC_DIR=$( dirname $COMMAND_PATH )
 
 export LD_LIBRARY_PATH=$( readlink -f $EXEC_DIR/../../lib )
-$EXEC_DIR/$COMMAND $*
-exit $?
+exec $EXEC_DIR/$COMMAND $*

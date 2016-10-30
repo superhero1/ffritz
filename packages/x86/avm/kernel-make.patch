@@ -1,0 +1,26 @@
+--- kernel/linux-2.6.39/Makefile	2015-04-01 17:20:53.000000000 +0200
++++ mod/linux-2.6.39/Makefile	2016-10-27 13:37:54.033583830 +0200
+@@ -1020,7 +1020,7 @@
+ # Kernel headers
+ 
+ # Kbuild defines destination-y: directory containing headers to install & header-y: headers to install
+-include arch/arm/mach-avalanche/include/arch-avalanche/generic/Kbuild
++#include arch/arm/mach-avalanche/include/arch-avalanche/generic/Kbuild
+ kernel-headers-dir := $(TARGET_HOME)/ti/arch/arm/mach-avalanche/include/arch-avalanche/generic/
+ update := cp -uf  $(addprefix $(destination-y), $(header-y))
+ 
+@@ -1047,10 +1047,10 @@
+ 	$(error Headers not exportable for the $(SRCARCH) architecture))
+ 	$(Q)$(MAKE) $(hdr-inst)=include
+ 	$(Q)$(MAKE) $(hdr-inst)=arch/$(hdr-arch)/include/asm $(hdr-dst)	
+-	$(Q)$(MAKE) $(hdr-inst)=include/asm-$(hdr-arch)/arch-avalanche/puma6 $(hdr-dst)
+-	$(Q)$(MAKE) $(hdr-inst)=include/asm-$(hdr-arch)/arch-avalanche/puma6/iosfsb_drv $(hdr-dst)
+-	$(Q)$(MAKE) $(hdr-inst)=include/asm-$(hdr-arch)/arch-avalanche/generic $(hdr-dst)      	
+-	$(Q)$(update) $(kernel-headers-dir)
++#	$(Q)$(MAKE) $(hdr-inst)=include/asm-$(hdr-arch)/arch-avalanche/puma6 $(hdr-dst)
++#	$(Q)$(MAKE) $(hdr-inst)=include/asm-$(hdr-arch)/arch-avalanche/puma6/iosfsb_drv $(hdr-dst)
++#	$(Q)$(MAKE) $(hdr-inst)=include/asm-$(hdr-arch)/arch-avalanche/generic $(hdr-dst)      	
++#	$(Q)$(update) $(kernel-headers-dir)
+ 
+ PHONY += headers_check_all
+ headers_check_all: headers_install_all
