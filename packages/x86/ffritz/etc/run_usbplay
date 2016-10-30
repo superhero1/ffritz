@@ -16,4 +16,4 @@ else
 fi
 
 umask 0
-$FFINSTDIR/bin/usbplayd -D -V /var/tmp/volume $options 
+$FFINSTDIR/bin/usbplayd -D -L /var/tmp/usbplayd.log -V /var/tmp/volume $options 
