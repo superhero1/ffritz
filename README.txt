@@ -94,6 +94,8 @@ Atom core extensions
 --------------------
 There is a separate package (ffritz-x86-ver.tar.gz) that contains various
 extensions for the atom core (see below).
+The package is not part of the git repository and needs to be downloaded from
+https://bitbucket.org/fesc2000/ffritz/downloads and put to .. directory.
 
 These extensions can either be hardcoded into the atom filesystem or installed
 to the NAS directory (/var/media/ftp) later by the user.
@@ -251,6 +253,7 @@ HISTORY
 
 release 8
 ---------
+- tested with firmware 6.63
 - Atom
     - Added udev rule to give usb devices proper permissions (usb group)
 	Remove clumsy permission fixup in runmpd
