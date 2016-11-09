@@ -27,9 +27,12 @@
 #include <fcntl.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <errno.h>
 
 #include <libmaru.h>
 #include <samplerate.h>
+
+#include "usbplayd.h"
 
 #define MAX_PFDS 10
 
@@ -75,7 +78,6 @@ struct			     pollfd pfd[MAX_PFDS];
 nfds_t			     nfds = 0;
 int			     output_rate = 0;
 int			     src_errcode = 0;
-FILE			    *log;
 
 const char *usage =
 "usbplayd options    A libusb audio player daemon\n"
@@ -220,7 +222,7 @@ void set_hardware_volume (int vol)
 
     if (err != LIBMARU_SUCCESS)
     {
-	fprintf (log, "Failed to set volume to %d\n", vol);
+	log_put ("!Failed to set volume to %d\n", vol);
     }
 
     vcur = vol;
@@ -323,13 +325,13 @@ int maru_start(void)
 
     if (num_devices == 0)
     {
-	fprintf (log, "No USB audio devices found\n");
+	log_put ("!No USB audio devices found\n");
 	return 1;
     }
 
     if (req_dev >= num_devices)
     {
-	fprintf (log, "Requested device index %d, but only %d available\n", 
+	log_put ("!Requested device index %d, but only %d available\n", 
 	    req_dev, num_devices);
 	return 1;
     }
@@ -351,7 +353,7 @@ int maru_start(void)
 
     if (err != LIBMARU_SUCCESS)
     {
-	fprintf (log, "usbplay: failed to get volume limits\n");
+	log_put ("!usbplay: failed to get volume limits\n");
 	volfile = NULL;
 	vmin = -50*256;
 	vmax = 0;
@@ -367,7 +369,7 @@ int maru_start(void)
 
 	if (err != LIBMARU_SUCCESS)
 	{
-	    fprintf (log, "Failed to set volume to %d\n", req_volume/256);
+	    log_put ("!Failed to set volume to %d\n", req_volume/256);
 	}
     }
 
@@ -375,7 +377,7 @@ int maru_start(void)
     {
 	if (req_stream >= maru_get_num_streams (ctx))
 	{
-	    fprintf (log, "Requested stream %d, only %d available\n", 
+	    log_put ("!Requested stream %d, only %d available\n", 
 		req_stream, maru_get_num_streams (ctx));
 
 	    maru_stop();
@@ -390,7 +392,7 @@ int maru_start(void)
 
 	if (stream < 0)
 	{
-	    fprintf (log, "No Available stream\n");
+	    log_put ("!No Available stream\n");
 	    maru_stop();
 	    return 1;
 	}
@@ -398,7 +400,7 @@ int maru_start(void)
 
     if (!maru_is_stream_available (ctx, stream))
     {
-	fprintf (log, "Stream %d not available\n", stream);
+	log_put ("!Stream %d not available\n", stream);
 	maru_stop();
 	return 1;
     }
@@ -416,10 +418,10 @@ int maru_start(void)
     if (output_rate)
 	desc[0].sample_rate = output_rate;
 
-    fprintf (log, "Format:\n");
-    fprintf (log, "\tRate: %u\n", desc[0].sample_rate);
-    fprintf (log, "\tChannels: %u\n", desc[0].channels);
-    fprintf (log, "\tBits: %u\n", desc[0].bits);
+    log_put ("Format:\n");
+    log_put ("\tRate: %u\n", desc[0].sample_rate);
+    log_put ("\tChannels: %u\n", desc[0].channels);
+    log_put ("\tBits: %u\n", desc[0].bits);
 
     desc[0].buffer_size = 1024 * 128;
     desc[0].fragment_size = 1024 * 32;
@@ -428,7 +430,7 @@ int maru_start(void)
 
     if (err != LIBMARU_SUCCESS)
     {
-	fprintf (log, "Failed to open stream\n");
+	log_put ("!Failed to open stream\n");
 	maru_stop();
 	return 1;
     }
@@ -457,14 +459,14 @@ int open_or_create_fifo(char *name, int i)
     {
 	if (-1 == mkfifo(name, 0666))
 	{
-	    perror (name);
+	    log_put ("!mkfifo %s: %s", name, strerror(errno));
 	    return -1;
 	}
 
 	fd = open (name, O_RDONLY|O_NONBLOCK);
 	if (fd == -1)
 	{
-	    perror (name);
+	    log_put ("!open %s: %s", name, strerror(errno));
 	    return -1;
 	}
     }
@@ -519,7 +521,7 @@ int convert_samplerate (SRC_STATE *src_state,
 
     if ((rc = src_process (src_state, &src_data)) != 0)
     {
-	fprintf (log, "src_process failed with error %d (%s)\n",
+	log_put ("src_process failed with error %d (%s)\n",
 	    rc,
 	    src_strerror(rc));
 
@@ -552,7 +554,6 @@ main (int argc, char **argv)
 
     memset (pfiles, 0, sizeof(pfiles));
     memset (pfd, 0, sizeof(pfd));
-    log = stderr;
 
     while (1)
     {
@@ -604,7 +605,7 @@ main (int argc, char **argv)
 	case 'P':
 	    if (nfds >= MAX_PFDS)
 	    {
-		fprintf (log, "max. %d input pipes\n", MAX_PFDS);
+		log_put ("max. %d input pipes\n", MAX_PFDS);
 		exit(1);
 	    }
 
@@ -664,7 +665,7 @@ main (int argc, char **argv)
 
     if (nfds == 0)
     {
-	fprintf (log, "no input pipes defined\n");
+	log_put ("no input pipes defined\n");
 	exit (1);
     }
 
@@ -677,21 +678,17 @@ main (int argc, char **argv)
     gettimeofday (&start_tv, NULL);
     prev_tv = start_tv;
 
-    if (daemon_mode)
-    {
-	if (daemon (0, 0))
-	{
-	    perror ("daemon");
-	    exit (1);
-	}
-    }
-
     if (logfile)
     {
-	log = fopen (logfile, "a");
-	if (!log)
-	    log = stderr;
-	setvbuf (log, NULL, _IONBF, 0);
+	log_set (logfile, 0);
+    }
+
+    if (daemon_mode)
+    {
+	if (daemon2 ("/var/tmp/usbplayd.pid", 0, 0))
+	{
+	    exit (1);
+	}
     }
 
     src_state = src_new (converter_type, 2, &src_errcode);
@@ -712,7 +709,7 @@ main (int argc, char **argv)
 
 	if ((i = poll(pfd, nfds, -1)) < 0)
 	{
-	    perror ("poll");
+	    log_put ("!poll: %s", strerror(errno));
 	    sleep (2);
 	    continue;
 	}
@@ -743,7 +740,7 @@ main (int argc, char **argv)
 		    remove_pipe (i);
 		    if (nfds == 0)
 		    {
-			fprintf (log, "no more pipes\n");
+			log_put ("no more pipes, exiting\n");
 			exit (1);
 		    }
 		    continue;
@@ -762,7 +759,7 @@ main (int argc, char **argv)
 		 */
 		if (i == current_input)
 		{
-		    fprintf (log, "current input %d(%s) closed\n", i, pfiles[i]);
+		    log_put ("current input %d(%s) closed\n", i, pfiles[i]);
 		    current_input = -1;
 		}
 	    }
@@ -779,7 +776,7 @@ main (int argc, char **argv)
 	     */
 	    if (ctx)
 	    {
-		fprintf (log, "No writers, closing USB device\n");
+		log_put ("No writers, closing USB device\n");
 		maru_stop();
 	    }
 
@@ -804,7 +801,7 @@ main (int argc, char **argv)
 	    {
 		/* output/input rate too high, ignore this stream
 		 */
-		fprintf (log, "input rate %d of stream %s too low relative to output rate %d (min is output/%d)\n",
+		log_put ("!input rate %d of stream %s too low relative to output rate %d (min is output/%d)\n",
 			input_rates[highest_input],
 			pfiles[highest_input],
 			output_rate,
@@ -813,7 +810,7 @@ main (int argc, char **argv)
 		remove_pipe (highest_input);
 		if (nfds == 0)
 		{
-		    fprintf (log, "no more pipes\n");
+		    log_put ("no more pipes\n");
 		    exit (1);
 		}
 		continue;
@@ -828,7 +825,7 @@ main (int argc, char **argv)
 
 	    current_input = highest_input;
 
-	    fprintf (log, "switching to input %d(%s)\n",
+	    log_put ("switching to input %d(%s)\n",
 		current_input, pfiles[current_input]);
 	}
 	else if (highest_input < current_input)
@@ -856,7 +853,7 @@ main (int argc, char **argv)
 	 */
 	if (maru_stream_write (ctx, stream, buf, read_size) < read_size)
 	{
-	    fprintf (log, "maru_stream_write() failed\n");
+	    log_put ("!maru_stream_write() failed\n");
 	    continue;
 	}
 
