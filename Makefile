@@ -45,6 +45,7 @@ HOSTTOOLS=$(TOPDIR)/host/$(HOST)
 ###############################################################################################
 
 FWVER=$(shell strings $(ORIG) | grep -i ^newFWver=|sed -e 's/.*=//')
+FWNUM=$(subst .,,$(FWVER))
 
 ifeq ($(FWVER),)
 $(error Could not determine firmware version ($(ORIG) missing?))
@@ -75,7 +76,10 @@ all: release
 #
 armfs:	arm/filesystem.image
 
-ARM_PATCHES=$(shell cat arm/patchlist)
+ARM_PATCHES  = rc.tail.patch
+ARM_PATCHES += $(shell test $(FWNUM) -gt 660 && echo nvram_dontremove.patch)
+ARM_PATCHES += $(shell test $(FWNUM) -lt 663 && echo ipv6_enable.patch)
+
 ARM_PATCHST=$(ARM_PATCHES:%=arm/.applied.%)
 
 tmp/arm/filesystem.image:
