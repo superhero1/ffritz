@@ -69,7 +69,6 @@ install: $(SUBDIRS) $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls 
 	make -C ../dropbear install DESTDIR=$(INSTDIR)
 	mv $(INSTDIR)/usr/local/bin/* $(INSTDIR)/bin
 	mv $(INSTDIR)/usr/local/sbin/* $(INSTDIR)/bin
-	cd $(INSTDIR)/bin; ln -s dbclient ssh
 	cp -a bin/ffwrap $(INSTDIR)/bin/exec
 	cd $(INSTDIR)/bin; \
 	    for f in `ls | xargs file | grep ELF | sed -e 's/:.*//'`; do\
@@ -77,6 +76,8 @@ install: $(SUBDIRS) $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls 
 		mv -v $$f exec/$$f;\
 		ln -sv exec/ffwrap $$f;\
 	    done
+	cd $(INSTDIR)/bin; ln -s exec/ffwrap ssh
+	cd $(INSTDIR)/bin/exec; ln -s dbclient ssh
 	rm -rf $(INSTDIR)/usr
 	
 clean:
