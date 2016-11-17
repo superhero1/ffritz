@@ -29,6 +29,11 @@ if [ $mach == armv6b ]; then
 	## ARM
 	#
 
+	## Create dummy shadow entry for ffritz so that it's possible to 
+	# assign a login
+	#
+	grep ffritz /etc/shadow >/dev/null  || echo ffritz:x:1:0:99999:7::: >> /etc/shadow
+
 	## Transfer passwords to x86
 	#
 	cp /etc/shadow /var/remote/var/tmp/shadow
@@ -81,7 +86,7 @@ fi
 #
 if [ -x $rundir/bin/dropbear -a ! -f /var/media/ftp/.skip_dropbear ]; then
     echo Starting dropbear >/dev/console
-    $rundir/bin/dropbear || echo dropbear startup failed >/dev/console
+    $rundir/bin/dropbear 2>/dev/console || echo dropbear startup failed >/dev/console
 else
     echo dropbear not started >/dev/console
 fi
