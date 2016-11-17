@@ -15,5 +15,13 @@ else
     options=`grep USBPLAYD_ARGS $FFRITZ_HOME/usbplayd.conf | sed -e 's/.*=//'`
 fi
 
+# Provide volume file upfront, the clients have no write access right to
+# /var/tmp unless they run as root
+#
+if [ ! -f /var/tmp/volume ]; then
+    echo 50 > /var/tmp/volume
+fi
+chmod 666 /var/tmp/volume
+
 umask 0
-$FFINSTDIR/bin/usbplayd -D -L /var/tmp/usbplayd.log -V /var/tmp/volume $options 
+$FFINSTDIR/bin/usbplayd -D -V /var/tmp/volume $options 
