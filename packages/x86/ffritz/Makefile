@@ -26,7 +26,7 @@ ETCFILES    = etc/ffritz-env.sh etc/mpd.conf etc/runmpd etc/mpdloop etc/ff_atom_
 
 STAGEDIR    = $(TOPDIR)/output/ffritz
 
-VERSION     = $(shell cat version)
+VERSION     = $(shell cat ../../../version)
 
 IMAGE       = ffritz-x86-$(VERSION).tar.gz
 

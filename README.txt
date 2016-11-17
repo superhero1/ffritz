@@ -174,6 +174,8 @@ IPV6
 Selection of native IPv6 has been forced to be enabled in the GUI together with
 the general IPv6 availability.
 
+This is obsolete with firmware 6.63, but doesn't harm.
+
 Music Player Daemon (Atom)
 -----------------------------
 - Uses user space audio tool (via libusb/libmaru) to access an USB audio DAC
@@ -246,10 +248,27 @@ Required packages are:
 
 TODO
 ====
-- IPv6 is always disabled after box restart
+- Atom: Add ssh as symlink to dbclient
+- Atom: Log dropbear messages (stderr) to console
+- ARM: Add own stuff in /nvram to /etc/docsis/nvramdontremove to avoid it 
+    being removed after recovery
 
 HISTORY
 =======
+
+release 9
+---------
+- Atom
+    - Fix access rights to /var/tmp/volume file at startup
+    - Make usbplayd self-respawning if it crashes
+    - Don't log usbplayd to /var/tmp to avoid hogging ramfs space
+    - Forward dropbear stderr outputs to /dev/console
+- ARM
+    - Make sure that ssh stuff and passwords in /nvram are not cleared
+      when a factory reset is performed (by means of entries in 
+      /etc/docsis/nvramdontremove). Only for FW 6.6x and later.
+    - Do not apply ipv6 patch for 6.63 and later
+- Make sure directory permissions for /var/media/ftp/ffritz are correct
 
 release 8
 ---------
@@ -323,3 +342,19 @@ release 2 [fb6490_6.50_telnet-2.tar]
 release 1 [fb6490_6.50_telnet.tar]
 ----------------------------------
 - Initial release
+
+Standalone Packages
+===================
+
+ffritz-arm-XXX.tar.gz
+---------------------
+    - 0.1
+	- Created, to be installed to /var/media/ftp/ffritz-arm
+	  Contains some libs, tcpreplay, dump, ..., strace, ldd
+    
+ffritz-x86-XXX.tar.gz
+---------------------
+    - Version >= 9
+	- Aligned versioning with repository version
+    - Version 0.4
+	- Corresponds to release 8
