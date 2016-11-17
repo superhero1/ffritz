@@ -1,8 +1,17 @@
+# Introduction 
 This is a repository containing my modifications for FritzBox-6490 Cable.
 You still need the original image to build a modified install image, and you
 need a way to upgrade.  I'm assuming you already have telnet/ssh access to
-the box by either already running a modified image or having gained access
-(see INSTALL.txt).
+the box by either already running a modified image or having gained access.
+
+There are some known methods how to perform a firmware update and/or
+gain login access to the box. For recent firmware ( > 6.30), a known 
+"attack vector" is
+https://github.com/PeterPawn/YourFritz/tree/master/reported_threats/480894
+
+For older firmware it is possible to use the pseudo-root method
+(see "telnet via pseudo-root" section below).
+
 
 I take no responsibility for broken devices or other problems (e.g. with
 your provider).  Use this at your own risk.
@@ -10,13 +19,12 @@ your provider).  Use this at your own risk.
 If you don't trust my binaries, everything (hopefully) that is required to
 rebuild them is located below packages.
 
-USAGE
-=====
+# USAGE
 
-Creating an install/update image
---------------------------------
+## Creating an install/update image
+
 - Obtain original install image (default is
-    FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.62.image)
+    FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.63.image)
 
 - Clone repository (master branch) in the directory where the original
     install image is located:
@@ -26,39 +34,38 @@ Creating an install/update image
 - Decide whether the atom filesystem shall be modified or not
     (see "Atom core extensions" below)
 
-Installing the image
---------------------
 - Go to ffritz directory and "make release" (sudo required).
-  This will create a release directory with a tar file inside, which can be
-  used for upgrade:
-	- Copy to box, e.g. NAS (/var/media/ftp)
-	- Extract in / directory of arm core:
-	    tar xf /var/media/ftp/fb6490_XXX.tar
-	- Call var/install (from the / directory !!)
-	    - Monitor the output on the console (1st telnet/ssh login session).
-		There should be a SUCCESS message at the end.
-	    - The return code $? of var/install should be 1
-	- After successful upgrade, execute "nohup sh var/post_install&"
 
+## Installing the image
 
-Installation issues:
-    If the return code is not 1, check the console messages. Known errors are
+- Copy the release tar image to the box, e.g. NAS (/var/media/ftp)
+- Extract in / directory of arm core:
+    tar xf /var/media/ftp/fb6490_XXX.tar
+- Call var/install (from the / directory !!)
+    - Monitor the output on the console (1st telnet/ssh login session).
+	There should be a SUCCESS message at the end.
+    - The return code $? of var/install should be 1
+- After successful upgrade, execute "nohup sh var/post_install&"
 
-    - ARM Calling additional procedure failed: UPDATE FAIL (1)
-	It is likely that there was a problem with the certificate update,
-	probably because the box does not have current certificates and new
-	certificates could not be obtained (missing network connection?).
+## Installation issues
 
-	The image has been installed, but the boot bank has not been switched
-	(i.e.  the box will still boot the current image).
-	To switch to the new image anyway, execute var/switch_image and apply
-	the instructed command.
+If the return code is not 1, check the console messages. Known errors are
 
-    - Installer not called from root directory (then the "dd" command can't
-	be found)
+- ARM Calling additional procedure failed: UPDATE FAIL (1)
+    It is likely that there was a problem with the certificate update,
+    probably because the box does not have current certificates and new
+    certificates could not be obtained (missing network connection?).
 
-First use
----------
+    The image has been installed, but the boot bank has not been switched
+    (i.e.  the box will still boot the current image).
+    To switch to the new image anyway, execute var/switch_image and apply
+    the instructed command.
+
+- Installer not called from root directory (then the "dd" command can't
+    be found)
+
+## First use
+
 After first installation a ssh login password must be assigned (if you plan to
 use ssh).
 Since you need telnet for this, and all traffic of the telnet session can
@@ -90,8 +97,8 @@ both arm and atoms ssh service.
 
 Note: The arm core is usually accessible at x.x.x.1, the atom core at x.x.x.254
 
-Atom core extensions
---------------------
+## Atom core extensions
+
 There is a separate package (ffritz-x86-ver.tar.gz) that contains various
 extensions for the atom core (see below).
 The package is not part of the git repository and needs to be downloaded from
@@ -110,33 +117,37 @@ The latter is more flexible, but has some drawbacks:
 
 To generate an install image that has the modifications in the Atom root
 filesystem (/usr/local):
-    Make sure FFRITZ_X86_PACKAGE is defined in the top-level Makefile
 
+- Make sure FFRITZ_X86_PACKAGE is defined in the top-level Makefile
 
 To install the package to the box NAS (/var/media/ftp) without having it in
 the filesystem:
-    - Copy packages/x86/ffritz/ffritz-x86-VERSION.tar.gz to the NAS storage
-	scp packages/x86/ffritz/ffritz-x86-VERSION.tar.gz root@192.168.178.1:/var/media/ftp
-    - Log in to the arm core:
-	cd /var/media/ftp
-	gunzip -c ffritz.tar.gz | tar xf -
 
-    The services then need to be started manually:
-	/var/media/ftp/ffritz/etc/ff_atom_startup
+- Copy packages/x86/ffritz/ffritz-x86-VERSION.tar.gz to the NAS storage:
 
-    This script will run the necessary steps on both the arm and atom core.
+    scp packages/x86/ffritz/ffritz-x86-VERSION.tar.gz root@192.168.178.1:/var/media/ftp
 
-FEATURES
-========
+- Log in to the arm core:
 
-telnet
-------
+    cd /var/media/ftp
+    gunzip -c ffritz.tar.gz | tar xf -
+
+The services then need to be started manually:
+
+    /var/media/ftp/ffritz/etc/ff_atom_startup
+
+This script will run the necessary steps on both the arm and atom core.
+
+# FEATURES
+
+## telnet
+
 - telnetd is available on the ARM CPU for 5 minutes after startup, then it's
     killed
 - telnetd on atom CPU can be started via /usr/sbin/start_atom_telnetd from ARM
 
-dropber/ssh/scp (arm)
-------------------
+## dropber/ssh/scp (arm)
+
 - By default, root has no password, and other users do not have rights to get
     a tty, so no login possible by default.
 - A root password can be assigned via a telnet login within 5 mins after
@@ -148,8 +159,8 @@ dropber/ssh/scp (arm)
 - The roots .ssh directory is a symlink to
   /nvram/root-ssh
 
-dropbear/ssh/scp (Atom)
------------------------
+## dropbear/ssh/scp (Atom)
+
 - The atom core has no direct access to the NVRAM
 - All non-volatile data is passed from arm to atom on startup:
     - host keys for atom are stored in /nvram/dropbear_x86. They are generated
@@ -169,39 +180,39 @@ dropbear/ssh/scp (Atom)
       passwords locally on the atom is not persistent.
     - Startup can be inhibited by creating file /var/media/ftp/.skip_dropbear
 
-IPV6
-----
+## IPV6
+
 Selection of native IPv6 has been forced to be enabled in the GUI together with
 the general IPv6 availability.
 
 This is obsolete with firmware 6.63, but doesn't harm.
 
-Music Player Daemon (Atom)
------------------------------
+## Music Player Daemon (Atom)
+
 - Uses user space audio tool (via libusb/libmaru) to access an USB audio DAC
 - Refer to MPD.txt for details
 - Startup can be inhibited by creating /var/media/ftp/.skip_mpd
 
-ShairPort Daemon (Atom)
------------------------
+## ShairPort Daemon (Atom)
+
 - Acts as AirPort receiver
 - Refer to MPD.txt for details
 - Startup can be inhibited by creating /var/media/ftp/.skip_shairport
 
-nfs mounter (Atom)
-------------------
+## nfs mounter (Atom)
 The file /var/media/ftp/ffritz/.mtab exists can be created to mount specific
 nfs directories to an (existing) location below /var/media/ftp.
 
 The format of the file is:
-MOUNT mountpoint mount-options
+
+    MOUNT mountpoint mount-options
 
 For example, to mount the music database from an external NAS:
 
-MOUNT Musik/NAS -o soft nas:Multimedia/Music
+    MOUNT Musik/NAS -o soft nas:Multimedia/Music
 
-Miscellaneous tools (Atom)
---------------------------
+## Miscellaneous tools (Atom)
+
 - ldd
 - su
 - strace
@@ -209,11 +220,10 @@ Miscellaneous tools (Atom)
 - tcpreplay
 - mpc
 
-NOTES
-=====
+# NOTES
 
-Atom libraries
---------------
+## Atom libraries
+
 - Espcially mpd requires a lot of additional shared libraries. Rather than
     integrating them into /lib / /usr/lib, they remain in their own lib
     directory (/usr/local/lib).
@@ -224,8 +234,7 @@ Atom libraries
     script (bin/exec/ffwrap) which sets LD_LIBRARY_PATH before actually calling
     the binary.
 
-Toolchain
----------
+## Toolchain
 Cross-compile toolchain for ARM is buildroot-2013.02 from the original avm
 source tarball.
 It is installed in packages/arm/avm (just do a make there).
@@ -233,8 +242,7 @@ It is installed in packages/arm/avm (just do a make there).
 For Atom, the toolchain is buildroot-2013.02 (packages/x86/buildroot).
 The atom source tarball (packages/x86/avm) does not work for me.
 
-Build Host
-----------
+## Build Host
 
 My build host is Debian 8.2 / x86_64.
 Compiling the atom toolchain requires gcc-4.7 installed.
@@ -246,18 +254,15 @@ Required packages are:
     sudo
 
 
-TODO
-====
+# TODO
 - Atom: Add ssh as symlink to dbclient
 - Atom: Log dropbear messages (stderr) to console
 - ARM: Add own stuff in /nvram to /etc/docsis/nvramdontremove to avoid it 
     being removed after recovery
 
-HISTORY
-=======
+# HISTORY
 
-release 9
----------
+## release 9
 - Atom
     - Fix access rights to /var/tmp/volume file at startup
     - Make usbplayd self-respawning if it crashes
@@ -273,8 +278,7 @@ release 9
       filesystem (ffritz-arm-XX.tar.gz, see below).
 - Make sure directory permissions for /var/media/ftp/ffritz are correct
 
-release 8
----------
+## release 8
 - tested with firmware 6.63
 - Atom
     - Added udev rule to give usb devices proper permissions (usb group)
@@ -299,16 +303,14 @@ release 8
 	Also in installer tar: var/switch_bootbank
     - Use toolchain from avm source tarball for dropbear binaries
 
-release 7
----------
+## release 7
 - Atom
     - Add dropbear
     - Add mpd
 - Arm
     - Add startup script /usr/local/etc/init.d/ff_atom_startup
 
-release 6
----------
+## release 6
 - Store/move dropbear keys to /nvram
 - Kill telnetd after 5 minutes
 - Do not start telnetd on atom by default
@@ -318,23 +320,19 @@ release 6
   link this to nvram at startup
 - Repack telnet-1.tar with busybox (same for release image)
 
-release 5
----------
+## release 5
 - Support for 6.62
 
-release 4
----------
+## release 4
 - IPV6 native tested, seems to work
 - Better dropbear integration, ssh daemon started by default
 
-release 3
----------------
+## release 3
 - Added dropbear binaries (very rudimentary)
 - Start telnetd on atom core
 - patch to enable native IPV6 selection
 
-release 2 [fb6490_6.50_telnet-2.tar]
-------------------------------------
+## release 2 [fb6490_6.50_telnet-2.tar]
 - Changed etc/init.d/rc.tail.sh
 	- Explicitly start telnetd from here (obviously the existence of
 	  /usr/sbin/telnetd is not always sufficient)
@@ -342,22 +340,34 @@ release 2 [fb6490_6.50_telnet-2.tar]
 - Fixed html tags in README
 - Remove LCR download in telnet-1.tar
 
-release 1 [fb6490_6.50_telnet.tar]
-----------------------------------
+## release 1 [fb6490_6.50_telnet.tar]
 - Initial release
 
-Standalone Packages
-===================
+# Standalone Packages
 
-ffritz-arm-XXX.tar.gz
----------------------
-    - 0.1
-	- Created, to be installed to /var/media/ftp/ffritz-arm
-	  Contains some libs, tcpreplay, dump, ..., strace, ldd
+## ffritz-arm-XXX.tar.gz
+- 0.1
+    - Created, to be installed to /var/media/ftp/ffritz-arm
+      Contains some libs, tcpreplay, dump, ..., strace, ldd
     
-ffritz-x86-XXX.tar.gz
----------------------
-    - Version >= 9
-	- Aligned versioning with repository version
-    - Version 0.4
-	- Corresponds to release 8
+## ffritz-x86-XXX.tar.gz
+- Version >= 9
+    - Aligned versioning with repository version
+- Version 0.4
+    - Corresponds to release 8
+
+# telnet via pseudo-root
+
+- In the GUI navigate to System/Sicherung/Wiederherstellen
+- Activate your browsers developer tools
+- Right click on "Datei auswaehlen" Button --> Inspect
+- Change the following elements in the html code:
+    - id=uiImport             --->      id=uiFile
+    - name=ConfigImportFile   --->      name=UploadFile
+- Select "Datei auswaehlen" and upload the pseudo-image (telnet-1.tar)
+
+After ca. 15 sec a dialog should appear to confirm installation of a inofficial firmware.
+Do this, telnet access should now be possible (with the regular login password of the box).
+
+You might need to repeat this, sometimes the box completely crashes. Note that the first
+telnet session might receive lots of console messages. Leave it open and connect a 2nd time.

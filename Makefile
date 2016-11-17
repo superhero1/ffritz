@@ -30,12 +30,12 @@ KEEP_ORIG = 1
 # The package can be either downloaded (https://bitbucket.org/fesc2000/ffritz/downloads),
 # or built with "make package"
 #
-#FFRITZ_X86_PACKAGE=../ffritz-x86-$(VERSION).tar.gz
+FFRITZ_X86_PACKAGE=../ffritz-x86-$(VERSION).tar.gz
 
 # Same for ARM. The package contains some optional binaries which may as well be installed to
 # to the ftp directory (-> /var/media/ftp/ffritz-arm)
 #
-#FFRITZ_ARM_PACKAGE=../ffritz-arm-0.1.tar.gz
+FFRITZ_ARM_PACKAGE=../ffritz-arm-0.1.tar.gz
 
 ###############################################################################################
 
@@ -178,7 +178,6 @@ $(RELDIR):
 	@echo "PREP   $(RELDIR)"
 	@mkdir -p $(RELDIR)
 	@cd $(RELDIR); ln -sf ../README.txt .
-	@cd $(RELDIR); ln -sf ../INSTALL.txt .
 	@cd $(RELDIR); ln -sf ../telnet-1.tar .
 	@cd $(RELDIR); tar xf $(ORIG)
 
