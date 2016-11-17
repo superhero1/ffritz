@@ -263,11 +263,14 @@ release 9
     - Make usbplayd self-respawning if it crashes
     - Don't log usbplayd to /var/tmp to avoid hogging ramfs space
     - Forward dropbear stderr outputs to /dev/console
+    - Create ssh symlink to dbclient
 - ARM
     - Make sure that ssh stuff and passwords in /nvram are not cleared
       when a factory reset is performed (by means of entries in 
       /etc/docsis/nvramdontremove). Only for FW 6.6x and later.
     - Do not apply ipv6 patch for 6.63 and later
+    - Added Makefile option to integrate separate arm package into root
+      filesystem (ffritz-arm-XX.tar.gz, see below).
 - Make sure directory permissions for /var/media/ftp/ffritz are correct
 
 release 8
