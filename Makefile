@@ -30,7 +30,12 @@ KEEP_ORIG = 1
 # The package can be either downloaded (https://bitbucket.org/fesc2000/ffritz/downloads),
 # or built with "make package"
 #
-#FFRITZ_X86_PACKAGE=../ffritz-x86-0.4.tar.gz
+#FFRITZ_X86_PACKAGE=../ffritz-x86-$(VERSION).tar.gz
+
+# Same for ARM. The package contains some optional binaries which may as well be installed to
+# to the ftp directory (-> /var/media/ftp/ffritz-arm)
+#
+#FFRITZ_ARM_PACKAGE=../ffritz-arm-0.1.tar.gz
 
 ###############################################################################################
 
@@ -67,6 +72,8 @@ endif
 
 ifneq ($(FFRITZ_X86_PACKAGE),)
     ATOMFS=atomfs
+else
+    $(warning Atom filesystem will not be modified, no package file specified)
 endif
 
 all: release
@@ -96,12 +103,27 @@ $(ARM_PATCHST):	$(@:arm/.applied.%=%)
 	@cd arm/squashfs-root; $(SUDO) patch -p1 < $(@:arm/.applied.%=../%)
 	@touch $@
 
-arm/filesystem.image: $(ARM_MODFILES) arm/squashfs-root $(ARM_PATCHST)
+arm/filesystem.image: $(ARM_MODFILES) arm/squashfs-root $(ARM_PATCHST) $(FFRITZ_ARM_PACKAGE)
 	@echo "PATCH  arm/squashfs-root"
 	@$(SUDO) $(RSYNC) -a arm/mod/ arm/squashfs-root/
+	@if [ -f "$(FFRITZ_ARM_PACKAGE)" ]; then \
+	    echo Integrating ARM extensions from $(FFRITZ_ARM_PACKAGE); \
+	    sudo mkdir -p arm/squashfs-root/usr/local; \
+	    sudo tar xf $(FFRITZ_ARM_PACKAGE) --strip-components=2 -C arm/squashfs-root/usr/local ./ffritz-arm; \
+	fi
 	@rm -f arm/filesystem.image
 	@echo "PACK  arm/squashfs-root"
 	@cd arm; $(SUDO) $(HOSTTOOLS)/mksquashfs4-lzma-avm-be squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 >/dev/null
+
+ifneq ($(FFRITZ_ARM_PACKAGE),)
+$(FFRITZ_ARM_PACKAGE):
+	@echo Please download $(FFRITZ_ARM_PACKAGE) from https://bitbucket.org/fesc2000/ffritz/downloads
+	@echo "(or try to build it with \"make arm-package\")"
+	@echo
+
+arm-package:
+	make -C packages/arm/ffritz; cp packages/arm/ffritz/$(shell basename $(FFRITZ_ARM_PACKAGE)) $(FFRITZ_ARM_PACKAGE)
+endif
 
 ###############################################################################################
 ## Unpack, patch and repack ATOM FS 
@@ -119,22 +141,25 @@ atom/squashfs-root:  tmp/atom/filesystem.image
 atom/filesystem.image: $(ATOM_MODFILES) atom/squashfs-root $(FFRITZ_X86_PACKAGE)
 	@echo "PATCH  atom/squashfs-root"
 	@$(SUDO) $(RSYNC) -a atom/mod/ atom/squashfs-root/
-	@test -f $(FFRITZ_X86_PACKAGE) && sudo mkdir -p atom/squashfs-root/usr/local
-	@test -f $(FFRITZ_X86_PACKAGE) && sudo tar xf $(FFRITZ_X86_PACKAGE) --strip-components=2 -C atom/squashfs-root/usr/local ./ffritz
-	@test -f $(FFRITZ_X86_PACKAGE) && sudo sh -c "cd atom/squashfs-root/usr/bin; ln -sf ../local/bin/* ."
+	@if [ -f "$(FFRITZ_X86_PACKAGE)" ]; then \
+	    echo Integrating Atom extensions from $(FFRITZ_X86_PACKAGE); \
+	    sudo mkdir -p atom/squashfs-root/usr/local; \
+	    sudo tar xf $(FFRITZ_X86_PACKAGE) --strip-components=2 -C atom/squashfs-root/usr/local ./ffritz; \
+	    sudo sh -c "cd atom/squashfs-root/usr/bin; ln -s ../local/bin/* ."; \
+	fi
 	@rm -f atom/filesystem.image
 	@echo "PACK  atom/squashfs-root"
 	@cd atom; $(SUDO) mksquashfs squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 >/dev/null
 
-## Normally the package should be pre-compiled. If not, try to rebuild it
+## Normally the package should be pre-compiled.
 #
 ifneq ($(FFRITZ_X86_PACKAGE),)
 $(FFRITZ_X86_PACKAGE):
 	@echo Please download $(FFRITZ_X86_PACKAGE) from https://bitbucket.org/fesc2000/ffritz/downloads
-	@echo "(or try to build it with \"make package\")"
+	@echo "(or try to build it with \"make atom-package\")"
 	@echo
 
-package:
+atom-package:
 	make -C packages/x86/ffritz; cp packages/x86/ffritz/$(shell basename $(FFRITZ_X86_PACKAGE)) $(FFRITZ_X86_PACKAGE)
 endif
 
