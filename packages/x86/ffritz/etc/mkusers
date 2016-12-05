@@ -11,5 +11,8 @@ grep usb /etc/group >/dev/null     || echo usb:x:8001:ffritz >> /etc/group
 if [ ! -d ~ffritz/.mpd ]; then
     mkdir -p ~ffritz/.mpd
 fi
+chown ffritz:ffritz ~ffritz
 chown ffritz:ffritz ~ffritz/.mpd
+chmod 775 ~ffritz
+chmod 775 ~ffritz/.mpd
 

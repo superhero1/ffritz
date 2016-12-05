@@ -11,6 +11,7 @@ FILE	= ../../dl/$(shell basename $(URL))
 
 all:	avm-prep.stamp
 	make -C build KERNEL_LAYOUT=armp6
+	make -C build/prefix_sehr_sehr_sehr_sehr_sehr_sehr_sehr_sehr_sehr_lang_buildroot-2013.05 readline tcpdump tcpreplay curl rsync
 	rm -rf GPL kernel
 
 install:

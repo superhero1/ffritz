@@ -2,22 +2,28 @@ TOPDIR	    = $(shell cd ..; pwd)
 BUILDROOT   = $(shell cd ../../buildroot/build; pwd)
 TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
 export PATH := $(TOOLCHAIN):$(PATH)
-CC=i686-buildroot-linux-uclibc-gcc
+CC	    = i686-buildroot-linux-uclibc-gcc
+
+CFLAGS += -I../../libmaru
+LDFLAGS += ../../libmaru/libmaru.a -lusb-1.0
+
+.c.o:
+	$(CC) -Wall -c $< -std=c99 $(CFLAGS)
 
 all:	sndlist usbplay usbplayd su
 
-su:    su.c
-	$(CC) -Wall -o su su.c -std=c99 
+su:	su.o
+	$(CC) -o $@ $^ -std=c99 
 
-sndlist:    sndlist.c
-	$(CC) -Wall -o sndlist sndlist.c -std=c99 -I ../../libmaru ../../libmaru/libmaru.a -lusb-1.0
+sndlist:    sndlist.o
+	$(CC) -o $@ $^ -std=c99 $(LDFLAGS)
 
-usbplay:    usbplay.c
-	$(CC)  -Wall -o usbplay usbplay.c -std=c99 -I ../../libmaru ../../libmaru/libmaru.a -lusb-1.0
+usbplay:    usbplay.o
+	$(CC) -o $@ $^ -std=c99 $(LDFLAGS)
 
-usbplayd:    usbplayd.c
-	$(CC)  -Wall -o usbplayd usbplayd.c -std=c99 -I../../libmaru ../../libmaru/libmaru.a -lsamplerate -lusb-1.0
+usbplayd:    usbplayd.o daemon.o
+	$(CC) -o $@ $^ -std=c99 $(LDFLAGS) -lsamplerate
 
 clean:
-	rm -f sndlist usbplay usbplayd
+	rm -f sndlist usbplay usbplayd *.o
 
