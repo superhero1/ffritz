@@ -156,13 +156,14 @@ void log_set (const char *logf, int consOut)
 {
     dflConsOut = stderr;
 
-    if (logf)
+    if (logf && strlen(logf))
     {
 	logFile = fopen (logf, "a");
 
 	if (!logFile)
 	{
 	    log_put ("!Failed to open log file %s\n", logf);
+	    return;
 	}
 	setvbuf (logFile, NULL, _IONBF, 0);
     }

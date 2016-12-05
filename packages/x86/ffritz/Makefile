@@ -47,8 +47,8 @@ $(SUBDIRS):
 $(IMAGE): $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_LIB)/lib*so*)
 	rm -rf $(STAGEDIR)
 	make install INSTDIR=$(STAGEDIR)
-	cp ../../../MPD.txt output/
-	cp ../../../README.txt output/
+	cp ../../../MPD.md output/
+	cp ../../../README.md output/
 	cd output; tar cfz ../$(IMAGE) --owner=8000 --group=8000 .
 	cd output; tar cfz ../bin-$(IMAGE) --owner=8000 --group=8000 ./ffritz/bin ./ffritz/etc
 

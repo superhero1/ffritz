@@ -198,7 +198,7 @@ the GUI together with the general IPv6 availability.
 Music Player Daemon (Atom)
 --------------------------
 - Uses user space audio tool (via libusb/libmaru) to access an USB audio DAC
-- Refer to MPD.txt for details
+- Refer to MPD.md for details
 - Startup can be inhibited by creating /var/media/ftp/.skip_mpd
 
 ShairPort Daemon (Atom)

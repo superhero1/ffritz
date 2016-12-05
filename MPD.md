@@ -12,7 +12,7 @@ will convert the sample rate.
 usbplayd is configured in /var/media/ftp/ffritz/usbplayd.conf.
 The default content is:
 
-USBPLAYD_ARGS=-P /var/tmp/mpd.fifo:44100 -P /var/tmp/shairport.fifo:44100
+    USBPLAYD_ARGS=-P /var/tmp/mpd.fifo:44100 -P /var/tmp/shairport.fifo:44100
 
 Which means that two pipes are generated, one for mpd and one for shairport
 The default sample rate is 44100 (i.e. mpd and shairport need to provide this
@@ -88,7 +88,7 @@ If you want to mount an external database, use the .mtab feature as described in
 For example is use this entry in /var/media/ftp/ffritz/.mtab so that mpd can access
 my music database on an external NAS:
 
-MOUNT Musik/NAS nas:Multimedia/Music
+    MOUNT Musik/NAS nas:Multimedia/Music
 
 Shairport
 =========

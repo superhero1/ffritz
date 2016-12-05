@@ -105,7 +105,7 @@ $(ARM_PATCHST):	$(@:arm/.applied.%=%)
 
 arm/filesystem.image: $(ARM_MODFILES) arm/squashfs-root $(ARM_PATCHST) $(FFRITZ_ARM_PACKAGE)
 	@echo "PATCH  arm/squashfs-root"
-	@$(SUDO) $(RSYNC) -a arm/mod/ arm/squashfs-root/
+	@$(SUDO) $(RSYNC) -a --no-perms arm/mod/ arm/squashfs-root/
 	@if [ -f "$(FFRITZ_ARM_PACKAGE)" ]; then \
 	    echo Integrating ARM extensions from $(FFRITZ_ARM_PACKAGE); \
 	    sudo mkdir -p arm/squashfs-root/usr/local; \
@@ -140,7 +140,7 @@ atom/squashfs-root:  tmp/atom/filesystem.image
 
 atom/filesystem.image: $(ATOM_MODFILES) atom/squashfs-root $(FFRITZ_X86_PACKAGE)
 	@echo "PATCH  atom/squashfs-root"
-	@$(SUDO) $(RSYNC) -a atom/mod/ atom/squashfs-root/
+	@$(SUDO) $(RSYNC) -a --no-perms atom/mod/ atom/squashfs-root/
 	@if [ -f "$(FFRITZ_X86_PACKAGE)" ]; then \
 	    echo Integrating Atom extensions from $(FFRITZ_X86_PACKAGE); \
 	    sudo mkdir -p atom/squashfs-root/usr/local; \
@@ -177,7 +177,6 @@ release:	armfs $(ATOMFS) $(RELDIR)
 $(RELDIR):
 	@echo "PREP   $(RELDIR)"
 	@mkdir -p $(RELDIR)
-	@cd $(RELDIR); ln -sf ../README.txt .
 	@cd $(RELDIR); ln -sf ../telnet-1.tar .
 	@cd $(RELDIR); tar xf $(ORIG)
 
