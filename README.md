@@ -12,7 +12,6 @@ gain login access to the box. For recent firmware ( > 6.30), a known
 For older firmware it is possible to use the pseudo-root method
 (see "telnet via pseudo-root" section below).
 
-
 I take no responsibility for broken devices or other problems (e.g. with
 your provider).  Use this at your own risk.
 
@@ -33,8 +32,8 @@ Creating an install/update image
 
     `git clone https://fesc2000@bitbucket.org/fesc2000/ffritz.git`
 
-- Decide whether the atom filesystem shall be modified or not
-    (see "Atom core extensions" below)
+- Decide whether to add additional packages to the arm/atom filesystems
+    (see "Software Packages" below)
 
 - Go to ffritz directory and `make release` (sudo required).
 
@@ -102,60 +101,18 @@ both arm and atoms ssh service.
 
 Note: The arm core is usually accessible at x.x.x.1, the atom core at x.x.x.254
 
-Atom core extensions
---------------------
-
-There is a separate package (ffritz-x86-ver.tar.gz) that contains various
-extensions for the atom core (see below).
-The package is not part of the git repository and needs to be downloaded from
-https://bitbucket.org/fesc2000/ffritz/downloads and put to .. directory.
-
-These extensions can either be hardcoded into the atom filesystem or installed
-to the NAS directory (/var/media/ftp) later by the user.
-The latter is more flexible, but has some drawbacks:
-
-- IT IS INSECURE!
-  There are various scripts/binaries that are (have to be) executed as root.
-  If someone has access to the box NAS storage he can modify these
-  binaries/scripts and do evil things.
-
-- The provided services are not automatically started when the box restarts.
-
-To generate an install image that has the modifications in the Atom root
-filesystem (/usr/local):
-
-- Make sure FFRITZ_X86_PACKAGE is defined in the top-level Makefile
-
-To install the package to the box NAS (/var/media/ftp) without having it in
-the filesystem:
-
-- Copy packages/x86/ffritz/ffritz-x86-VERSION.tar.gz to the NAS storage:
-
-    scp packages/x86/ffritz/ffritz-x86-VERSION.tar.gz root@192.168.178.1:/var/media/ftp
-
-- Log in to the arm core:
-
-    cd /var/media/ftp
-    gunzip -c ffritz.tar.gz | tar xf -
-
-The services then need to be started manually:
-
-    /var/media/ftp/ffritz/etc/ff_atom_startup
-
-This script will run the necessary steps on both the arm and atom core.
-
 Features
 ========
 
-telnet
-------
+telnet (arm core feature)
+-------------------------
 
 - telnetd is available on the ARM CPU for 5 minutes after startup, then it's
     killed
 - telnetd on atom CPU can be started via /usr/sbin/start_atom_telnetd from ARM
 
-dropber/ssh/scp (arm)
----------------------
+dropber/ssh/scp (arm core feature)
+----------------------------------
 - By default, root has no password, and other users do not have rights to get
     a tty, so no login possible by default.
 - A root password can be assigned via a telnet login within 5 mins after
@@ -167,8 +124,8 @@ dropber/ssh/scp (arm)
 - The roots .ssh directory is a symlink to
   /nvram/root-ssh
 
-dropbear/ssh/scp (Atom)
------------------------
+dropbear/ssh/scp (Atom package)
+-------------------------------
 - The atom core has no direct access to the NVRAM
 - All non-volatile data is passed from arm to atom on startup:
     - host keys for atom are stored in /nvram/dropbear_x86. They are generated
@@ -190,25 +147,25 @@ dropbear/ssh/scp (Atom)
       passwords locally on the atom is not persistent.
     - Startup can be inhibited by creating file /var/media/ftp/.skip_dropbear
 
-IPv6
-----
+IPv6 (arm core feature)
+-----------------------
 For firmware < 6.63 selection of native IPv6 is forced to be enabled in
 the GUI together with the general IPv6 availability.
 
-Music Player Daemon (Atom)
---------------------------
+Music Player Daemon (Atom package)
+----------------------------------
 - Uses user space audio tool (via libusb/libmaru) to access an USB audio DAC
 - Refer to MPD.md for details
 - Startup can be inhibited by creating /var/media/ftp/.skip_mpd
 
-ShairPort Daemon (Atom)
------------------------
+ShairPort Daemon (Atom package)
+-------------------------------
 - Acts as AirPort receiver
 - Refer to MPD.txt for details
 - Startup can be inhibited by creating /var/media/ftp/.skip_shairport
 
-nfs mounter (Atom)
-------------------
+nfs mounter (Atom package)
+--------------------------
 The file /var/media/ftp/ffritz/.mtab exists can be created to mount specific
 nfs directories to an (existing) location below /var/media/ftp.
 
@@ -220,14 +177,71 @@ For example, to mount the music database from an external NAS:
 
     MOUNT Musik/NAS -o soft nas:Multimedia/Music
 
-Miscellaneous tools (Atom)
---------------------------
+Miscellaneous tools (Atom/Arm packages)
+---------------------------------------
 - ldd
 - su
 - strace
 - tcpdump
 - tcpreplay
 - mpc
+- curl
+- rsync
+
+Software Packages
+=================
+
+By default only the Atom filesystem is modified, adding (temporary) telnet and
+ssh access (see arm core feature in the feature list).
+In addition the repository contains additional software packages for the arm and
+atom cores which can either be built from scratch or downloaded from the
+repository (https://bitbucket.org/fesc2000/ffritz/downloads).
+
+To build the packages by yourself, go to packages/x86 and/or packages/arm and type make.
+Output images are placed into packages/x86/ffritz / packages/arm/ffritz
+respectively.
+
+The packages can either be integrated into the root filesystems of the arm/atom 
+core(s), or be installed into the NAS/flash storage of the box. The latter
+is more flexible, but has some drawbacks:
+
+- IT IS INSECURE!
+  There are various scripts/binaries that are (have to be) executed as root.
+  If someone has access to the box NAS storage he can modify these
+  binaries/scripts and do evil things.
+
+- The provided services on the Atom core are not automatically started when the
+  box restarts.
+
+Integrating into install image
+------------------------------
+To integrate the packages into the root filesystem(s), edit the 
+Makefile before building the installer image and comment out the following
+defines:
+- FFRITZ_X86_PACKAGE must point to the Atom image file
+- FFRITZ_ARM_PACKAGE must point to the ARM image file
+
+Installing to flash storage (NAS)
+---------------------------------
+
+It is possible to install the packages to the NAS storage of the box (var/media/ftp)
+by simply unpacking them there. Atom binaries will be installed below "ffritz", 
+arm binaries below "ffritz-arm":
+
+- Copy to the NAS storage:
+
+    scp packages/x86/ffritz/ffritz-x86-VERSION.tar.gz root@192.168.178.1:/var/media/ftp
+    scp packages/arm/ffritz/ffritz-arm-VERSION.tar.gz root@192.168.178.1:/var/media/ftp
+
+- Log in to the arm core:
+
+    cd /var/media/ftp
+    gunzip -c ffritz-x86-VERSION.tar.gz | tar xf -
+    gunzip -c ffritz-arm-VERSION.tar.gz | tar xf -
+
+If required, the atom services can be started manually:
+
+    /var/media/ftp/ffritz/etc/ff_atom_startup
 
 Notes
 =====
@@ -281,6 +295,8 @@ release 9
     - Don't log usbplayd to /var/tmp to avoid hogging ramfs space
     - Forward dropbear stderr outputs to /dev/console
     - Create ssh symlink to dbclient
+    - Added curl binary
+    - Added rsync binary
 - ARM
     - Make sure that ssh stuff and passwords in /nvram are not cleared
       when a factory reset is performed (by means of entries in 
@@ -363,11 +379,14 @@ release 1 [fb6490_6.50_telnet.tar]
 ----------------------------------
 - Initial release
 
-Standalone Packages
-===================
+Standalone Package History
+==========================
 
 ffritz-arm-XXX.tar.gz
 ---------------------
+- 0.2
+    - Added curl
+    - Added rsync
 - 0.1
     - Created, to be installed to /var/media/ftp/ffritz-arm
       Contains some libs, tcpreplay, dump, ..., strace, ldd

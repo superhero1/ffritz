@@ -19,6 +19,8 @@ BR_TGT_SBIN = $(BR_TGT)/usr/sbin
 
 BINFILES   += $(BR_TGT_BIN)/strace $(BR_TGT_BIN)/ldd $(BR_TGT_SBIN)/tcpdump 
 BINFILES   += $(BR_TGT_BIN)/tcpbridge $(BR_TGT_BIN)/tcpprep $(BR_TGT_BIN)/tcpreplay $(BR_TGT_BIN)/tcpreplay-edit $(BR_TGT_BIN)/tcprewrite
+BINFILES   += $(BR_TGT_BIN)/rsync
+BINFILES   += $(BR_TGT)/../host/usr/armeb-buildroot-linux-uclibcgnueabi/sysroot/usr/bin/curl
 ETCFILES    = etc/ffritz-env.sh 
 
 STAGEDIR    = $(TOPDIR)/output/ffritz-arm
@@ -44,8 +46,7 @@ $(SUBDIRS):
 $(IMAGE): $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_LIB)/lib*so*)
 	rm -rf $(STAGEDIR)
 	make install INSTDIR=$(STAGEDIR)
-	cp ../../../MPD.txt output/
-	cp ../../../README.txt output/
+	cp ../../../README.md output/
 	cd output; tar cfz ../$(IMAGE) --owner=8000 --group=8000 .
 	cd output; tar cfz ../bin-$(IMAGE) --owner=8000 --group=8000 ./ffritz-arm/bin ./ffritz-arm/etc
 
