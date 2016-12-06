@@ -218,6 +218,7 @@ Integrating into install image
 To integrate the packages into the root filesystem(s), edit the 
 Makefile before building the installer image and comment out the following
 defines:
+
 - FFRITZ_X86_PACKAGE must point to the Atom image file
 - FFRITZ_ARM_PACKAGE must point to the ARM image file
 
