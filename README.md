@@ -228,12 +228,12 @@ It is possible to install the packages to the NAS storage of the box (var/media/
 by simply unpacking them there. Atom binaries will be installed below "ffritz", 
 arm binaries below "ffritz-arm":
 
-- Copy to the NAS storage:
+Copy to the NAS storage:
 
-    scp packages/x86/ffritz/ffritz-x86-VERSION.tar.gz root@192.168.178.1:/var/media/ftp
+    scp packages/x86/ffritz/ffritz-x86-VERSION.tar.gz root@192.168.178.1:/var/media/ftp   
     scp packages/arm/ffritz/ffritz-arm-VERSION.tar.gz root@192.168.178.1:/var/media/ftp
 
-- Log in to the arm core:
+Log in to the arm core:
 
     cd /var/media/ftp
     gunzip -c ffritz-x86-VERSION.tar.gz | tar xf -
