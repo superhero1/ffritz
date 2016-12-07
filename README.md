@@ -287,6 +287,11 @@ TODO
 HISTORY
 =======
 
+release 10
+----------
+- Atom
+    - Add libid3tag / id3 tag support to mpd
+
 release 9
 ---------
 - Atom
