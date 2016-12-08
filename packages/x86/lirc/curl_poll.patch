@@ -1,0 +1,22 @@
+--- build/lib/curl_poll.c	2016-12-08 13:39:54.920180523 +0100
++++ build_/lib/curl_poll.c	2016-12-08 13:38:58.412512096 +0100
+@@ -143,15 +143,14 @@
+ 		if (ufds[i].fd == -1)
+ 			continue;
+ 		ufds[i].fd = verify_sock(ufds[i].fd);
+-		if (ufds[i].events & (POLLIN | POLLOUT | POLLPRI |
+-				      POLLRDNORM | POLLWRNORM | POLLRDBAND)) {
++		if (ufds[i].events & (POLLIN | POLLOUT | POLLPRI)) {
+ 			if (ufds[i].fd > maxfd)
+ 				maxfd = ufds[i].fd;
+-			if (ufds[i].events & (POLLRDNORM | POLLIN))
++			if (ufds[i].events & (POLLIN))
+ 				FD_SET(ufds[i].fd, &fds_read);
+-			if (ufds[i].events & (POLLWRNORM | POLLOUT))
++			if (ufds[i].events & (POLLOUT))
+ 				FD_SET(ufds[i].fd, &fds_write);
+-			if (ufds[i].events & (POLLRDBAND | POLLPRI))
++			if (ufds[i].events & (POLLPRI))
+ 				FD_SET(ufds[i].fd, &fds_err);
+ 		}
+ 	}
