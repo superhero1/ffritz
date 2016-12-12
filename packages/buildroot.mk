@@ -12,7 +12,7 @@ FILE	= $(DLDIR)/$(shell basename $(URL))
 #
 
 all:	.build.stamp arch-patches
-	@make -C build toolchain CC=gcc-4.7 HOSTCC=gcc-4.7
+	@make -C build #toolchain CC=gcc-4.7 HOSTCC=gcc-4.7
 	@make -C build $(BUILDROOT_TARGETS)
 
 $(FILE):
