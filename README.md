@@ -271,15 +271,24 @@ The atom source tarball (packages/x86/avm) does not work for me.
 Build Host
 ----------
 
-My build host is Debian 8.2 / x86_64.
-Compiling the atom toolchain requires gcc-4.7 installed.
+Suggested build host is Debian Wheezy (7.x), newer OSes may have problems compiling the used
+buildroot enironment (esp. gcc 4.7 and an older/other version of binutils/ld seems to be required,
+see comment in packages/buildroot.mk).
+Used disk space is ca. 10G.
 
-Required packages are:
-    squashfs-tools
-    busybox
-    rsync
-    sudo
+Required (debian) packages are:
+squashfs-tools busybox rsync sudo gcc g++ flex bison git libncurses-dev gettext unzip automake
 
+Big endian squashfs tools
+-------------------------
+
+Binaries are provided in the "hosts" directory. If they dont work, try cloning freetz and
+build them using "make squashfstools-be".
+
+Required (debian) packages are:
+apt-get install gawk libtool realpath pkg-config zlibc gnulib libcap-dev
+
+You might have to remove "composite" and "sys/acl.h" from the .build-prerequisites file
 
 TODO
 ====
@@ -291,6 +300,7 @@ release 10
 ----------
 - Atom
     - Add libid3tag / id3 tag support to mpd
+    - Toolchain fixes for clean build
 
 release 9
 ---------
