@@ -37,6 +37,13 @@ KEEP_ORIG = 1
 #
 #FFRITZ_ARM_PACKAGE=../ffritz-arm-0.2.tar.gz
 
+
+## Host tools (unsquashfs4-lzma-avm-be, mksquashfs4-lzma-avm-be) can either be built
+# (using squashfstools-be), or try the pre-compiled binaries
+#
+#HOSTTOOLS=freetz/tools
+HOSTTOOLS=$(TOPDIR)/host/$(HOST)
+
 ###############################################################################################
 
 RELDIR  = release$(VERSION)
@@ -44,7 +51,6 @@ RELDIR  = release$(VERSION)
 ARM_MODFILES = $(shell find arm/mod/ -type f -o -type d)
 ATOM_MODFILES = $(shell find atom/mod/ -type f -o -type d)
 
-HOSTTOOLS=$(TOPDIR)/host/$(HOST)
 
 ###############################################################################################
 ###############################################################################################
@@ -179,6 +185,19 @@ $(RELDIR):
 	@mkdir -p $(RELDIR)
 	@cd $(RELDIR); ln -sf ../telnet-1.tar .
 	@cd $(RELDIR); tar xf $(ORIG)
+
+###############################################################################################
+#
+# In case the packaged squashfs tools do not work ..
+#
+.PHONY:	freetz
+
+freetz:
+	git clone https://github.com/Freetz/freetz.git
+
+squashfstools-be:	freetz
+	make -C freetz tools/mksquashfs4-lzma-avm-be tools/unsquashfs4-lzma-avm-be
+
 
 ###############################################################################################
 clean:
