@@ -5,7 +5,6 @@ DLDIR	= $(PKGTOP)/dl
 TOPDIR	    = $(shell pwd)
 BUILDROOT   = $(shell cd ../buildroot/build; pwd)
 TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
-DESTDIR	    = $(TOPDIR)/output
 SYSROOT	    = $(BUILDROOT)/output/host/usr/i686-buildroot-linux-uclibc/sysroot
 
 export PATH := $(TOOLCHAIN):$(PATH)
@@ -13,6 +12,10 @@ export CC   := i686-buildroot-linux-uclibc-gcc
 
 URL	= $(shell cat $(PKGTOP)/url-lirc)
 FILE	= $(DLDIR)/$(shell basename $(URL))
+
+ifeq ($(DESTDIR),)
+DESTDIR=$(TOPDIR)/output
+endif
 
 .PHONY:	build
 
@@ -32,6 +35,10 @@ build/configure:
 build/config.status:	build/configure
 	@cd build; export PATH=$(TOOLCHAIN):$(PATH); ./configure --host=i686-buildroot-linux-uclibc --target=i686-buildroot-linux-uclibc
 #	@cd build; export PATH=$(TOOLCHAIN):$(PATH); ./configure --target=i686-buildroot-linux-uclibc
+
+install:
+	mkdir -p $(DESTDIR)
+	export PATH=$(TOOLCHAIN):$(PATH); make -C build install DESTDIR=$(DESTDIR)
 
 clean:
 	rm -rf build
