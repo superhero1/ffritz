@@ -187,6 +187,8 @@ Miscellaneous tools (Atom/Arm packages)
 - mpc
 - curl
 - rsync
+- socat
+- lirc
 
 Software Packages
 =================
@@ -274,10 +276,13 @@ Build Host
 Suggested build host is Debian Wheezy (7.x), newer OSes may have problems compiling the used
 buildroot enironment (esp. gcc 4.7 and an older/other version of binutils/ld seems to be required,
 see comment in packages/buildroot.mk).
+
+Also tested is Debian Jessie (8.x) with gcc-4.7. Ubuntu, CentOS failed.
+
 Used disk space is ca. 10G.
 
 Required (debian) packages are:
-squashfs-tools busybox rsync sudo gcc g++ flex bison git libncurses-dev gettext unzip automake
+squashfs-tools busybox rsync sudo gcc gcc-4.7 g++ flex bison git libncurses-dev gettext unzip automake
 
 Big endian squashfs tools
 -------------------------
@@ -299,12 +304,14 @@ HISTORY
 release 10
 ----------
 - Atom
-    - Add libid3tag / id3 tag support to mpd
     - Toolchain fixes for clean build
+    - Added lirc
+    - Added socat
 
 release 9
 ---------
 - Atom
+    - Add libid3tag / id3 tag support to mpd
     - Fix access rights to /var/tmp/volume file at startup
     - Make usbplayd self-respawning if it crashes
     - Don't log usbplayd to /var/tmp to avoid hogging ramfs space

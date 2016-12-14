@@ -16,6 +16,8 @@ FILE	= $(DLDIR)/$(shell basename $(URL))
 
 all:	build/config.status
 	@make -C build PATH=$(TOOLCHAIN):$(PATH) install DESTDIR=$(SYSROOT)
+
+install:
 	@make -C build PATH=$(TOOLCHAIN):$(PATH) install DESTDIR=$(INSTDIR)
 
 $(FILE):

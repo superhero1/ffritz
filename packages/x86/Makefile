@@ -5,3 +5,9 @@
 
 all:
 	make -C ffritz
+
+clean:
+	make -C ffritz clean
+
+cleanall:
+	make -C ffritz cleanall

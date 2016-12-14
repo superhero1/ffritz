@@ -1,8 +1,10 @@
 
 TOPDIR	= $(shell pwd)
 VERSION = $(shell cat version)
+ARM_VER = $(shell cat packages/arm/ffritz/version)
 HOST    = $(shell uname -m)
 SUDO	= sudo
+
 
 ###############################################################################################
 # Configuration
@@ -28,20 +30,21 @@ KEEP_ORIG = 1
 # flexible but unsafe.
 #
 # The package can be either downloaded (https://bitbucket.org/fesc2000/ffritz/downloads),
-# or built with "make package"
+# or built with "make atom-package"
 #
 #FFRITZ_X86_PACKAGE=../ffritz-x86-$(VERSION).tar.gz
 
 # Same for ARM. The package contains some optional binaries which may as well be installed to
 # to the ftp directory (-> /var/media/ftp/ffritz-arm)
+# To build: "make arm-package"
 #
 #FFRITZ_ARM_PACKAGE=../ffritz-arm-0.2.tar.gz
 
 
 ## Host tools (unsquashfs4-lzma-avm-be, mksquashfs4-lzma-avm-be) can either be built
-# (using squashfstools-be), or try the pre-compiled binaries
+# (using squashfstools-be target), or try the pre-compiled binaries
 #
-#HOSTTOOLS=freetz/tools
+#HOSTTOOLS=$(TOPDIR)/freetz/tools
 HOSTTOOLS=$(TOPDIR)/host/$(HOST)
 
 ###############################################################################################
@@ -126,10 +129,14 @@ $(FFRITZ_ARM_PACKAGE):
 	@echo Please download $(FFRITZ_ARM_PACKAGE) from https://bitbucket.org/fesc2000/ffritz/downloads
 	@echo "(or try to build it with \"make arm-package\")"
 	@echo
-
-arm-package:
-	make -C packages/arm/ffritz; cp packages/arm/ffritz/$(shell basename $(FFRITZ_ARM_PACKAGE)) $(FFRITZ_ARM_PACKAGE)
 endif
+
+arm-package: packages/arm/ffritz/ffritz-arm-$(ARM_VER).tar.gz
+
+packages/arm/ffritz/ffritz-arm-$(ARM_VER).tar.gz:
+	make -C packages/arm/ffritz
+	@echo
+	@echo Successfully built $@
 
 ###############################################################################################
 ## Unpack, patch and repack ATOM FS 
@@ -164,10 +171,14 @@ $(FFRITZ_X86_PACKAGE):
 	@echo Please download $(FFRITZ_X86_PACKAGE) from https://bitbucket.org/fesc2000/ffritz/downloads
 	@echo "(or try to build it with \"make atom-package\")"
 	@echo
-
-atom-package:
-	make -C packages/x86/ffritz; cp packages/x86/ffritz/$(shell basename $(FFRITZ_X86_PACKAGE)) $(FFRITZ_X86_PACKAGE)
 endif
+
+atom-package: packages/x86/ffritz/ffritz-x86-$(VERSION).tar.gz
+
+packages/x86/ffritz/ffritz-x86-$(VERSION).tar.gz:
+	make -C packages/x86/ffritz
+	@echo
+	@echo Successfully built $@
 
 .PHONY:		$(RELDIR)
 
@@ -190,7 +201,6 @@ $(RELDIR):
 #
 # In case the packaged squashfs tools do not work ..
 #
-.PHONY:	freetz
 
 freetz:
 	git clone https://github.com/Freetz/freetz.git

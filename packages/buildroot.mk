@@ -11,7 +11,7 @@ FILE	= $(DLDIR)/$(shell basename $(URL))
 #
 ## For this try to enable the following macro, and maybe replace ld with gold
 #
-#GCCFLAGS="CC=gcc-4.7 HOSTCC=gcc-4.7"
+GCCFLAGS=HOSTCC=gcc-4.7
 
 all:	.build.stamp arch-patches
 	@make -C build $(GCCFLAGS)
