@@ -7,12 +7,14 @@ export PATH := $(TOOLCHAIN):$(PATH)
 URL	= $(shell cat $(PKGTOP)/url-buildroot)
 FILE	= $(DLDIR)/$(shell basename $(URL))
 
-## For some reason i need gcc-4.7, otherwise cross gcc does not
-# compile ..
+## For some reason i need gcc-4.7, otherwise cross gcc does not compile ..
 #
+## For this try to enable the following macro, and maybe replace ld with gold
+#
+GCCFLAGS=HOSTCC=gcc-4.7
 
 all:	.build.stamp arch-patches
-	@make -C build toolchain CC=gcc-4.7 HOSTCC=gcc-4.7
+	@make -C build $(GCCFLAGS)
 	@make -C build $(BUILDROOT_TARGETS)
 
 $(FILE):

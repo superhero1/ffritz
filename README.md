@@ -177,6 +177,33 @@ For example, to mount the music database from an external NAS:
 
     MOUNT Musik/NAS -o soft nas:Multimedia/Music
 
+lirc (Atom Package)
+-------------------
+lirc can be used to operate an IR transceiver connected to the fritzbox
+(im using an irdroid module).
+
+- General configuration settings (used driver, network port, ...) can be modified in
+
+    /var/media/ftp/ffritz/lirc_options.conf
+
+- Remote control configuration can be placed into
+
+    /var/media/ftp/ffritz/etc/lirc/lircd.conf.d
+
+- To restart lirc after doing this:
+
+    killall lircd
+    /usr/local/etc/run_lircd 
+
+- For irdroid/irtoy the cdc-acm kernel module is packaged and installed.
+  It is pre-built, but can be generated in packages/x86/avm (make kernel-config kernel-modules)
+
+- lircd execution can be prevented by creating /var/media/ftp/.skip_lircd
+
+For now lirc sources are fetched from my private fork at git://git.code.sf.net/u/fesc2000/lirc
+It contains a driver for irdroid (based on irtoy).
+
+
 Miscellaneous tools (Atom/Arm packages)
 ---------------------------------------
 - ldd
@@ -187,6 +214,8 @@ Miscellaneous tools (Atom/Arm packages)
 - mpc
 - curl
 - rsync
+- socat
+- lirc
 
 Software Packages
 =================
@@ -272,25 +301,49 @@ The atom source tarball (packages/x86/avm) does not work for me.
 Build Host
 ----------
 
-My build host is Debian 8.2 / x86_64.
-Compiling the atom toolchain requires gcc-4.7 installed.
+Suggested build host is Debian Wheezy (7.x), newer OSes may have problems compiling the used
+buildroot enironment (esp. gcc 4.7 and an older/other version of binutils/ld seems to be required,
+see comment in packages/buildroot.mk).
 
-Required packages are:
-    squashfs-tools
-    busybox
-    rsync
-    sudo
+Also tested is Debian Jessie (8.x) with gcc-4.7. Ubuntu, CentOS failed.
 
+Used disk space is ca. 10G.
 
-TODO
-====
+Required (debian) packages are:
+squashfs-tools busybox rsync sudo gcc gcc-4.7 g++ flex bison git libncurses-dev gettext unzip automake
+
+Big endian squashfs tools
+-------------------------
+
+Binaries are provided in the "hosts" directory. If they dont work, try cloning freetz and
+build them using "make squashfstools-be".
+
+Required (debian) packages are:
+apt-get install gawk libtool realpath pkg-config zlibc gnulib libcap-dev
+
+You might have to remove "composite" and "sys/acl.h" from the .build-prerequisites file
+
+TODO / Known Issues
+===================
+- Fix usbplayd
+    - Hangs if USB DAC is removed/inserted at runtime
+    - May hang if usbplayd -l is called while daemone runs
+    - Fix libmaru to properly support for different sample rates (currently only 48KHz is detected)
 
 HISTORY
 =======
 
+release 10
+----------
+- Atom
+    - Toolchain fixes for clean build
+    - Added lirc
+    - Added socat
+
 release 9
 ---------
 - Atom
+    - Add libid3tag / id3 tag support to mpd
     - Fix access rights to /var/tmp/volume file at startup
     - Make usbplayd self-respawning if it crashes
     - Don't log usbplayd to /var/tmp to avoid hogging ramfs space

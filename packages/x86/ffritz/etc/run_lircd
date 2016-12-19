@@ -1,0 +1,33 @@
+#!/bin/sh
+#        
+# lircd startup file
+#                   
+. `dirname $0`/../etc/ffritz-env.sh || exit 1
+                                             
+mkdir -p /var/lock/lockdev                   
+chmod 777 /var/lock/lockdev
+mkdir -p /var/run/lirc     
+chmod 777 /var/run/lirc
+                       
+if [ ! -d $FFRITZ_HOME/etc/lirc ]; then
+    cp -ar $FFINSTDIR/etc/lirc $FFRITZ_HOME/etc
+    chown -R ffritz:ffritz $FFRITZ_HOME/etc/lirc
+fi
+
+/sbin/insmod $FFINSTDIR/lib/modules/cdc-acm.ko
+chmod 666 /dev/ttyACM*                        
+                      
+if [ ! -f $FFRITZ_HOME/lirc_options.conf ]; then
+    cp $FFINSTDIR/etc/lirc_options_dfl.conf $FFRITZ_HOME/lirc_options.conf
+    chown ffritz:ffritz $FFRITZ_HOME/lirc_options.conf                    
+fi                                                    
+
+# The listen option in the config file seems to get ignored (bug?)
+#
+port=`grep listen $FFRITZ_HOME/lirc_options.conf | grep -v \# | sed -e 's/.*=//' -e 's/[[:space:]]//g'`
+                                                                                                       
+if [ "x$port" != "x" ] ; then                                                                          
+        port=--listen=$port
+fi                         
+  
+$FFINSTDIR/bin/lircd $port -U $FFINSTDIR/lib/lirc/plugins -O $FFRITZ_HOME/lirc_options.conf -e ffritz $FFRITZ_HOME/etc/lirc/lircd.conf

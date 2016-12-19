@@ -16,6 +16,8 @@ FILE	= $(DLDIR)/$(shell basename $(URL))
 
 all:	build/config.status
 	@make -C build PATH=$(TOOLCHAIN):$(PATH) install DESTDIR=$(SYSROOT)
+
+install:
 	@make -C build PATH=$(TOOLCHAIN):$(PATH) install DESTDIR=$(INSTDIR)
 
 $(FILE):
@@ -32,7 +34,7 @@ autoconf:
 	cd build; automake
 
 build/config.status:	build/configure
-	@cd build; export PATH=$(TOOLCHAIN):$(PATH); ./configure --host=i686-buildroot-linux-uclibc --target=i686-buildroot-linux-uclibc --with-zeroconf=no --disable-oss --disable-alsa --disable-pulse --enable-pipe-output --disable-icu --enable-glib --sysconfdir=/var/tmp --enable-mad --enable-lsr --enable-fifo --enable-flac --disable-mpg123 --enable-recorder-output --enable-sqlite --enable-vorbis --enable-aac --prefix=/usr
+	@cd build; export PATH=$(TOOLCHAIN):$(PATH); ./configure --host=i686-buildroot-linux-uclibc --target=i686-buildroot-linux-uclibc --with-zeroconf=no --disable-oss --disable-alsa --disable-pulse --enable-pipe-output --disable-icu --enable-glib --sysconfdir=/var/tmp --enable-mad --enable-lsr --enable-fifo --enable-flac --disable-mpg123 --enable-recorder-output --enable-sqlite --enable-vorbis --enable-aac --disable-documentation --prefix=/usr
 
 clean:
 	rm -rf build
