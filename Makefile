@@ -57,12 +57,16 @@ ATOM_MODFILES = $(shell find atom/mod/ -type f -o -type d)
 
 ###############################################################################################
 ###############################################################################################
-
 FWVER=$(shell strings $(ORIG) | grep -i ^newFWver=|sed -e 's/.*=//')
 FWNUM=$(subst .,,$(FWVER))
 
 ifeq ($(FWVER),)
 $(error Could not determine firmware version ($(ORIG) missing?))
+endif
+
+ifeq ($(PKGMAKE),1)
+FFRITZ_X86_PACKAGE=packages/x86/ffritz/ffritz-x86-$(VERSION).tar.gz
+FFRITZ_ARM_PACKAGE=packages/arm/ffritz/ffritz-arm-$(ARM_VER).tar.gz
 endif
 
 BUSYBOX	= $(shell which busybox)
@@ -114,21 +118,26 @@ $(ARM_PATCHST):	$(@:arm/.applied.%=%)
 
 arm/filesystem.image: $(ARM_MODFILES) arm/squashfs-root $(ARM_PATCHST) $(FFRITZ_ARM_PACKAGE)
 	@echo "PATCH  arm/squashfs-root"
+	@$(SUDO) rm -rf arm/squashfs-root/usr/local
 	@$(SUDO) $(RSYNC) -a --no-perms arm/mod/ arm/squashfs-root/
 	@if [ -f "$(FFRITZ_ARM_PACKAGE)" ]; then \
 	    echo Integrating ARM extensions from $(FFRITZ_ARM_PACKAGE); \
-	    sudo mkdir -p arm/squashfs-root/usr/local; \
-	    sudo tar xf $(FFRITZ_ARM_PACKAGE) --strip-components=2 -C arm/squashfs-root/usr/local ./ffritz-arm; \
+	    $(SUDO) mkdir -p arm/squashfs-root/usr/local; \
+	    $(SUDO) tar xf $(FFRITZ_ARM_PACKAGE) --strip-components=2 -C arm/squashfs-root/usr/local ./ffritz-arm; \
+	    $(TOPDIR)/mklinks arm/squashfs-root/usr/bin ../local/bin $(SUDO); \
 	fi
 	@rm -f arm/filesystem.image
 	@echo "PACK  arm/squashfs-root"
 	@cd arm; $(SUDO) $(HOSTTOOLS)/mksquashfs4-lzma-avm-be squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 >/dev/null
 
 ifneq ($(FFRITZ_ARM_PACKAGE),)
+ifeq ($(PKGMAKE),)
 $(FFRITZ_ARM_PACKAGE):
 	@echo Please download $(FFRITZ_ARM_PACKAGE) from https://bitbucket.org/fesc2000/ffritz/downloads
 	@echo "(or try to build it with \"make arm-package\")"
 	@echo
+	endif
+endif
 endif
 
 arm-package: packages/arm/ffritz/ffritz-arm-$(ARM_VER).tar.gz
@@ -156,9 +165,10 @@ atom/filesystem.image: $(ATOM_MODFILES) atom/squashfs-root $(FFRITZ_X86_PACKAGE)
 	@$(SUDO) $(RSYNC) -a --no-perms atom/mod/ atom/squashfs-root/
 	@if [ -f "$(FFRITZ_X86_PACKAGE)" ]; then \
 	    echo Integrating Atom extensions from $(FFRITZ_X86_PACKAGE); \
-	    sudo mkdir -p atom/squashfs-root/usr/local; \
-	    sudo tar xf $(FFRITZ_X86_PACKAGE) --strip-components=2 -C atom/squashfs-root/usr/local ./ffritz; \
-	    sudo sh -c "cd atom/squashfs-root/usr/bin; ln -s ../local/bin/* ."; \
+	    $(SUDO) rm -rf atom/squashfs-root/usr/local; \
+	    $(SUDO) mkdir -p atom/squashfs-root/usr/local; \
+	    $(SUDO) tar xf $(FFRITZ_X86_PACKAGE) --strip-components=2 -C atom/squashfs-root/usr/local ./ffritz; \
+	    $(TOPDIR)/mklinks atom/squashfs-root/usr/bin ../local/bin $(SUDO); \
 	fi
 	@rm -f atom/filesystem.image
 	@echo "PACK  atom/squashfs-root"
@@ -167,10 +177,12 @@ atom/filesystem.image: $(ATOM_MODFILES) atom/squashfs-root $(FFRITZ_X86_PACKAGE)
 ## Normally the package should be pre-compiled.
 #
 ifneq ($(FFRITZ_X86_PACKAGE),)
+ifeq ($(PKGMAKE),)
 $(FFRITZ_X86_PACKAGE):
 	@echo Please download $(FFRITZ_X86_PACKAGE) from https://bitbucket.org/fesc2000/ffritz/downloads
 	@echo "(or try to build it with \"make atom-package\")"
 	@echo
+endif
 endif
 
 atom-package: packages/x86/ffritz/ffritz-x86-$(VERSION).tar.gz
@@ -180,10 +192,13 @@ packages/x86/ffritz/ffritz-x86-$(VERSION).tar.gz:
 	@echo
 	@echo Successfully built $@
 
-.PHONY:		$(RELDIR)
+#.PHONY:		$(RELDIR)
 
 ###############################################################################################
-release:	armfs $(ATOMFS) $(RELDIR) 
+release:    $(RELDIR)/fb6490_$(FWVER)-$(VERSION).tar
+	
+$(RELDIR)/fb6490_$(FWVER)-$(VERSION).tar: armfs $(ATOMFS) $(RELDIR) 
+	@cd $(RELDIR); tar xf $(ORIG)
 	@echo "PACK   $(RELDIR)/fb6490_$(FWVER)-$(VERSION).tar"
 	@cp arm/filesystem.image $(RELDIR)/var/remote/var/tmp/filesystem.image
 	@cp arm/mod/usr/local/etc/switch_bootbank $(RELDIR)/var
@@ -195,7 +210,6 @@ $(RELDIR):
 	@echo "PREP   $(RELDIR)"
 	@mkdir -p $(RELDIR)
 	@cd $(RELDIR); ln -sf ../telnet-1.tar .
-	@cd $(RELDIR); tar xf $(ORIG)
 
 ###############################################################################################
 #

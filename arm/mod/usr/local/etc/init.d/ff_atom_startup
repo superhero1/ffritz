@@ -108,3 +108,13 @@ if [ -x $rundir/etc/runmpd -a ! -f /var/media/ftp/.skip_mpd ]; then
 else
     echo mpd not started >/dev/console
 fi
+
+# and lircd
+#
+if [ -x $rundir/etc/run_lircd -a ! -f /var/media/ftp/.skip_lircd ]; then
+    echo Starting lircd >/dev/console
+    nohup $rundir/etc/run_lircd
+else
+    echo lircd not started >/dev/console
+fi
+

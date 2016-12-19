@@ -1,0 +1,24 @@
+#!/bin/sh
+#
+# Create file links from everything in $2 to directory $1
+# Abort if the target name exists.
+#
+dst=$1
+src=$2
+SUDO=$3
+
+err()
+{
+    echo $* 1>&2
+    exit 1
+}
+
+cd $1 || exit 1
+for f in `find $2 -maxdepth 1 -type f -o -type l`; do
+    if [ -x $f ]; then
+	bf=`basename $f`
+
+	ls -d $bf >/dev/null 2>&1 && err `pwd`/$bf exists
+	${SUDO} ln -s $f . || exit 1
+    fi
+done

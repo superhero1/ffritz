@@ -177,6 +177,33 @@ For example, to mount the music database from an external NAS:
 
     MOUNT Musik/NAS -o soft nas:Multimedia/Music
 
+lirc (Atom Package)
+-------------------
+lirc can be used to operate an IR transceiver connected to the fritzbox
+(im using an irdroid module).
+
+- General configuration settings (used driver, network port, ...) can be modified in
+
+    /var/media/ftp/ffritz/lirc_options.conf
+
+- Remote control configuration can be placed into
+
+    /var/media/ftp/ffritz/etc/lirc/lircd.conf.d
+
+- To restart lirc after doing this:
+
+    killall lircd
+    /usr/local/etc/run_lircd 
+
+- For irdroid/irtoy the cdc-acm kernel module is packaged and installed.
+  It is pre-built, but can be generated in packages/x86/avm (make kernel-config kernel-modules)
+
+- lircd execution can be prevented by creating /var/media/ftp/.skip_lircd
+
+For now lirc sources are fetched from my private fork at git://git.code.sf.net/u/fesc2000/lirc
+It contains a driver for irdroid (based on irtoy).
+
+
 Miscellaneous tools (Atom/Arm packages)
 ---------------------------------------
 - ldd
@@ -295,8 +322,12 @@ apt-get install gawk libtool realpath pkg-config zlibc gnulib libcap-dev
 
 You might have to remove "composite" and "sys/acl.h" from the .build-prerequisites file
 
-TODO
-====
+TODO / Known Issues
+===================
+- Fix usbplayd
+    - Hangs if USB DAC is removed/inserted at runtime
+    - May hang if usbplayd -l is called while daemone runs
+    - Fix libmaru to properly support for different sample rates (currently only 48KHz is detected)
 
 HISTORY
 =======

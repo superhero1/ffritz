@@ -24,6 +24,8 @@ BINFILES   += $(BR_TGT_BIN)/mpc $(BR_TGT_BIN)/rsync $(BR_TGT_BIN)/socat
 BINFILES   += $(BR_TGT)/../host/usr/i686-buildroot-linux-uclibc/sysroot/usr/bin/curl
 BINFILES   += ../shairport/build/shairport
 ETCFILES    = etc/ffritz-env.sh etc/mpd.conf etc/runmpd etc/mpdloop etc/ff_atom_startup etc/mkusers etc/run_usbplay etc/run_shairport etc/usrmount
+ETCFILES   += etc/run_lircd etc/lirc_options_dfl.conf
+MODFILES    = lib/modules/cdc-acm.ko
 
 STAGEDIR    = $(TOPDIR)/output/ffritz
 
@@ -51,18 +53,18 @@ $(IMAGE): $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_L
 	cp ../../../MPD.md output/
 	cp ../../../README.md output/
 	cd output; tar cfz ../$(IMAGE) --owner=8000 --group=8000 .
-	cd output; tar cfz ../bin-$(IMAGE) --owner=8000 --group=8000 ./ffritz/bin ./ffritz/etc
 
-# Install averything to target
+# Install everything to target
 # LD_LIBRARY_PATH needs to be set correctly for binaries. This is done by the ffwrap wrapper script,
 # which is linked to for each binary. This makes the package position independent, i.e.
 # it can be installed to /var/media/ftp, or integrated into the atom squashfs (to /usr/local).
 #
 install: $(SUBDIRS) $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_LIB)/lib*so*)
 	mkdir -p $(INSTDIR)/bin/exec
-	mkdir -p $(INSTDIR)/lib
+	mkdir -p $(INSTDIR)/lib/modules
 	mkdir -p $(INSTDIR)/etc
 	cp -a $(BINFILES) $(INSTDIR)/bin
+	cp -a $(MODFILES) $(INSTDIR)/lib/modules
 	cp -a  $(shell ls  $(BR_TGT_LIB)/lib*so*) $(INSTDIR)/lib
 	cp $(ETCFILES) $(INSTDIR)/etc
 	sed -i -e 's@^rundir=.*@rundir=/var/media/ftp/ffritz@' $(INSTDIR)/etc/ff_atom_startup

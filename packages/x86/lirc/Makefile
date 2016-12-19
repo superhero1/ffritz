@@ -7,6 +7,8 @@ BUILDROOT   = $(shell cd ../buildroot/build; pwd)
 TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
 SYSROOT	    = $(BUILDROOT)/output/host/usr/i686-buildroot-linux-uclibc/sysroot
 
+PREFIX=/usr/local
+
 export PATH := $(TOOLCHAIN):$(PATH)
 export CC   := i686-buildroot-linux-uclibc-gcc
 
@@ -19,26 +21,32 @@ FILE	= $(DLDIR)/$(shell basename $(URL))
 all:	build/config.status
 	make -C build
 	mkdir -p $(TOPDIR)/output
-	export PATH=$(TOOLCHAIN):$(PATH); make -C build install DESTDIR=$(TOPDIR)/output
-	rm -rf output/usr/local/share/doc output/usr/local/share/man output/usr/local/lib/python3
+	export PATH=$(TOOLCHAIN):$(PATH); make -C build
 
 $(FILE):
 	@cd $(DLDIR); wget $(URL)
 
 build/configure:
-	git clone git://git.code.sf.net/p/lirc/git build
-	cd build; git reset $(COMMIT)
-#	@mkdir -p build
-#	@cd build; tar xf $(FILE) --strip-components=1
+	git clone $(URL) build
 	cd build; patch -p1 < ../curl_poll.patch
 	cd build; ./autogen.sh
 	
 build/config.status:	build/configure
-	@cd build; export PATH=$(TOOLCHAIN):$(PATH); ./configure --host=i686-buildroot-linux-uclibc --target=i686-buildroot-linux-uclibc --with-driver=userspace
+	@cd build; export PATH=$(TOOLCHAIN):$(PATH); ./configure \
+	    --host=i686-buildroot-linux-uclibc \
+	    --target=i686-buildroot-linux-uclibc \
+	    --localstatedir=/var \
+	    --prefix=$(PREFIX)
 
 install:
 	mkdir -p $(DESTDIR)
-	cp -arnv output/usr/local/* $(DESTDIR)
+	export PATH=$(TOOLCHAIN):$(PATH); make -C build install DESTDIR=$(TOPDIR)/output
+	cp -arnv output/$(PREFIX)/bin $(DESTDIR)
+	cp output/$(PREFIX)/sbin/* $(DESTDIR)/bin
+	cp -arnv output/$(PREFIX)/lib $(DESTDIR)
+	mkdir -p $(DESTDIR)/share
+	cp -arnv output/$(PREFIX)/share/lirc $(DESTDIR)/share
+	cp -arnv output/$(PREFIX)/etc $(DESTDIR)
 
 clean:
 	rm -rf build
