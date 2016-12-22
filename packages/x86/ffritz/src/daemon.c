@@ -69,9 +69,10 @@ static void prep_pid_file (char *pdfile)
 
     atexit (exit_fcn);
     signal (SIGINT, cleanup);
+    signal (SIGQUIT, cleanup);
     signal (SIGHUP, cleanup);
     signal (SIGKILL, cleanup);
-    signal (SIGTERM, cleanup);
+    signal (SIGTERM, SIG_IGN);
     signal (SIGBUS, cleanup);
 
     pidfile = pdfile;

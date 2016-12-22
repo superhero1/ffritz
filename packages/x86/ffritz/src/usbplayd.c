@@ -67,12 +67,12 @@ int			     stream = -1;
 int			     req_dev = -1;
 int			     req_stream = -1;
 int			     req_volume = -1;
-char			    *volfile = NULL;
+const char		    *volfile = NULL;
 int			     converter_type = SRC_SINC_FASTEST;
 
 /* Runtime data
  */
-char			    *pfiles[MAX_PFDS];
+const char		    *pfiles[MAX_PFDS];
 int			     input_rates[MAX_PFDS];
 struct			     pollfd pfd[MAX_PFDS];
 nfds_t			     nfds = 0;
@@ -106,6 +106,9 @@ const char *usage =
 " Example:\n"
 " usbplayd -D -V /tmp/volfile -P /tmp/mpd.fifo:48000 -P /tmp/shairport.fifo:44100\n"
 ;
+
+extern char *strdup(const char *s);
+extern int fchmod(int fd, mode_t mode);
 
 void list_devices(void)
 {
@@ -441,10 +444,8 @@ int maru_start(void)
     return 0;
 }
 
-int open_or_create_fifo(char *name, int i)
+int open_or_create_fifo(const char *name, int i)
 {
-    int fd;
-
     if (i >= MAX_PFDS)
 	return -1;
 
@@ -454,8 +455,11 @@ int open_or_create_fifo(char *name, int i)
     if (!pfiles[i])
 	return -1;
 
-    fd = open (name, O_RDONLY|O_NONBLOCK);
-    if (fd == -1)
+    if (!name)
+	name = pfiles[i];
+
+    pfd[i].fd = open (name, O_RDONLY|O_NONBLOCK);
+    if (pfd[i].fd == -1)
     {
 	if (-1 == mkfifo(name, 0666))
 	{
@@ -463,18 +467,17 @@ int open_or_create_fifo(char *name, int i)
 	    return -1;
 	}
 
-	fd = open (name, O_RDONLY|O_NONBLOCK);
-	if (fd == -1)
+	pfd[i].fd = open (name, O_RDONLY|O_NONBLOCK);
+	if (pfd[i].fd == -1)
 	{
 	    log_put ("!open %s: %s", name, strerror(errno));
 	    return -1;
 	}
     }
-    fchmod (fd, 0666);
 
-    pfd[i].fd = fd;
+    fchmod (pfd[i].fd, 0666);
 
-    return fd;
+    return pfd[i].fd;
 }
 
 /* Remove an input pipe from list of pipes
@@ -537,7 +540,6 @@ int
 main (int argc, char **argv)
 {
     struct timeval tv, prev_tv, start_tv;
-    int fd;
     int i;
     int current_input;
     int written = 0;
@@ -548,7 +550,7 @@ main (int argc, char **argv)
     int do_rate_convert = 0;
     char fifo_name[100];
     int rate;
-    char *logfile;
+    const char *logfile;
 
     int c;
 
@@ -622,12 +624,8 @@ main (int argc, char **argv)
 		rate = 0;
 	    }
 
-	    fd = open_or_create_fifo (fifo_name, nfds);
-
-	    if (fd ==-1)
-		exit (1);
-
-	    input_rates[nfds] = rate;
+	    pfiles[nfds]	= strdup (fifo_name);
+	    input_rates[nfds]	= rate;
 
 	    nfds++;
 
@@ -694,6 +692,9 @@ main (int argc, char **argv)
     src_state = src_new (converter_type, 2, &src_errcode);
 
     current_input = -1;
+
+    for (i = 0; i < nfds; i++)
+	open_or_create_fifo (NULL, i);
 
     /* Main loop
      */
@@ -789,6 +790,9 @@ main (int argc, char **argv)
 	     */
 	    if (maru_start())
 	    {
+		if (daemon_mode)
+		    exit (1);
+
 		sleep (1);
 		continue;
 	    }
@@ -854,6 +858,12 @@ main (int argc, char **argv)
 	if (maru_stream_write (ctx, stream, buf, read_size) < read_size)
 	{
 	    log_put ("!maru_stream_write() failed\n");
+
+	    /* something went wrong badly, abort worker in daemon mode
+	     */
+	    if (daemon_mode)
+		exit (1);
+
 	    continue;
 	}
 

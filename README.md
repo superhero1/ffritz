@@ -333,6 +333,15 @@ TODO / Known Issues
 HISTORY
 =======
 
+release 11
+----------
+- Atom
+    - lirc
+	- replaced irdroid driver with fixed irtoy
+	!! Requires replacing/merging existing lirc_options.conf with etc/lirc_options_dfl.conf
+    - usbplayd
+	- Fix hanging daemon
+
 release 10
 ----------
 - Atom
