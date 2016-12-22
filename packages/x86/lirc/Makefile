@@ -28,7 +28,6 @@ $(FILE):
 
 build/configure:
 	git clone $(URL) build
-	cd build; patch -p1 < ../curl_poll.patch
 	cd build; ./autogen.sh
 	
 build/config.status:	build/configure

@@ -22,12 +22,4 @@ if [ ! -f $FFRITZ_HOME/lirc_options.conf ]; then
     chown ffritz:ffritz $FFRITZ_HOME/lirc_options.conf                    
 fi                                                    
 
-# The listen option in the config file seems to get ignored (bug?)
-#
-port=`grep listen $FFRITZ_HOME/lirc_options.conf | grep -v \# | sed -e 's/.*=//' -e 's/[[:space:]]//g'`
-                                                                                                       
-if [ "x$port" != "x" ] ; then                                                                          
-        port=--listen=$port
-fi                         
-  
 $FFINSTDIR/bin/lircd $port -U $FFINSTDIR/lib/lirc/plugins -O $FFRITZ_HOME/lirc_options.conf -e ffritz $FFRITZ_HOME/etc/lirc/lircd.conf
