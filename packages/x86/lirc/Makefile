@@ -28,6 +28,7 @@ $(FILE):
 
 build/configure:
 	git clone $(URL) build
+	cd build; git reset --hard $(COMMIT)
 	cd build; ./autogen.sh
 	
 build/config.status:	build/configure
@@ -40,6 +41,7 @@ build/config.status:	build/configure
 install:
 	mkdir -p $(DESTDIR)
 	export PATH=$(TOOLCHAIN):$(PATH); make -C build install DESTDIR=$(TOPDIR)/output
+	rm -f output/$(PREFIX)/lib/lirc/plugins/atilibusb.so
 	cp -arnv output/$(PREFIX)/bin $(DESTDIR)
 	cp output/$(PREFIX)/sbin/* $(DESTDIR)/bin
 	cp -arnv output/$(PREFIX)/lib $(DESTDIR)

@@ -200,10 +200,6 @@ lirc can be used to operate an IR transceiver connected to the fritzbox
 
 - lircd execution can be prevented by creating /var/media/ftp/.skip_lircd
 
-For now lirc sources are fetched from my private fork at git://git.code.sf.net/u/fesc2000/lirc
-It contains a driver for irdroid (based on irtoy).
-
-
 Miscellaneous tools (Atom/Arm packages)
 ---------------------------------------
 - ldd
@@ -326,7 +322,6 @@ You might have to remove "composite" and "sys/acl.h" from the .build-prerequisit
 TODO / Known Issues
 ===================
 - Fix usbplayd
-    - Hangs if USB DAC is removed/inserted at runtime
     - May hang if usbplayd -l is called while daemone runs
     - Fix libmaru to properly support for different sample rates (currently only 48KHz is detected)
 
@@ -337,6 +332,7 @@ release 11
 ----------
 - Atom
     - lirc
+	- switch back to main lirc repository
 	- replaced irdroid driver with fixed irtoy
 	!! Requires replacing/merging existing lirc_options.conf with etc/lirc_options_dfl.conf
     - usbplayd

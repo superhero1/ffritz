@@ -21,7 +21,7 @@ sndlist:    sndlist.o
 usbplay:    usbplay.o
 	$(CC) -o $@ $^ -std=c99 $(LDFLAGS)
 
-usbplayd:    usbplayd.o daemon.o
+usbplayd:    usbplayd.o daemon.o ../../libmaru/libmaru.a
 	$(CC) -o $@ $^ -std=c99 $(LDFLAGS) -lsamplerate
 
 clean:

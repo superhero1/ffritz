@@ -22,4 +22,4 @@ if [ ! -f $FFRITZ_HOME/lirc_options.conf ]; then
     chown ffritz:ffritz $FFRITZ_HOME/lirc_options.conf                    
 fi                                                    
 
-$FFINSTDIR/bin/lircd $port -U $FFINSTDIR/lib/lirc/plugins -O $FFRITZ_HOME/lirc_options.conf -e ffritz $FFRITZ_HOME/etc/lirc/lircd.conf
+$FFINSTDIR/bin/lircd -U $FFINSTDIR/lib/lirc/plugins -O $FFRITZ_HOME/lirc_options.conf -e ffritz $FFRITZ_HOME/etc/lirc/lircd.conf
