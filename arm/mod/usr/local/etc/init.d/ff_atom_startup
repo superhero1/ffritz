@@ -12,11 +12,16 @@
 # script.
 #
 
+FFLOG=/var/tmp/ffritz.log
+touch $FFLOG
+chmod 666 $FFLOG
+
 mach=`uname -m`
 
-echo ffritz_startup on $mach >/dev/console
+echo ffritz_startup on $mach >> $FFLOG
 
 rundir=/usr/local
+
 
 # Create ffritz user/group on both arm and atom
 # Audio group required to allow access to usb devices
@@ -44,14 +49,14 @@ if [ $mach == armv6b ]; then
 	# at boot time
 	#
 	if [ ! -d /nvram/dropbear_x86 ]; then
-	    mkdir /nvram/dropbear_x86 || echo failed to create /nvram/dropbear_x86 >/dev/console
+	    mkdir /nvram/dropbear_x86 || echo failed to create /nvram/dropbear_x86 >> $FFLOG
 	fi
-	chmod 700 /nvram/dropbear_x86 || echo failed to create /nvram/dropbear_x86 >/dev/console
+	chmod 700 /nvram/dropbear_x86 || echo failed to create /nvram/dropbear_x86 >> $FFLOG
 	
 	for key in rsa dss ecdsa; do
 		if [ ! -f /nvram/dropbear_x86/dropbear_${key}_host_key ]; then
-			echo creating /nvram/dropbear_x86/dropbear_${key}_host_key >/dev/console
-			dropbearkey -t $key -f /nvram/dropbear_x86/dropbear_${key}_host_key || echo dropbearkey failed >/dev/console
+			echo creating /nvram/dropbear_x86/dropbear_${key}_host_key >> $FFLOG
+			dropbearkey -t $key -f /nvram/dropbear_x86/dropbear_${key}_host_key || echo dropbearkey failed >> $FFLOG
 		fi
 	done
 	rm -rf /var/remote/var/tmp/dropbear
@@ -60,7 +65,7 @@ if [ $mach == armv6b ]; then
 	## same for root's .ssh
 	#
 	if [ ! -d /nvram/root-ssh_x86 ]; then
-	    mkdir /nvram/root-ssh_x86 || echo failed to create /nvram/root-ssh_x86 >/dev/console
+	    mkdir /nvram/root-ssh_x86 || echo failed to create /nvram/root-ssh_x86 >> $FFLOG
 	    chmod 700 /nvram/root-ssh_x86
 	fi
 	cp -ar /nvram/root-ssh_x86 /var/remote/var/tmp/root-ssh
@@ -68,7 +73,7 @@ if [ $mach == armv6b ]; then
 
 	# Call this script on atom to finalize startup
 	#
-	cp $0 /var/remote/var/tmp/ffprep || echo failed to install /var/remote/var/tmp/ffprep from $0 >/dev/console
+	cp $0 /var/remote/var/tmp/ffprep || echo failed to install /var/remote/var/tmp/ffprep from $0 >> $FFLOG
 	chmod +x /var/remote/var/tmp/ffprep
 
 	rpc /var/tmp/ffprep
@@ -76,45 +81,54 @@ if [ $mach == armv6b ]; then
 	exit 0
 fi
 
+(
+mkdir -p /var/run/mpd
+chown ffritz /var/run/mpd
+
 # Run user mounts
 #
 if [ -f /var/media/ftp/ffritz/.mtab ]; then
     $rundir/etc/usrmount /var/media/ftp/ffritz/.mtab
 fi
 
+# A log rotator
+#
+nohup $rundir/etc/fflogrotate >/dev/null&
+
 # run dropbear
 #
 if [ -x $rundir/bin/dropbear -a ! -f /var/media/ftp/.skip_dropbear ]; then
-    echo Starting dropbear >/dev/console
-    $rundir/bin/dropbear 2>/dev/console || echo dropbear startup failed >/dev/console
+    echo Starting dropbear 
+    $rundir/bin/dropbear 2>/dev/console || echo dropbear startup failed 
 else
-    echo dropbear not started >/dev/console
+    echo dropbear not started 
 fi
 
 # run shairport
 #
 if [ -x $rundir/etc/run_shairport -a ! -f /var/media/ftp/.skip_shairport ]; then
-    echo Starting shairport >/dev/console
+    echo Starting shairport 
     $rundir/etc/run_shairport
 else
-    echo shairport skipped > /dev/console
+    echo shairport skipped 
 fi
 
 # run mpd
 #
 if [ -x $rundir/etc/runmpd -a ! -f /var/media/ftp/.skip_mpd ]; then
-    echo Starting mpd >/dev/console
-    nohup $rundir/etc/runmpd&
+    echo Starting mpd 
+    $rundir/etc/runmpd
 else
-    echo mpd not started >/dev/console
+    echo mpd not started 
 fi
 
 # and lircd
 #
 if [ -x $rundir/etc/run_lircd -a ! -f /var/media/ftp/.skip_lircd ]; then
-    echo Starting lircd >/dev/console
-    nohup $rundir/etc/run_lircd
+    echo Starting lircd 
+    $rundir/etc/run_lircd
 else
-    echo lircd not started >/dev/console
+    echo lircd not started 
 fi
+) | tee -a $FFLOG 2>&1
 

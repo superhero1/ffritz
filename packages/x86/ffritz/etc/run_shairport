@@ -25,7 +25,7 @@ GROUP=usb
 # If a non-default log or error file is used, and logrotate is configured with
 # the provided configuration file, then the paths of the log files should be
 # updated in /etc/logrotate.d/shairport to reflect the value of $LOGFILE and $ERRFILE
-LOGFILE=~ffritz/shairport.log
+LOGFILE=$FFLOG
 
 # If empty, errors are redirected to LOGFILE
 #ERRFILE=/var/log/shairport.err

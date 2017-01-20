@@ -1,0 +1,49 @@
+#!/bin/sh
+#
+# A little script to let a program run in background.
+# If given command/argument exits it is respawned after 2 seconds
+# Output is appended to $FFLOG (/var/tmp/ffritz.log)
+# Command runs as user ffritz
+#
+# usage ffdaemon [-r|x user] cmd args ...
+#
+# If -r is not given then cmd is executed as user (via su), otherwise in the
+# current context.
+# -x starts the actual endless work loop 
+# 
+
+. `dirname $0`/../etc/ffritz-env.sh || exit 1
+
+if [ "$1" = "-x" ]; then
+    shift
+    user=$1
+    shift
+
+    sucmd=
+    if [ $user != current ]; then
+	sucmd="$FFINSTDIR/bin/su $user"
+    fi
+
+    while true; do
+            $sucmd $*
+            echo $1 terminated with $?
+            sleep 2
+    done
+
+    exit 0
+fi
+
+if [ "$1" = "-r" ]; then
+    user=$2
+    shift
+    shift
+else
+    user=current
+fi
+
+if [ ! -x $1 ]; then
+    echo $0: $1 not executable > /dev/console
+    exit 1
+fi
+
+nohup $0 -x $user $* >> $FFLOG &

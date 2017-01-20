@@ -927,7 +927,10 @@ handle_stream (maru_context * ctx, struct maru_stream_internal *stream)
 	maru_fifo_read_lock (stream->fifo, total_write, &region);
 
 	if (!enqueue_transfer (ctx, stream, &region, packet_len, packets))
+	{
 	    fprintf (stderr, "Enqueue transfer failed!\n");
+	    exit (1);
+	}
     }
 
     // We are being killed, kill all transfers and tell other thread it's safe to deinit.
