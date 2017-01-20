@@ -12,13 +12,16 @@
 # script.
 #
 
+FFLOG=/var/tmp/ffritz.log
+touch $FFLOG
+chmod 666 $FFLOG
+
 mach=`uname -m`
 
 echo ffritz_startup on $mach >> $FFLOG
 
 rundir=/usr/local
 
-FFLOG=/var/tmp/ffritz.log
 
 # Create ffritz user/group on both arm and atom
 # Audio group required to allow access to usb devices
@@ -78,6 +81,7 @@ if [ $mach == armv6b ]; then
 	exit 0
 fi
 
+(
 mkdir -p /var/run/mpd
 chown ffritz /var/run/mpd
 
@@ -94,36 +98,37 @@ nohup $rundir/etc/fflogrotate >/dev/null&
 # run dropbear
 #
 if [ -x $rundir/bin/dropbear -a ! -f /var/media/ftp/.skip_dropbear ]; then
-    echo Starting dropbear >> $FFLOG
-    $rundir/bin/dropbear 2>/dev/console || echo dropbear startup failed >> $FFLOG
+    echo Starting dropbear 
+    $rundir/bin/dropbear 2>/dev/console || echo dropbear startup failed 
 else
-    echo dropbear not started >> $FFLOG
+    echo dropbear not started 
 fi
 
 # run shairport
 #
 if [ -x $rundir/etc/run_shairport -a ! -f /var/media/ftp/.skip_shairport ]; then
-    echo Starting shairport >> $FFLOG
+    echo Starting shairport 
     $rundir/etc/run_shairport
 else
-    echo shairport skipped >> $FFLOG
+    echo shairport skipped 
 fi
 
 # run mpd
 #
 if [ -x $rundir/etc/runmpd -a ! -f /var/media/ftp/.skip_mpd ]; then
-    echo Starting mpd >> $FFLOG
+    echo Starting mpd 
     $rundir/etc/runmpd
 else
-    echo mpd not started >> $FFLOG
+    echo mpd not started 
 fi
 
 # and lircd
 #
 if [ -x $rundir/etc/run_lircd -a ! -f /var/media/ftp/.skip_lircd ]; then
-    echo Starting lircd >> $FFLOG
+    echo Starting lircd 
     $rundir/etc/run_lircd
 else
-    echo lircd not started >> $FFLOG
+    echo lircd not started 
 fi
+) | tee -a $FFLOG 2>&1
 
