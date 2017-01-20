@@ -322,7 +322,6 @@ You might have to remove "composite" and "sys/acl.h" from the .build-prerequisit
 TODO / Known Issues
 ===================
 - Fix usbplayd
-    - May hang if usbplayd -l is called while daemone runs
     - Fix libmaru to properly support for different sample rates (currently only 48KHz is detected)
 
 HISTORY
@@ -334,9 +333,15 @@ release 11
     - lirc
 	- switch back to main lirc repository
 	- replaced irdroid driver with fixed irtoy
-	!! Requires replacing/merging existing lirc_options.conf with etc/lirc_options_dfl.conf
+	  NOTE: _This requires replacing/merging existing lirc_options.conf with etc/lirc_options_dfl.conf!_
+	- lircd sometimes crashed after the very first start. Workaround is to start it in
+	  self-respawning mode (via ffdaemon).
     - usbplayd
 	- Fix hanging daemon
+    - added ffdaemon script to start service as daemon
+    - some startup/daemon output is logged to /var/tmp/ffritz.log, added simple logrotate
+    - moved usbplayd.pid to /var/run
+    - moved mpd.pid to /var/run/mpd
 
 release 10
 ----------
