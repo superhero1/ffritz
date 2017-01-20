@@ -152,6 +152,10 @@ packages/arm/ffritz/ffritz-arm-$(ARM_VER).tar.gz:
 #
 atomfs:	atom/filesystem.image
 
+ATOM_PATCHES = 50-udev-default.patch
+
+ATOM_PATCHST=$(ATOM_PATCHES:%=atom/.applied.%)
+
 tmp/atom/filesystem.image:
 	@mkdir -p tmp/atom
 	@cd tmp/atom; tar xf $(ORIG) ./var/remote/var/tmp/x86/filesystem.image --strip-components=6
@@ -160,7 +164,12 @@ atom/squashfs-root:  tmp/atom/filesystem.image
 	@if [ ! -d atom/squashfs-root ]; then cd atom; $(SUDO) unsquashfs $(TOPDIR)/tmp/atom/filesystem.image; fi
 	@if [ $(KEEP_ORIG) -eq 1 -a ! -d atom/orig ]; then cd atom; $(SUDO) unsquashfs -d orig $(TOPDIR)/tmp/atom/filesystem.image; fi
 
-atom/filesystem.image: $(ATOM_MODFILES) atom/squashfs-root $(FFRITZ_X86_PACKAGE)
+$(ATOM_PATCHST):	$(@:atom/.applied.%=%)
+	@echo APPLY $(@:atom/.applied.%=%)
+	@cd atom/squashfs-root; $(SUDO) patch -p1 < $(@:atom/.applied.%=../%)
+	@touch $@
+
+atom/filesystem.image: $(ATOM_MODFILES) atom/squashfs-root $(ATOM_PATCHST) $(FFRITZ_X86_PACKAGE)
 	@echo "PATCH  atom/squashfs-root"
 	@$(SUDO) $(RSYNC) -a --no-perms atom/mod/ atom/squashfs-root/
 	@if [ -f "$(FFRITZ_X86_PACKAGE)" ]; then \
