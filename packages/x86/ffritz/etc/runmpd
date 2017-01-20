@@ -19,6 +19,6 @@ fi
 sed -i -e "s@\(.*\"\).*\(/bin/usbplay.*\)@\1$FFINSTDIR\2@" $FFRITZ_HOME/mpd.conf
 chown ffritz:ffritz $FFRITZ_HOME/mpd.conf
 
-# Run mpd in endless loop in case it crashes
+# Run mpd (as respawning daemon)
 #
-nohup $FFINSTDIR/bin/su ffritz $FFINSTDIR/etc/mpdloop&
+$FFINSTDIR/etc/ffdaemon -r ffritz $FFINSTDIR/bin/mpd --no-daemon $FFRITZ_HOME/mpd.conf
