@@ -163,8 +163,12 @@ web radio stations via mpd:
 ```
 
 - Restart mpd and start irexec as daemon
+
+```
+
 	killall mpd
 	/usr/local/etc/ffdaemon -x ffritz /usr/local/bin/exec/irexec /var/media/ftp/ffritz/etc/lirc/irexec.lircrc
+```
 
 Integration details
 ===================
