@@ -44,9 +44,9 @@ Installing the image
 - Extract in / directory of arm core:
     tar xf /var/media/ftp/fb6490_XXX.tar
 - Call var/install (from the / directory !!)
-    - Monitor the output on the console (1st telnet/ssh login session).
-	There should be a SUCCESS message at the end.
-    - The return code $? of var/install should be 1
+	- Monitor the output on the console (1st telnet/ssh login session).
+	  There should be a SUCCESS message at the end.
+	- The return code $? of var/install should be 1
 - After successful upgrade, execute "nohup sh var/post_install&"
 
 Installation issues
@@ -128,24 +128,23 @@ dropbear/ssh/scp (Atom package)
 -------------------------------
 - The atom core has no direct access to the NVRAM
 - All non-volatile data is passed from arm to atom on startup:
-    - host keys for atom are stored in /nvram/dropbear_x86. They are generated
-      on the ARM 
-      prior to starting the server on atom if they don't exist
-      (in the ff_atom_startup script).
-      The data is copied to atom:/var/tmp/dropbear at box startup.
+	- host keys for atom are stored in `/nvram/dropbear_x86`. They are generated
+	  on the ARM prior to starting the server on atom if they don't exist
+	  (in the `ff_atom_startup` script).
+	  The data is copied to atom:/var/tmp/dropbear at box startup.
 
-    - /.ssh
-      This is a symlink to /var/tmp/root-ssh, which is populated with the
-      contents of /nvram/root-ssh_x86 at startup. This means:
-	- All unsaved runtime data in ~root/.ssh gets lost at reboot
-	- If public keys are added to `authorized_keys`, they should be saved to
-	  the arm nvram:
+	- /.ssh
+	  This is a symlink to /var/tmp/root-ssh, which is populated with the
+	  contents of /nvram/root-ssh_x86 at startup. This means:
+		- All unsaved runtime data in ~root/.ssh gets lost at reboot
+		- If public keys are added to `authorized_keys`, they should be saved to
+		  the arm nvram:
 
-	  `scp /var/tmp/root-ssh/authorized_keys root@fritz.box:/nvram/root-ssh_x86`
+		  `scp /var/tmp/root-ssh/authorized_keys root@fritz.box:/nvram/root-ssh_x86`
 
-    - passwords (/etc/shadow) are copied from arm to atom at startup. Changing
-      passwords locally on the atom is not persistent.
-    - Startup can be inhibited by creating file /var/media/ftp/.skip_dropbear
+	- passwords (/etc/shadow) are copied from arm to atom at startup. Changing
+	  passwords locally on the atom is not persistent.
+	- Startup can be inhibited by creating file `/var/media/ftp/.skip_dropbear`
 
 IPv6 (arm core feature)
 -----------------------
@@ -192,8 +191,7 @@ lirc can be used to operate an IR transceiver connected to the fritzbox
 
 - To restart lirc after doing this:
 
-    killall lircd
-    /usr/local/etc/run_lircd 
+	killall lircd
 
 - For irdroid/irtoy the cdc-acm kernel module is packaged and installed.
   It is pre-built, but can be generated in packages/x86/avm (make kernel-config kernel-modules)
@@ -211,7 +209,6 @@ Miscellaneous tools (Atom/Arm packages)
 - curl
 - rsync
 - socat
-- lirc
 
 Software Packages
 =================
@@ -322,7 +319,8 @@ You might have to remove "composite" and "sys/acl.h" from the .build-prerequisit
 TODO / Known Issues
 ===================
 - Fix usbplayd
-    - Fix libmaru to properly support for different sample rates (currently only 48KHz is detected)
+	- Fix libmaru to properly support for different sample rates (currently only 48KHz is detected)
+- Auto-start irexec
 
 HISTORY
 =======
@@ -330,79 +328,80 @@ HISTORY
 release 11
 ----------
 - Atom
-    - lirc
-	- switch back to main lirc repository
-	- replaced irdroid driver with fixed irtoy
-	  NOTE: _This requires replacing/merging existing lirc_options.conf with etc/lirc_options_dfl.conf!_
-	- lircd sometimes crashed after the very first start. Workaround is to start it in
-	  self-respawning mode (via ffdaemon).
-    - usbplayd
-	- Fix hanging daemon
-    - added ffdaemon script to start service as daemon
-    - some startup/daemon output is logged to /var/tmp/ffritz.log, added simple logrotate
-    - moved usbplayd.pid to /var/run
-    - moved mpd.pid to /var/run/mpd
+	- lirc
+		- switch back to main lirc repository
+		- replaced irdroid driver with fixed irtoy
+		  NOTE: _This requires replacing/merging existing lirc_options.conf with etc/lirc_options_dfl.conf!_
+		- lircd sometimes crashed after the very first start. Workaround is to start it in
+		  self-respawning mode (via ffdaemon).
+	- usbplayd
+		- Fix hanging daemon
+	- added ffdaemon script to start service as daemon
+	- some startup/daemon output is logged to /var/tmp/ffritz.log, added simple logrotate
+	- moved usbplayd.pid to /var/run
+	- moved mpd.pid to /var/run/mpd
+	- Add udev rule for /dev/ttyACM* permission
 
 release 10
 ----------
 - Atom
-    - Toolchain fixes for clean build
-    - Added lirc
-    - Added socat
+	- Toolchain fixes for clean build
+	- Added lirc
+	- Added socat
 
 release 9
 ---------
 - Atom
-    - Add libid3tag / id3 tag support to mpd
-    - Fix access rights to /var/tmp/volume file at startup
-    - Make usbplayd self-respawning if it crashes
-    - Don't log usbplayd to /var/tmp to avoid hogging ramfs space
-    - Forward dropbear stderr outputs to /dev/console
-    - Create ssh symlink to dbclient
-    - Added curl binary
-    - Added rsync binary
+	- Add libid3tag / id3 tag support to mpd
+	- Fix access rights to /var/tmp/volume file at startup
+	- Make usbplayd self-respawning if it crashes
+	- Don't log usbplayd to /var/tmp to avoid hogging ramfs space
+	- Forward dropbear stderr outputs to /dev/console
+	- Create ssh symlink to dbclient
+	- Added curl binary
+	- Added rsync binary
 - ARM
-    - Make sure that ssh stuff and passwords in /nvram are not cleared
-      when a factory reset is performed (by means of entries in 
-      /etc/docsis/nvramdontremove). Only for FW 6.6x and later.
-    - Do not apply ipv6 patch for 6.63 and later
-    - Added Makefile option to integrate separate arm package into root
-      filesystem (ffritz-arm-XX.tar.gz, see below).
+	- Make sure that ssh stuff and passwords in /nvram are not cleared
+	  when a factory reset is performed (by means of entries in 
+	  /etc/docsis/nvramdontremove). Only for FW 6.6x and later.
+	- Do not apply ipv6 patch for 6.63 and later
+	- Added Makefile option to integrate separate arm package into root
+	  filesystem (ffritz-arm-XX.tar.gz, see below).
 - Make sure directory permissions for /var/media/ftp/ffritz are correct
 
 release 8
 ---------
 - tested with firmware 6.63
 - Atom
-    - Added udev rule to give usb devices proper permissions (usb group)
+	- Added udev rule to give usb devices proper permissions (usb group)
 	Remove clumsy permission fixup in runmpd
-    - Put ffritz user into usb group by default
-    - Fixed permission of mpd.conf
-    - Added some tools:
-	strace
-	ldd
-	tcpdump
-	tcpreplay
-	su
-	mpc
-    - Replaced usbplay with usbplayd, which is fifo based and accepts several
-	inputs. It also performs sample rate conversion if required.
-    - Accordingly, mpd uses fifo output driver instead of pipe driver
-    - Added shairport (AirPort audio receiver)
-    - Added user mount table (var/media/ftp/ffritz/.mtab)
+	- Put ffritz user into usb group by default
+	- Fixed permission of mpd.conf
+	- Added some tools:
+	  strace
+	  ldd
+	  tcpdump
+	  tcpreplay
+	  su
+	  mpc
+	- Replaced usbplay with usbplayd, which is fifo based and accepts several
+	  inputs. It also performs sample rate conversion if required.
+	- Accordingly, mpd uses fifo output driver instead of pipe driver
+	- Added shairport (AirPort audio receiver)
+	- Added user mount table (var/media/ftp/ffritz/.mtab)
 - ARM
-    - Added /usr/local/etc/switch_bootbank script to help bank switch without
-	having to invoke the bootloader.
-	Also in installer tar: var/switch_bootbank
-    - Use toolchain from avm source tarball for dropbear binaries
+	- Added /usr/local/etc/switch_bootbank script to help bank switch without
+	  having to invoke the bootloader.
+	  Also in installer tar: var/switch_bootbank
+	- Use toolchain from avm source tarball for dropbear binaries
 
 release 7
 ---------
 - Atom
-    - Add dropbear
-    - Add mpd
+	- Add dropbear
+	- Add mpd
 - Arm
-    - Add startup script /usr/local/etc/init.d/ff_atom_startup
+	- Add startup script /usr/local/etc/init.d/ff_atom_startup
 
 release 6
 ---------
@@ -433,8 +432,8 @@ release 3
 release 2 [fb6490_6.50_telnet-2.tar]
 ------------------------------------
 - Changed etc/init.d/rc.tail.sh
-	- Explicitly start telnetd from here (obviously the existence of
-	  /usr/sbin/telnetd is not always sufficient)
+		- Explicitly start telnetd from here (obviously the existence of
+		  /usr/sbin/telnetd is not always sufficient)
 - Added unsquashfs4_avm_x86/mksquashfs4-lzma-avm-be binaries (from Freetz)
 - Fixed html tags in README
 - Remove LCR download in telnet-1.tar
@@ -469,8 +468,8 @@ telnet via pseudo-root
 - Activate your browsers developer tools
 - Right click on "Datei auswaehlen" Button --> Inspect
 - Change the following elements in the html code:
-    - `id=uiImport`             --->      `id=uiFile`
-    - `name=ConfigImportFile`   --->      `name=UploadFile`
+	- `id=uiImport`             --->      `id=uiFile`
+	- `name=ConfigImportFile`   --->      `name=UploadFile`
 - Select "Datei auswaehlen" and upload the pseudo-image (telnet-1.tar)
 
 After ca. 15 sec a dialog should appear to confirm installation of a inofficial firmware.

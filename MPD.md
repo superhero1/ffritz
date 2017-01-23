@@ -45,15 +45,17 @@ usbplayd will use libsamplerate if pipe and device sample rate mismatches.
 The maximum supported ratio is 4 (device rate / pipe rate).
 
 libsamplerate has different algorithms:
-- SRC_SINC_BEST_QUALITY
-- SRC_SINC_MEDIUM_QUALITY
-- SRC_SINC_FASTEST
-- SRC_ZERO_ORDER_HOLD
-- SRC_LINEAR
+
+- 0 : `SRC_SINC_BEST_QUALITY`
+- 1 : `SRC_SINC_MEDIUM_QUALITY`
+- 2 : `SRC_SINC_FASTEST`
+- 3 : `SRC_ZERO_ORDER_HOLD`
+- 4 : `SRC_LINEAR`
 
 The "best quality" algorithm results in a CPU load of ca 50% (44.1KHz -> 48KHz).
-The default is SRC_SINC_FASTEST (ca. 7% load).
-Add the -c switch to USBPLAYD_ARGS to change the default.
+The default is 2 (`SRC_SINC_FASTEST`) (ca. 7% load), a good compromise is `MEDIUM_QUALITY`
+with 17% load (although i don't hear a difference).
+Add the `-c <algo-number>` switch to `USBPLAYD_ARGS` to change the default.
 
 MPD
 ===
@@ -61,12 +63,12 @@ MPD
 mpd is started via etc/runmpd. By default it will use the fifo output plugin
 to write data to /var/tmp/mpd.fifo at a sample rate of 44100Hz.
 
-The configuratin file is var/media/ftp/ffritz/mpd.conf.
-mpd runtime files (database, log, etc) are stored in var/media/ftp/ffritz/.mpd.
+The configuratin file is /var/media/ftp/ffritz/mpd.conf.
+mpd runtime files (database, etc) are stored in var/media/ftp/ffritz/.mpd.
 
 The default Music database is /var/media/ftp/Musik.
 
-mpd can be manually started with the etc/runmpd script. This script will also
+mpd can be started manually with the etc/runmpd script. This script will also
 start usbplayd if required.
 
 If you do not want to start mpd, create /var/media/ftp/.skip_mpd
@@ -103,6 +105,66 @@ level is written to (/var/tmp/volume in this case).
 Tested with Android AirAudio app.
 
 If you do not want to start shairport, create /var/media/ftp/.skip_shairport
+
+
+Remote Control with lirc
+========================
+Here is an example how i use irexec to use my amplifiers remote control to operate 
+web radio stations via mpd:
+
+- Create a playlist for web-radio stations, for example
+	/var/media/ftp/ffritz/.mpd/playlists/radio.m3u
+  (just put in the URLs of the web radion stations line by line)
+
+- Use irrecord to create a remote control configuration file, or search for an
+  existing one.
+
+- Put the configuration file to /var/media/ftp/ffritz/etc/lirc/lircd.conf.d
+
+- Edit the irexec definition file (/var/media/ftp/ffritz/etc/lirc/irexec.lircrc) to
+  assign keys on the remote controll to actions.
+  Below is the one i'm using.
+	- The `CD_PLAY` and `PAUSE_STOP` keys are used to start/stop playing.
+	- The tuner preset keys are used to go back and forth in the playlist
+	- The `TUNER_ABCDE` key is used to reset the player to play the first
+	  entry from the readio playlist.
+
+```
+
+	begin
+	    prog   = irexec
+	    button = CD_PLAY
+	    config = mpc play
+	end                  
+	   
+	begin
+	    prog   = irexec
+	    button = CD_PAUSE/STOP
+	    config = mpc stop     
+	end                  
+	   
+	begin
+	    prog   = irexec
+	    button = TUNER_PRESET_+
+	    config = mpc next      
+	end                  
+	   
+	begin
+	    prog   = irexec
+	    button = TUNER_PRESET_-
+	    config = mpc prev      
+	end                  
+	   
+	begin
+	    prog   = irexec
+	    button = TUNER_ABCDE
+	    config = mpc load radio; mpc play 1
+	end                                    
+```
+
+- Restart mpd and start irexec as daemon
+	killall mpd
+	/usr/local/etc/ffdaemon -x ffritz /usr/local/bin/exec/irexec /var/media/ftp/ffritz/etc/lirc/irexec.lircrc
 
 Integration details
 ===================
