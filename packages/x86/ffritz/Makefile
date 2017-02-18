@@ -24,7 +24,7 @@ BINFILES   += $(BR_TGT_BIN)/mpc $(BR_TGT_BIN)/rsync $(BR_TGT_BIN)/socat
 BINFILES   += $(BR_TGT)/../host/usr/i686-buildroot-linux-uclibc/sysroot/usr/bin/curl
 BINFILES   += ../shairport/build/shairport
 ETCFILES    = etc/ffritz-env.sh etc/mpd.conf etc/runmpd etc/ff_atom_startup etc/mkusers etc/run_usbplay etc/run_shairport etc/usrmount
-ETCFILES   += etc/run_lircd etc/lirc_options_dfl.conf etc/ffdaemon etc/fflogrotate
+ETCFILES   += etc/run_lircd etc/lirc_options_dfl.conf etc/ffdaemon etc/fflogrotate etc/upmpdcli.conf-dist
 MODFILES    = lib/modules/cdc-acm.ko
 
 STAGEDIR    = $(TOPDIR)/output/ffritz
@@ -37,7 +37,7 @@ ifeq ($(INSTDIR),)
     INSTDIR=$(STAGEDIR)
 endif
 
-SUBDIRS	    = ../buildroot ../mpd ../libmaru ../dropbear ../shairport ../libmpdclient ../mpc ../lirc src
+SUBDIRS	    = ../buildroot ../mpd ../libmaru ../dropbear ../shairport ../libmpdclient ../mpc ../lirc ../libupnpp ../jsoncpp ../upmpdcli src
 
 .PHONY:	$(SUBDIRS)
 
@@ -71,14 +71,20 @@ install: $(SUBDIRS) $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls 
 	chmod +x $(INSTDIR)/etc/ff_atom_startup
 	make -C ../dropbear install DESTDIR=$(INSTDIR)
 	make -C ../lirc install DESTDIR=$(INSTDIR)
+	make -C ../libupnpp install DESTDIR=$(INSTDIR)
+	make -C ../upmpdcli install DESTDIR=$(INSTDIR)
 	mv $(INSTDIR)/usr/local/bin/* $(INSTDIR)/bin
 	mv $(INSTDIR)/usr/local/sbin/* $(INSTDIR)/bin
 	cp -a bin/ffwrap $(INSTDIR)/bin/exec
-	cd $(INSTDIR)/bin; \
+	@cd $(INSTDIR)/bin; \
 	    for f in `ls | xargs file | grep ELF | sed -e 's/:.*//'`; do\
 		strip $$f;\
-		mv -v $$f exec/$$f;\
+		mv $$f exec/$$f;\
 		ln -sv exec/ffwrap $$f;\
+	    done
+	@cd $(INSTDIR)/lib; \
+	    for l in `ls | xargs file | grep ELF | sed -e 's/:.*//'`; do\
+		strip $$l;\
 	    done
 	cd $(INSTDIR)/bin; ln -s exec/ffwrap ssh
 	cd $(INSTDIR)/bin/exec; ln -s dbclient ssh

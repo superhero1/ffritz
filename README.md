@@ -320,10 +320,20 @@ TODO / Known Issues
 ===================
 - Fix usbplayd
 	- Fix libmaru to properly support for different sample rates (currently only 48KHz is detected)
-- Auto-start irexec
+- Add support for l16 audio format for MPD/DLNA renderer
 
 HISTORY
 =======
+
+release 12
+----------
+- Atom
+	- Added upmpdcli
+		- UPNP/DLNA renderer front-end for mpd
+		- l16/LPCM audio is currently not supported (would require latest
+		  mpd, which does not compile in this toolchain)
+	- Auto-start irexec
+	- Moved irexec config file to /var/media/ftp/ffritz/irexec.lircrc
 
 release 11
 ----------

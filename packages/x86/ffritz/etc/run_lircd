@@ -10,8 +10,9 @@ mkdir -p /var/run/lirc
 chmod 777 /var/run/lirc
                        
 if [ ! -d $FFRITZ_HOME/etc/lirc ]; then
+    mkdir -p FFRITZ_HOME/etc
     cp -ar $FFINSTDIR/etc/lirc $FFRITZ_HOME/etc
-    chown -R ffritz:ffritz $FFRITZ_HOME/etc/lirc
+    chown -R ffritz:ffritz $FFRITZ_HOME/etc
 fi
 
 /sbin/insmod $FFINSTDIR/lib/modules/cdc-acm.ko
@@ -22,4 +23,11 @@ if [ ! -f $FFRITZ_HOME/lirc_options.conf ]; then
     chown ffritz:ffritz $FFRITZ_HOME/lirc_options.conf                    
 fi                                                    
 
+if [ ! -f $FFRITZ_HOME/irexec.lircrc ]; then
+    cp $FFINSTDIR/etc/lirc/irexec.lircrc $FFRITZ_HOME/irexec.lircrc
+    chown ffritz:ffritz $FFRITZ_HOME/irexec.lircrc
+fi                                                    
+
 $FFINSTDIR/etc/ffdaemon $FFINSTDIR/bin/lircd -n -L $FFLOG -U $FFINSTDIR/lib/lirc/plugins -O $FFRITZ_HOME/lirc_options.conf -e ffritz $FFRITZ_HOME/etc/lirc/lircd.conf
+sleep 1
+$FFINSTDIR/etc/ffdaemon -r ffritz $FFINSTDIR/bin/irexec $FFRITZ_HOME/irexec.lircrc
