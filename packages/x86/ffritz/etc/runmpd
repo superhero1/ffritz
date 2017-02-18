@@ -25,7 +25,7 @@ dir=`readlink $FFRITZ_HOME/share/upmpdcli`
 if [ ! -d "$dir" ]; then
     if [ -d $FFINSTDIR/share/upmpdcli ]; then
 	mkdir -p $FFRITZ_HOME/share
-	ln -s $FFINSTDIR/share/upmpdcli $dir
+	ln -s $FFINSTDIR/share/upmpdcli $FFRITZ_HOME/share
     else
 	echo ERROR: $FFINSTDIR/share/upmpdcli not found
     fi
@@ -33,10 +33,10 @@ fi
 
 # create initial upmpdcli.conf from default
 #
-if [ ! -f $FFRITZ_HOME/etc/upmpdcli.conf ]; then
-    rm -f $FFRITZ_HOME/etc/upmpdcli.conf
-    cp $FFINSTDIR/etc/upmpdcli.conf-dist $FFRITZ_HOME/etc/upmpdcli.conf 
-    chown ffritz:ffritz $FFRITZ_HOME/etc/upmpdcli.conf
+if [ ! -f $FFRITZ_HOME/upmpdcli.conf ]; then
+    rm -f $FFRITZ_HOME/upmpdcli.conf
+    cp $FFINSTDIR/etc/upmpdcli.conf-dist $FFRITZ_HOME/upmpdcli.conf 
+    chown ffritz:ffritz $FFRITZ_HOME/upmpdcli.conf
 fi
 
 # Run mpd (as respawning daemon)
@@ -46,5 +46,5 @@ $FFINSTDIR/etc/ffdaemon -r ffritz $FFINSTDIR/bin/mpd --no-daemon $FFRITZ_HOME/mp
 # Run upmpdcli (UPNP frontent to MPD)
 #
 sleep 1
-$FFINSTDIR/bin/upmpdcli -c $FFRITZ_HOME/etc/upmpdcli.conf -D
+$FFINSTDIR/bin/upmpdcli -c $FFRITZ_HOME/upmpdcli.conf -D
 

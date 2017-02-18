@@ -85,6 +85,10 @@ fi
 mkdir -p /var/run/mpd
 chown ffritz /var/run/mpd
 
+# Create/check users/paths
+#
+$rundir/etc/mkusers
+
 # Run user mounts
 #
 if [ -f /var/media/ftp/ffritz/.mtab ]; then

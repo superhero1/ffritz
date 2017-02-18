@@ -15,9 +15,14 @@ grep upmpdcli /etc/passwd >/dev/null || echo upmpdcli:x:8001:8000:upmpdcli:/var/
 if [ ! -d ~ffritz/.mpd ]; then
     mkdir -p ~ffritz/.mpd
 fi
+if [ ! -d ~ffritz/etc ]; then
+    mkdir -p ~ffritz/etc
+fi
 
 chown ffritz:ffritz ~ffritz
 chown ffritz:ffritz ~ffritz/.mpd
+chown ffritz:ffritz ~ffritz/etc
 chmod 775 ~ffritz
 chmod 775 ~ffritz/.mpd
+chmod 775 ~ffritz/etc
 

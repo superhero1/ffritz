@@ -45,6 +45,7 @@ install:
 	cp -arnv output/$(PREFIX)/bin $(DESTDIR)
 	cp output/$(PREFIX)/sbin/* $(DESTDIR)/bin
 	cp -arnv output/$(PREFIX)/lib $(DESTDIR)
+	rm -rf $(DESTDIR)/lib/python3
 	mkdir -p $(DESTDIR)/share
 	cp -arnv output/$(PREFIX)/share/lirc $(DESTDIR)/share
 	cp -arnv output/$(PREFIX)/etc $(DESTDIR)

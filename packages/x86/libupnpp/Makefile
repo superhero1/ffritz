@@ -29,7 +29,7 @@ build/config.status:	build/configure
 	@cd build; make install DESTDIR=$(TOPDIR)/output
 
 install:
-	@cd build; make install DESTDIR=$(DESTDIR)
+	@cp -a output/usr/lib/lib*so* $(DESTDIR)/lib
 
 clean:
 	rm -rf build

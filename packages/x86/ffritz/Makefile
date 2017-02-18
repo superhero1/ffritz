@@ -76,11 +76,15 @@ install: $(SUBDIRS) $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls 
 	mv $(INSTDIR)/usr/local/bin/* $(INSTDIR)/bin
 	mv $(INSTDIR)/usr/local/sbin/* $(INSTDIR)/bin
 	cp -a bin/ffwrap $(INSTDIR)/bin/exec
-	cd $(INSTDIR)/bin; \
+	@cd $(INSTDIR)/bin; \
 	    for f in `ls | xargs file | grep ELF | sed -e 's/:.*//'`; do\
 		strip $$f;\
-		mv -v $$f exec/$$f;\
+		mv $$f exec/$$f;\
 		ln -sv exec/ffwrap $$f;\
+	    done
+	@cd $(INSTDIR)/lib; \
+	    for l in `ls | xargs file | grep ELF | sed -e 's/:.*//'`; do\
+		strip $$l;\
 	    done
 	cd $(INSTDIR)/bin; ln -s exec/ffwrap ssh
 	cd $(INSTDIR)/bin/exec; ln -s dbclient ssh
