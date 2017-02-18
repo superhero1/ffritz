@@ -106,6 +106,13 @@ Tested with Android AirAudio app.
 
 If you do not want to start shairport, create /var/media/ftp/.skip_shairport
 
+UPNP/DLNA Renderer (upmpdcli)
+=============================
+The upmpdcli daemon is started together with mpd. It provides a DLNA renderer.
+Currently it does not the "l16" format (raw data), since mpd in the used version
+does not support it. Latest mpd requires at least gcc 4.9, which is not provided
+by the used builroot toolchain ..
+
 
 Remote Control with lirc
 ========================

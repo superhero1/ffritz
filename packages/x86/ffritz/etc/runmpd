@@ -19,6 +19,32 @@ fi
 sed -i -e "s@\(.*\"\).*\(/bin/usbplay.*\)@\1$FFINSTDIR\2@" $FFRITZ_HOME/mpd.conf
 chown ffritz:ffritz $FFRITZ_HOME/mpd.conf
 
+# Create link for share/upmpdcli
+#
+dir=`readlink $FFRITZ_HOME/share/upmpdcli`
+if [ ! -d "$dir" ]; then
+    if [ -d $FFINSTDIR/share/upmpdcli ]; then
+	mkdir -p $FFRITZ_HOME/share
+	ln -s $FFINSTDIR/share/upmpdcli $dir
+    else
+	echo ERROR: $FFINSTDIR/share/upmpdcli not found
+    fi
+fi
+
+# create initial upmpdcli.conf from default
+#
+if [ ! -f $FFRITZ_HOME/etc/upmpdcli.conf ]; then
+    rm -f $FFRITZ_HOME/etc/upmpdcli.conf
+    cp $FFINSTDIR/etc/upmpdcli.conf-dist $FFRITZ_HOME/etc/upmpdcli.conf 
+    chown ffritz:ffritz $FFRITZ_HOME/etc/upmpdcli.conf
+fi
+
 # Run mpd (as respawning daemon)
 #
 $FFINSTDIR/etc/ffdaemon -r ffritz $FFINSTDIR/bin/mpd --no-daemon $FFRITZ_HOME/mpd.conf
+
+# Run upmpdcli (UPNP frontent to MPD)
+#
+sleep 1
+$FFINSTDIR/bin/upmpdcli -c $FFRITZ_HOME/etc/upmpdcli.conf -D
+
