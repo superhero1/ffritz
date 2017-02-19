@@ -63,15 +63,17 @@ MPD
 mpd is started via etc/runmpd. By default it will use the fifo output plugin
 to write data to /var/tmp/mpd.fifo at a sample rate of 44100Hz.
 
-The configuratin file is /var/media/ftp/ffritz/mpd.conf.
+The configuration file is /var/media/ftp/ffritz/mpd.conf.
 mpd runtime files (database, etc) are stored in var/media/ftp/ffritz/.mpd.
 
 The default Music database is /var/media/ftp/Musik.
 
 mpd can be started manually with the etc/runmpd script. This script will also
-start usbplayd if required.
+start usbplayd if required, as well as the UPNP/DLNA renderer upmpdcli.
 
 If you do not want to start mpd, create /var/media/ftp/.skip_mpd
+
+The CLI client for mpd (mpc) is available on the atom core.
 
 Volume Control
 --------------
@@ -94,7 +96,8 @@ my music database on an external NAS:
 
 Shairport
 =========
-shairport will announce itself as "fFritz". It will output data to /var/tmp/shairport.fifo.
+shairport will announce itself as "fFritz". It will output data to /var/tmp/shairport.fifo
+and has precedence over the MPD audio pipe.
 
 shairport can be manually started with the etc/run_shairport script. This script will also
 start usbplayd if required.
@@ -109,24 +112,31 @@ If you do not want to start shairport, create /var/media/ftp/.skip_shairport
 UPNP/DLNA Renderer (upmpdcli)
 =============================
 The upmpdcli daemon is started together with mpd. It provides a DLNA renderer.
-Currently it does not the "l16" format (raw data), since mpd in the used version
-does not support it. Latest mpd requires at least gcc 4.9, which is not provided
-by the used builroot toolchain ..
 
+Currently it does not support the "l16" format (raw data), since mpd in the used version
+does not support it (the latest mpd version requires at least gcc 4.9, which is not provided
+by the used builroot toolchain ..).
+
+The announced name is "fFritz".
+
+The configuration file is /var/media/ftp/ffritz/upmpdcli.conf.
 
 Remote Control with lirc
 ========================
 Here is an example how i use irexec to use my amplifiers remote control to operate 
-web radio stations via mpd:
+web radio stations via mpd/mpc:
 
 - Create a playlist for web-radio stations, for example
+
 	/var/media/ftp/ffritz/.mpd/playlists/radio.m3u
+
   (just put in the URLs of the web radion stations line by line)
 
 - Use irrecord to create a remote control configuration file, or search for an
   existing one.
 
-- Put the configuration file to /var/media/ftp/ffritz/etc/lirc/lircd.conf.d
+- Put the configuration file to /var/media/ftp/ffritz/etc/lirc/lircd.conf.d and 
+  restart lirc (`killall lircd`).
 
 - Edit the irexec definition file (/var/media/ftp/ffritz/etc/lirc/irexec.lircrc) to
   assign keys on the remote controll to actions.
@@ -165,21 +175,17 @@ web radio stations via mpd:
 	begin
 	    prog   = irexec
 	    button = TUNER_ABCDE
-	    config = mpc load radio; mpc play 1
+	    config = mpc crop; mpc del 1; mpc load radio; mpc play 1
 	end                                    
 ```
 
-- Restart mpd and start irexec as daemon
-
-```
-
-	killall mpd
-	/usr/local/etc/ffdaemon -x ffritz /usr/local/bin/exec/irexec /var/media/ftp/ffritz/etc/lirc/irexec.lircrc
-```
+- Restart irexec daemon (`killall irexec`)
 
 Integration details
 ===================
 - mpd/shairport run as user ffritz, group usb for security reasons.
+- Likewise, upmpdcli runs as user upmpdcli.
 
 TODO
 ====
+- Integrate mpd >= 0.20 to support l16/PCM streams.
