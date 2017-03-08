@@ -1,18 +1,29 @@
-
-diff -urN -x '*dep*' -x '*.o' -x '*~' -x '*~' mpd-0.19.19/src/mixer/MixerList.hxx build/src/mixer/MixerList.hxx
---- mpd-0.19.19/src/mixer/MixerList.hxx	2016-07-29 10:01:52.000000000 +0200
-+++ build/src/mixer/MixerList.hxx	2016-10-24 09:38:48.662531045 +0200
-@@ -33,5 +33,6 @@
+diff -urN mpd-0.20.5/Makefile.am build/Makefile.am
+--- mpd-0.20.5/Makefile.am	2017-02-01 21:58:30.000000000 +0100
++++ build/Makefile.am	2017-03-08 14:18:08.104995408 +0100
+@@ -1397,6 +1397,7 @@
+ 	src/mixer/MixerInternal.hxx
+ 
+ libmixer_plugins_a_SOURCES = \
++	src/mixer/plugins/VolfileMixerPlugin.cxx \
+ 	src/mixer/plugins/NullMixerPlugin.cxx \
+ 	src/mixer/plugins/SoftwareMixerPlugin.cxx \
+ 	src/mixer/plugins/SoftwareMixerPlugin.hxx
+diff -urN mpd-0.20.5/src/mixer/MixerList.hxx build/src/mixer/MixerList.hxx
+--- mpd-0.20.5/src/mixer/MixerList.hxx	2017-02-01 21:58:30.000000000 +0100
++++ build/src/mixer/MixerList.hxx	2017-03-08 14:09:46.242653710 +0100
+@@ -35,5 +35,7 @@
  extern const MixerPlugin roar_mixer_plugin;
  extern const MixerPlugin pulse_mixer_plugin;
  extern const MixerPlugin winmm_mixer_plugin;
 +extern const MixerPlugin volfile_volctrl_plugin;
++
  
  #endif
-diff -urN -x '*dep*' -x '*.o' -x '*~' -x '*~' mpd-0.19.19/src/mixer/plugins/VolfileMixerPlugin.cxx build/src/mixer/plugins/VolfileMixerPlugin.cxx
---- mpd-0.19.19/src/mixer/plugins/VolfileMixerPlugin.cxx	1970-01-01 01:00:00.000000000 +0100
-+++ build/src/mixer/plugins/VolfileMixerPlugin.cxx	2016-10-24 09:57:38.440725028 +0200
-@@ -0,0 +1,152 @@
+diff -urN mpd-0.20.5/src/mixer/plugins/VolfileMixerPlugin.cxx build/src/mixer/plugins/VolfileMixerPlugin.cxx
+--- /dev/null	2017-02-08 08:57:19.166715181 +0100
++++ build/src/mixer/plugins/VolfileMixerPlugin.cxx	2017-03-08 14:48:47.690973560 +0100
+@@ -0,0 +1,149 @@
 +/*
 + * Copyright (C) 2003-2014 The Music Player Daemon Project
 + * http://www.musicpd.org
@@ -34,9 +45,11 @@ diff -urN -x '*dep*' -x '*.o' -x '*~' -x '*~' mpd-0.19.19/src/mixer/plugins/Volf
 +
 +#include "config.h"
 +#include "config/ConfigError.hxx"
-+#include "config/ConfigData.hxx"
-+#include "util/Error.hxx"
++#include "config/Block.hxx"
 +#include "util/Domain.hxx"
++#include "util/RuntimeError.hxx"
++#include "Log.hxx"
++
 +
 +#include <stdio.h>
 +#include <string.h>
@@ -66,8 +79,7 @@ diff -urN -x '*dep*' -x '*.o' -x '*~' -x '*~' mpd-0.19.19/src/mixer/plugins/Volf
 +static Mixer *
 +volfile_volctrl_init(EventLoop &event_loop, gcc_unused AudioOutput &ao,
 +		MixerListener &listener,
-+		const config_param &param,
-+		gcc_unused Error &error);
++		const ConfigBlock &param);
 +
 +const MixerPlugin volfile_volctrl_plugin = {
 +	volfile_volctrl_init,
@@ -87,20 +99,19 @@ diff -urN -x '*dep*' -x '*.o' -x '*~' -x '*~' mpd-0.19.19/src/mixer/plugins/Volf
 +
 +	virtual ~PipeMixer(){};
 +
-+	void Configure(const config_param &param)
++	void Configure(const ConfigBlock &param)
 +	{
 +	    volfile = param.GetBlockValue("volume_file", "");
 +	};
 +
 +	/* virtual methods from class Mixer */
-+	virtual bool Open(Error &error) override
++	void Open() override
 +	{
 +	    last_volume = 75;
-+	    last_volume = GetVolume (error);
-+	    return true;
++	    last_volume = GetVolume ();
 +	};
-+	virtual void Close() override {};
-+	virtual int GetVolume(Error &error) override
++	void Close() override {};
++	int GetVolume()
 +	{
 +	    int vol;
 +
@@ -110,7 +121,7 @@ diff -urN -x '*dep*' -x '*.o' -x '*~' -x '*~' mpd-0.19.19/src/mixer/plugins/Volf
 +	    FILE *fd = fopen (volfile, "r");
 +	    if (fd == NULL)
 +	    {
-+		error.Format (volfile_output_domain, errno, "Failed to open volume control %s", volfile);
++		FormatError (volfile_output_domain, "Failed to open volume control %s %d", volfile, errno);
 +		return last_volume;
 +	    }
 +
@@ -122,108 +133,80 @@ diff -urN -x '*dep*' -x '*.o' -x '*~' -x '*~' mpd-0.19.19/src/mixer/plugins/Volf
 +	    return vol;
 +	};
 +
-+	virtual bool SetVolume(unsigned volume, Error &error) override
++	void SetVolume(unsigned volume)
 +	{
 +	    char out[20];
 +
 +	    if (volume == last_volume)
-+		return true;
++		return;
 +
 +	    if (strlen(volfile) == 0)
-+		return false;
++		return;
 +
 +	    FILE *fd = fopen (volfile, "w+");
 +	    if (fd == NULL)
 +	    {
-+		error.Format (volfile_output_domain, errno, "Failed to open volume control %s", volfile);
-+		return false;
++		FormatError (volfile_output_domain, "Failed to open volume control %s", volfile);
++		return;
 +	    }
 +
 +	    sprintf (out, "%d", volume);
 +	    if (fwrite (out, strlen(out), 1, fd) == 0)
 +	    {
-+		error.Format (volfile_output_domain, errno, "Failed to write volume control %s", volfile);
-+		return false;
++		FormatError (volfile_output_domain, "Failed to write volume control %s", volfile);
++		return;
 +	    }
 +
 +	    fclose (fd);
 +
 +	    last_volume = volume;
-+
-+	    return true;
 +	};
 +};
 +
 +static Mixer *
 +volfile_volctrl_init(EventLoop &event_loop, gcc_unused AudioOutput &ao,
 +		MixerListener &listener,
-+		const config_param &param,
-+		gcc_unused Error &error)
++		const ConfigBlock &param)
 +{
 +	PipeMixer *pm = new PipeMixer(event_loop, listener);
 +	pm->Configure (param);
 +
 +	return pm;
 +}
-Binary files mpd-0.19.19/src/mpd and build/src/mpd differ
-diff -urN -x '*dep*' -x '*.o' -x '*~' -x '*~' mpd-0.19.19/src/output/plugins/FifoOutputPlugin.cxx build/src/output/plugins/FifoOutputPlugin.cxx
---- mpd-0.19.19/src/output/plugins/FifoOutputPlugin.cxx	2016-07-29 10:01:52.000000000 +0200
-+++ build/src/output/plugins/FifoOutputPlugin.cxx	2016-10-24 09:40:34.349986961 +0200
-@@ -28,6 +28,7 @@
- #include "util/Domain.hxx"
+diff -urN mpd-0.20.5/src/output/plugins/FifoOutputPlugin.cxx build/src/output/plugins/FifoOutputPlugin.cxx
+--- mpd-0.20.5/src/output/plugins/FifoOutputPlugin.cxx	2017-01-27 08:46:51.000000000 +0100
++++ build/src/output/plugins/FifoOutputPlugin.cxx	2017-03-08 14:16:04.609403652 +0100
+@@ -29,6 +29,7 @@
+ #include "util/RuntimeError.hxx"
  #include "Log.hxx"
  #include "open.h"
 +#include "mixer/MixerList.hxx"
  
  #include <sys/stat.h>
  #include <errno.h>
-@@ -303,5 +304,5 @@
+@@ -257,5 +258,5 @@
  	nullptr,
- 	fifo_output_cancel,
+ 	&Wrapper::Cancel,
  	nullptr,
 -	nullptr,
 +	&volfile_volctrl_plugin,
  };
-diff -urN -x '*dep*' -x '*.o' -x '*~' -x '*~' mpd-0.19.19/src/output/plugins/PipeOutputPlugin.cxx build/src/output/plugins/PipeOutputPlugin.cxx
---- mpd-0.19.19/src/output/plugins/PipeOutputPlugin.cxx	2016-07-29 10:01:52.000000000 +0200
-+++ build/src/output/plugins/PipeOutputPlugin.cxx	2016-10-24 09:39:56.078182697 +0200
-@@ -22,11 +22,22 @@
+diff -urN mpd-0.20.5/src/output/plugins/PipeOutputPlugin.cxx build/src/output/plugins/PipeOutputPlugin.cxx
+--- mpd-0.20.5/src/output/plugins/PipeOutputPlugin.cxx	2017-01-27 08:46:51.000000000 +0100
++++ build/src/output/plugins/PipeOutputPlugin.cxx	2017-03-08 14:17:00.801217911 +0100
+@@ -22,6 +22,8 @@
  #include "../OutputAPI.hxx"
- #include "config/ConfigError.hxx"
- #include "util/Error.hxx"
-+#include "util/Domain.hxx"
+ #include "../Wrapper.hxx"
+ #include "system/Error.hxx"
 +#include "mixer/MixerList.hxx"
 +
-+#include <stdio.h>
-+#include <string.h>
-+#include <unistd.h>
-+#include <errno.h>
-+#include <fcntl.h>
  
  #include <string>
-+#include <sys/types.h>
-+#include <sys/wait.h>
- 
- #include <stdio.h>
- 
-+
- struct PipeOutput {
- 	AudioOutput base;
- 
-@@ -136,5 +147,5 @@
+ #include <stdexcept>
+@@ -99,5 +101,5 @@
  	nullptr,
  	nullptr,
  	nullptr,
 -	nullptr,
 +	&volfile_volctrl_plugin,
  };
---- mpd-0.19.19/Makefile.am	2016-08-05 17:48:36.000000000 +0200
-+++ build/Makefile.am	2016-10-24 11:05:26.864820128 +0200
-@@ -1242,6 +1242,7 @@
- 	src/mixer/MixerInternal.hxx
- 
- libmixer_plugins_a_SOURCES = \
-+	src/mixer/plugins/VolfileMixerPlugin.cxx \
- 	src/mixer/plugins/SoftwareMixerPlugin.cxx \
- 	src/mixer/plugins/SoftwareMixerPlugin.hxx
- libmixer_plugins_a_CPPFLAGS = $(AM_CPPFLAGS) \

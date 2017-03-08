@@ -11,6 +11,8 @@ FFHOME	    = /var/media/ftp/ffritz
 URL	= $(shell cat $(PKGTOP)/url-upmpdcli)
 FILE	= $(DLDIR)/$(shell basename $(URL))
 
+export PATH := $(TOOLCHAIN):$(PATH)
+
 all:	build/config.status
 	@make -C build PATH=$(TOOLCHAIN):$(PATH)
 
@@ -25,7 +27,7 @@ build/configure:    $(FILE)
 	@touch build/configure
 
 build/config.status:	build/configure
-	@cd build; export PATH=$(TOOLCHAIN):$(PATH); ./configure --host=i686-buildroot-linux-uclibc --target=i686-buildroot-linux-uclibc prefix=/usr --datarootdir=$(FFHOME)/share --sysconfdir=$(FFHOME)/etc
+	@cd build; ./configure --host=i686-buildroot-linux-uclibc --target=i686-buildroot-linux-uclibc prefix=/usr --datarootdir=$(FFHOME)/share --sysconfdir=$(FFHOME)/etc
 	@cd build; make install DESTDIR=$(TOPDIR)/output
 
 install:    all

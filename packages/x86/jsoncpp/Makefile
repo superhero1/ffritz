@@ -13,6 +13,8 @@ FILE	= $(DLDIR)/$(shell basename $(URL))
 OBJECTS = json_reader.o json_writer.o json_value.o
 VPATH =	build/src/lib_json
 
+export PATH := $(PATH):$(TOOLCHAIN)
+
 all:	libjsoncpp.a
 	cp -arv build/include/json $(SYSROOT)/usr/include
 	cp -av jsoncpp.pc $(SYSROOT)/usr/lib/pkgconfig

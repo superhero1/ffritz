@@ -20,7 +20,6 @@ build/configure:    $(FILE)
 	@mkdir -p build
 	@cd build; tar xf $(FILE) --strip-components=1
 	@cd build; patch -p1 < ../pipe_volume_ctrl.patch
-	@cd build; patch -p1 < ../l16.patch
 	cd build; aclocal
 	cd build; automake
 	cd build; autoreconf
