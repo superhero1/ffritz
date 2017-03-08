@@ -294,16 +294,12 @@ The atom source tarball (packages/x86/avm) does not work for me.
 Build Host
 ----------
 
-Suggested build host is Debian Wheezy (7.x), newer OSes may have problems compiling the used
-buildroot enironment (esp. gcc 4.7 and an older/other version of binutils/ld seems to be required,
-see comment in packages/buildroot.mk).
-
-Also tested is Debian Jessie (8.x) with gcc-4.7. Ubuntu, CentOS failed.
+Tested: Debian 7, Debian 8.
 
 Used disk space is ca. 10G.
 
 Required (debian) packages are:
-squashfs-tools busybox rsync sudo gcc gcc-4.7 g++ flex bison git libncurses-dev gettext unzip automake
+squashfs-tools busybox rsync sudo gcc g++ flex bison git libncurses-dev gettext unzip automake
 
 Big endian squashfs tools
 -------------------------
