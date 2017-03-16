@@ -316,7 +316,6 @@ TODO / Known Issues
 ===================
 - Fix usbplayd
 	- Fix libmaru to properly support for different sample rates (currently only 48KHz is detected)
-- Add support for l16 audio format for MPD/DLNA renderer
 
 HISTORY
 =======
@@ -324,9 +323,15 @@ release 13
 ----------
 - Atom
 	- buildroot
-		- gcc:		4.7.3	-> 4.9.3
-		- bunutils:	2.21.1	-> 2.23.1
-	- mpd:			0.19.21	-> 0.20.5
+		- New gcc version (4.7.3 -> 4.9.3)
+		- New binutils version (2.21.1 -> 2.23.1)
+			- Host gcc 4.7 no longer required
+	- New mpd version (0.19.21 -> 0.20.5)
+		- mpd/upmpdcli now support LPCM/l16 audio format
+- Arm
+	- version 0.3 of arm package
+		- added gdbserver
+	- Started implementing athtool to access Atheros switch
 
 release 12
 ----------

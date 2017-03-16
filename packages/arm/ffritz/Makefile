@@ -19,7 +19,7 @@ BR_TGT_SBIN = $(BR_TGT)/usr/sbin
 
 BINFILES   += $(BR_TGT_BIN)/strace $(BR_TGT_BIN)/ldd $(BR_TGT_SBIN)/tcpdump 
 BINFILES   += $(BR_TGT_BIN)/tcpbridge $(BR_TGT_BIN)/tcpprep $(BR_TGT_BIN)/tcpreplay $(BR_TGT_BIN)/tcpreplay-edit $(BR_TGT_BIN)/tcprewrite
-BINFILES   += $(BR_TGT_BIN)/rsync
+BINFILES   += $(BR_TGT_BIN)/rsync $(BR_TGT_BIN)/gdbserver
 BINFILES   += $(BR_TGT)/../host/usr/armeb-buildroot-linux-uclibcgnueabi/sysroot/usr/bin/curl
 ETCFILES    = etc/ffritz-env.sh 
 
