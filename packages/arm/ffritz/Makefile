@@ -33,7 +33,7 @@ ifeq ($(INSTDIR),)
     INSTDIR=$(STAGEDIR)
 endif
 
-SUBDIRS	    = ../avm 
+SUBDIRS	    = ../avm ../athtool
 
 .PHONY:	$(SUBDIRS)
 
@@ -62,8 +62,7 @@ install: $(SUBDIRS) $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls 
 	cp -a $(BINFILES) $(INSTDIR)/bin
 	cp -a  $(shell ls  $(BR_TGT_LIB)/lib*so*) $(INSTDIR)/lib
 	cp $(ETCFILES) $(INSTDIR)/etc
-#	test -d  $(INSTDIR)/usr/local && mv $(INSTDIR)/usr/local/bin/* $(INSTDIR)/bin
-#	test -d  $(INSTDIR)/usr/local && mv $(INSTDIR)/usr/local/sbin/* $(INSTDIR)/bin
+	make -C ../athtool install INSTDIR=$(INSTDIR)
 	cp -a bin/ffwrap $(INSTDIR)/bin/exec
 	cd $(INSTDIR)/bin; \
 	    for f in `ls | xargs file | grep ELF | sed -e 's/:.*//'`; do\
