@@ -22,6 +22,14 @@
 #include "ar8216.h"
 #include "ar8327.h"
 
+#define verb_printf(lvl, ...) if (_ath_verbose > lvl) { printf(__VA_ARGS__); }
+
+extern int _ath_verbose;
+extern const char *_ath_err;
+
+#define SETERR(_s)  _ath_err = _s;
+#define PRERR(...) {fprintf (stderr, __VA_ARGS__); fprintf (stderr, " :: ERROR :: %s\n", _ath_err ? _ath_err : "(none)");}
+
 extern uint32_t ath_rmw (uint32_t reg, uint32_t mask, uint32_t value, int *err);
 
 extern void ath_vlan_show (void);
@@ -30,6 +38,7 @@ extern int ath_vlan_delete (uint32_t vid);
 extern int ath_vlan_port_rm (uint32_t vid, uint32_t port);
 extern int ath_vlan_port_add (uint32_t vid, uint32_t port, uint32_t mode);
 extern uint32_t ath_attr_set_port (uint32_t attr, uint32_t port, uint32_t mode);
-
+extern int ath_pvid_port (uint32_t port, uint32_t vid);
+extern int ath_counters (int port, const char *filter, int all);
 #endif
 

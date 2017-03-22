@@ -32,7 +32,7 @@ export PATH := $(TOOLCHAIN):$(PATH)
 
 all:	$(TARGETS)
 
-athtool:    athtool.o athtool_vlan.o
+athtool:    athtool.o athtool_vlan.o athtool_counters.o
 	$(CROSS_COMPILE)gcc -o $@ $^ -L $(TGTLIB) $(LIBS)
 
 mdio-release:    mdio-release.o

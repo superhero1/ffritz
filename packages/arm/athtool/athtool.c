@@ -47,19 +47,28 @@ const char *usage =
 " ==== VLANs ====\n"
 " -V               : Show VLAN setup of all ports/VLANs\n"
 " -D <vid>         : Delete VLAN <vid>\n"
-//" -R <p>,<vid>     : Remove port <p> from VLAN <vid>\n"
+" -R <p>,<vid>     : Remove port <p> from VLAN <vid>\n"
 " -A <p>[,<t>]     : Add port <p> to new VLAN (-C) with egress-tag mode t:\n"
 "                     keep  : keep existing tag (default)\n"
 "                     untag : remove tag\n"
 "                     tag   : add/replace default port vid tag\n"
 "                    One or more -A statements are parameters to a subsequent\n"
 "                    create command:\n"
-" -C <vid>         : Create VLAN <vid>\n"
+" -C <vid>         : Create VLAN <vid>, using previous -A statememts as port\n"
+"                    list/attributes.\n"
+" -P <p>,<vid>     : Assign default VID for untagged ingress frames to port.\n"
+" ==== Counters ====\n"
+" -c <p>[,<all>[,<filter>]]\n"
+"                  : Print counters of port <p> (-1 for all ports).\n"
+"                    If <all> is 1 all counters are printed, otherwise only\n"
+"                    those that have changed since the previous call.\n"
+"                    Use optional <filter> for counter name substring match.\n"
+"                    Uses shared memory segment 0xfefec002.\n"
 ;
 
 int _ath_verbose = 0;
+const char *_ath_err = NULL;
 
-#define verb_printf(lvl, ...) if (_ath_verbose > lvl) { printf(__VA_ARGS__); }
 
 
 /* ========================================================================= */
@@ -83,7 +92,10 @@ uint32_t ath_rmw (uint32_t reg, uint32_t mask, uint32_t value, int *err)
 	if (extSwitchReadAthReg (reg, &tmp))
 	{
 	    if (err)
+	    {
 		*err = 1;
+		SETERR("extSwitchReadAthReg failed");
+	    }
 	    return 0xffffffff;
 	}
 	
@@ -97,7 +109,10 @@ uint32_t ath_rmw (uint32_t reg, uint32_t mask, uint32_t value, int *err)
 	if (extSwitchWriteAthReg (reg, tmp))
 	{
 	    if (err)
+	    {
 		*err = 1;
+		SETERR("extSwitchReadAthReg failed");
+	    }
 	    return 0xffffffff;
 	}
 
@@ -111,14 +126,17 @@ uint32_t ath_rmw (uint32_t reg, uint32_t mask, uint32_t value, int *err)
  *
  * \param port	port number (0..6) or -1 to disable mirroring
  *
- * \returns 0 on success, -1 on error
+ * \returns 0 on success, 1 on error
  */
 int ath_mirror_to (int port)
 {
     int rc = 0;
 
     if ((port < -1) || (port > 6))
-	return -1;
+    {
+	SETERR("bad port index");
+	return 1;
+    }
 
     ath_rmw (AR8327_REG_FWD_CTRL0,
 	AR8327_FWD_CTRL0_MIRROR_PORT,
@@ -133,7 +151,7 @@ int ath_mirror_to (int port)
  * \param multi	0 to allow only one mirror source (all others will be disabled),
  *		1 to allow multiple
  *
- * \returns 0 on success, -1 on error
+ * \returns 0 on success, 1 on error
  */
 int ath_ig_mirror_from (int port, int multi)
 {
@@ -142,7 +160,10 @@ int ath_ig_mirror_from (int port, int multi)
     int rc = 0;
 
     if ((port < -1) || (port > 6))
-	return -1;
+    {
+	SETERR("bad port index");
+	return 1;
+    }
 
     if (port == -1)
 	multi = 0;
@@ -176,7 +197,7 @@ int ath_ig_mirror_from (int port, int multi)
  * \param multi	0 to allow only one mirror source (all others will be disabled),
  *		1 to allow multiple
  *
- * \returns 0 on success, -1 on error
+ * \returns 0 on success, 1 on error
  */
 int ath_eg_mirror_from (int port, int multi)
 {
@@ -185,7 +206,10 @@ int ath_eg_mirror_from (int port, int multi)
     int rc = 0;
 
     if ((port < -1) || (port > 6))
-	return -1;
+    {
+	SETERR("bad port index");
+	return 1;
+    }
 
     if (port == -1)
 	multi = 0;
@@ -275,7 +299,9 @@ int main (int argc, char **argv)
     int multi;
     int src_port;
     int rc;
-    uint32_t port, mode;
+    uint32_t port, mode, vid;
+    int all = 0;
+    const char *filter = NULL;
 
     /* default vlan create attributes
      */
@@ -294,19 +320,47 @@ int main (int argc, char **argv)
 	    {"vlan-create", required_argument, 0, 'C'},
 	    {"vlan-delete", required_argument, 0, 'D'},
 	    {"vlan-add", required_argument, 0, 'A'},
-//	    {"vlan-remove", required_argument, 0, 'R'},
+	    {"vlan-remove", required_argument, 0, 'R'},
+	    {"pvid-set", required_argument, 0, 'P'},
+	    {"show-counters", required_argument, 0, 'c'},
 	    {"verbose", no_argument, 0, 'v'},
 	    {"help", no_argument, 0, 'h'},
 	    {0, 0, 0, 0}
 	};
 
-	c = getopt_long (argc, argv, "Vr:w:hM:E:I:RvC:D:A:", long_options, &option_index);
+	c = getopt_long (argc, argv, "Vr:w:hM:E:I:vC:D:A:R:P:c:", long_options, &option_index);
 
 	if (c == -1)
 	    break;
 
 	switch (c)
 	{
+	case 'c':
+	    s = strtok (optarg, ",");
+	    if (s)
+		port = atoi(s);
+	    else
+	    {
+		fprintf (stderr, usage);
+		return 1;
+	    }
+
+	    s = strtok (NULL, ",");
+	    if (s)
+		all = atoi(s);
+	    if (s)
+		s = strtok (NULL, ",");
+	    if (s)
+		filter = strdup (s);
+
+	    if (ath_counters (port, filter, all))
+	    {
+		PRERR("ath_counters");
+		return 1;
+	    }
+	    break;
+
+
 	case 'r':
 	    reg = strtoul (optarg, NULL, 0);
 
@@ -365,7 +419,7 @@ int main (int argc, char **argv)
 
 	    if (ath_mirror_to (atoi(optarg)))
 	    {
-		fprintf (stderr, "ath_mirror_to failed\n");
+		PRERR ("ath_mirror_to");
 		return 1;
 	    }
 	    break;
@@ -384,8 +438,7 @@ int main (int argc, char **argv)
 
 	    if (ath_eg_mirror_from (src_port, multi))
 	    {
-		fprintf (stderr, "ath_eg_mirror_from (%d %d) failed\n",
-		    src_port, multi);
+		PRERR ("ath_eg_mirror_from (%d %d)", src_port, multi);
 		return 1;
 	    }
 	    break;
@@ -404,7 +457,7 @@ int main (int argc, char **argv)
 
 	    if (ath_ig_mirror_from (src_port, multi))
 	    {
-		fprintf (stderr, "ath_ig_mirror_from (%d %d) failed\n",
+		PRERR("ath_ig_mirror_from (%d %d)",
 		    src_port, multi);
 		return 1;
 	    }
@@ -417,13 +470,13 @@ int main (int argc, char **argv)
 	case 'C':
 	    if ((mode & AR8327_VTU_FUNC0_EG_MODE) == AR8327_VTU_FUNC0_EG_MODE)
 	    {
-		fprintf (stderr, "No ports defined for new VLAN. -C switch requires at least one -A\n");
+		PRERR("No ports defined for new VLAN. -C switch requires at least one -A\n");
 		return 1;
 	    }
 
 	    if (ath_vlan_create (strtoul (optarg, NULL, 0), mode))
 	    {
-		fprintf (stderr, "ath_vlan_create failed\n");
+		PRERR("ath_vlan_create");
 		return 1;
 	    }
 	    break;
@@ -431,7 +484,7 @@ int main (int argc, char **argv)
 	case 'D':
 	    if (ath_vlan_delete (atoi(optarg)))
 	    {
-		fprintf (stderr, "ath_vlan_delete failed\n");
+		PRERR("ath_vlan_delete");
 		return 1;
 	    }
 	    break;
@@ -463,19 +516,14 @@ int main (int argc, char **argv)
 	    mode = ath_attr_set_port (mode, port, val);
 	    break;
 	    
-#if 0
 	case 'R':
 	    s = strtok (optarg, ",");
-	    printf ("%d %s\n", __LINE__, s);fflush(stdout);
 	    if (s)
 		port = strtoul (s, NULL, 0);
-	    printf ("%d %s %d\n", __LINE__, s, port);fflush(stdout);
 	    if (s)
 		s = strtok (NULL, ",");
-	    printf ("%d %s %d\n", __LINE__, s, port);fflush(stdout);
 	    if (s)
 		vid = strtoul (s, NULL, 0);
-	    printf ("%d %s %d\n", __LINE__, s, vid);fflush(stdout);
 
 	    if (!s)
 	    {
@@ -485,11 +533,31 @@ int main (int argc, char **argv)
 
 	    if (ath_vlan_port_rm (vid, port))
 	    {
-		fprintf (stderr, "ath_vlan_port_rm failed\n");
+		PRERR("ath_vlan_port_rm");
 		return 1;
 	    }
 	    break;
-#endif
+
+	case 'P':
+	    s = strtok (optarg, ",");
+	    if (s)
+		port = strtoul (s, NULL, 0);
+	    if (s)
+		s = strtok (NULL, ",");
+	    if (s)
+		vid = strtoul (s, NULL, 0);
+
+	    if (!s)
+	    {
+		fprintf (stderr, usage);
+		return 1;
+	    }
+
+	    if (ath_pvid_port (port, vid))
+	    {
+		PRERR("ath_pvid_port");
+		return 1;
+	    }
 
 	case 'v':
 	    _ath_verbose++;

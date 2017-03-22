@@ -27,13 +27,28 @@
 
 #include "athtool.h"
 
+/*! Execute VTU command
+ *
+ * If required, VTU_FUNC0 register must be assigned before calling this function
+ *
+ * \param cmd	VTU command bytes (bits 0..3 of VTU_FUNC1)
+ * \param vid	VID part of VTU_FUNC1 (if applicable)
+ * \param port  PORT part of VTU_FUNC1 (if applicable)
+ * \param reg0	[out] assigned with read VTU_FUNC0 after command was executed
+ * \param reg1	[out] assigned with read VTU_FUNC1 after command was executed
+ *
+ * \returns 0 on success, 1 on error
+ */
 int ath_vtu_cmd (int cmd, uint32_t vid, uint32_t port, uint32_t *reg0, uint32_t *reg1)
 {
     int rc = 0;
     int i;
 
     if (!reg0 || !reg1)
+    {
+	SETERR("bad parameters");
 	return 1;
+    }
 
     vid &= 0xfff;
     port &= 0xf;
@@ -62,7 +77,10 @@ int ath_vtu_cmd (int cmd, uint32_t vid, uint32_t port, uint32_t *reg0, uint32_t 
     /* operation timed out?
      */
     if (cmd & AR8327_VTU_FUNC1_BUSY)
+    {
+	SETERR("VTU time-out");
 	return 1;
+    }
 
     *reg0 = ath_rmw (AR8327_REG_VTU_FUNC0, 0, 0, &rc);
     *reg1 = cmd;
@@ -114,7 +132,10 @@ int ath_vlan_create (uint32_t vid, uint32_t attr)
     /* does it already exist?
      */
     if (ath_vid_get (vid))
+    {
+	SETERR("VLAN exists");
 	return 1;
+    }
 
     attr = (attr & (AR8327_VTU_FUNC0_IVL|AR8327_VTU_FUNC0_LLD|AR8327_VTU_FUNC0_PO|AR8327_VTU_FUNC0_PRI|AR8327_VTU_FUNC0_EG_MODE)) |
 	    AR8327_VTU_FUNC0_VALID;
@@ -139,9 +160,16 @@ int ath_vlan_delete (uint32_t vid)
     return 0;
 }
 
+
 int ath_vlan_port_rm (uint32_t vid, uint32_t port)
 {
     uint32_t r1, r2;
+
+    if ((port > 6) || (vid > 4095))
+    {
+	SETERR("parameter out of range");
+	return 1;
+    }
 
     if (ath_vtu_cmd (AR8327_VTU_FUNC1_OP_REMOVE_PORT, vid, port, &r1, &r2))
 	return 1;
@@ -156,11 +184,17 @@ int ath_vlan_port_add (uint32_t vid, uint32_t port, uint32_t mode)
     uint32_t attr;
 
     if ((port > 6) || (mode > 2))
+    {
+	SETERR("parameter out of range");
 	return 1;
+    }
 
     attr = ath_vid_get (vid);
     if (attr == 0)
+    {
+	SETERR("VLAN does not exist");
 	return 1;
+    }
 
     attr = (attr & ~(3 << AR8327_VTU_FUNC0_EG_MODE_S(port))) |
 	   (mode << AR8327_VTU_FUNC0_EG_MODE_S(port));
@@ -175,6 +209,31 @@ int ath_vlan_port_add (uint32_t vid, uint32_t port, uint32_t mode)
     return 0;
 }
 
+/*! Set default VID for untagged ingress frames
+ *
+ * \param port port number
+ * \param vid  VLAN id
+ *
+ * \returns 0 on success, 1 on error
+ */
+int ath_pvid_port (uint32_t port, uint32_t vid)
+{
+    int rc = 0;
+
+    if ((port > 6) || (vid > 4095))
+    {
+	SETERR("parameter out of range");
+	return 1;
+    }
+
+    ath_rmw (AR8327_REG_PORT_VLAN0(port),
+	AR8327_PORT_VLAN0_DEF_CVID,
+	vid << AR8327_PORT_VLAN0_DEF_CVID_S,
+	&rc);
+
+    return rc;
+}
+
 
 int ath_vtu_get_next (int reset, uint32_t *reg0, uint32_t *reg1)
 {
@@ -183,7 +242,10 @@ int ath_vtu_get_next (int reset, uint32_t *reg0, uint32_t *reg1)
     int i;
 
     if (!reg0 || !reg1)
+    {
+	SETERR("bad arguments");
 	return 1;
+    }
 
     if (reset)
     {
@@ -199,7 +261,10 @@ int ath_vtu_get_next (int reset, uint32_t *reg0, uint32_t *reg1)
     /* pending operation? 
      */
     if (cmd & 0x80000000)
+    {
+	SETERR("VTU operation pending");
 	return 1;
+    }
 
     if (reset)
 	cmd = 0;
@@ -222,13 +287,16 @@ int ath_vtu_get_next (int reset, uint32_t *reg0, uint32_t *reg1)
 	if ((cmd & AR8327_VTU_FUNC1_BUSY) == 0)
 	    break;
 	
-	usleep (100);
+	usleep (10);
     }
 
     /* operation timed out?
      */
     if (cmd & AR8327_VTU_FUNC1_BUSY)
+    {
+	SETERR("VTU operation timed out");
 	return 1;
+    }
 
     *reg0 = ath_rmw (AR8327_REG_VTU_FUNC0, 0, 0, &rc);
     *reg1 = cmd;
