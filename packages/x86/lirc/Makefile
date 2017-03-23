@@ -19,9 +19,9 @@ FILE	= $(DLDIR)/$(shell basename $(URL))
 .PHONY:	build
 
 all:	build/config.status
-	make -C build
 	mkdir -p $(TOPDIR)/output
-	export PATH=$(TOOLCHAIN):$(PATH); make -C build
+	make -k -C build/doc; true
+	make -C build
 
 $(FILE):
 	@cd $(DLDIR); wget $(URL)

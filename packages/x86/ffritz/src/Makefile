@@ -5,7 +5,7 @@ export PATH := $(TOOLCHAIN):$(PATH)
 CC	    = i686-buildroot-linux-uclibc-gcc
 
 CFLAGS += -I../../libmaru
-LDFLAGS += ../../libmaru/libmaru.a -lusb-1.0
+LDFLAGS += ../../libmaru/libmaru.a -lusb-1.0 -pthread
 
 .c.o:
 	$(CC) -Wall -c $< -std=c99 $(CFLAGS)

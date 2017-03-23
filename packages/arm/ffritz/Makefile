@@ -19,7 +19,7 @@ BR_TGT_SBIN = $(BR_TGT)/usr/sbin
 
 BINFILES   += $(BR_TGT_BIN)/strace $(BR_TGT_BIN)/ldd $(BR_TGT_SBIN)/tcpdump 
 BINFILES   += $(BR_TGT_BIN)/tcpbridge $(BR_TGT_BIN)/tcpprep $(BR_TGT_BIN)/tcpreplay $(BR_TGT_BIN)/tcpreplay-edit $(BR_TGT_BIN)/tcprewrite
-BINFILES   += $(BR_TGT_BIN)/rsync
+BINFILES   += $(BR_TGT_BIN)/rsync $(BR_TGT_BIN)/gdbserver
 BINFILES   += $(BR_TGT)/../host/usr/armeb-buildroot-linux-uclibcgnueabi/sysroot/usr/bin/curl
 ETCFILES    = etc/ffritz-env.sh 
 
@@ -33,7 +33,7 @@ ifeq ($(INSTDIR),)
     INSTDIR=$(STAGEDIR)
 endif
 
-SUBDIRS	    = ../avm 
+SUBDIRS	    = ../avm ../athtool
 
 .PHONY:	$(SUBDIRS)
 
@@ -62,8 +62,7 @@ install: $(SUBDIRS) $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls 
 	cp -a $(BINFILES) $(INSTDIR)/bin
 	cp -a  $(shell ls  $(BR_TGT_LIB)/lib*so*) $(INSTDIR)/lib
 	cp $(ETCFILES) $(INSTDIR)/etc
-#	test -d  $(INSTDIR)/usr/local && mv $(INSTDIR)/usr/local/bin/* $(INSTDIR)/bin
-#	test -d  $(INSTDIR)/usr/local && mv $(INSTDIR)/usr/local/sbin/* $(INSTDIR)/bin
+	make -C ../athtool install INSTDIR=$(INSTDIR)
 	cp -a bin/ffwrap $(INSTDIR)/bin/exec
 	cd $(INSTDIR)/bin; \
 	    for f in `ls | xargs file | grep ELF | sed -e 's/:.*//'`; do\

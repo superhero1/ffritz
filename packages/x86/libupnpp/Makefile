@@ -10,6 +10,8 @@ SYSROOT	    = $(BUILDROOT)/output/host/usr/i686-buildroot-linux-uclibc/sysroot
 URL	= $(shell cat $(PKGTOP)/url-libupnpp)
 FILE	= $(DLDIR)/$(shell basename $(URL))
 
+export PATH := $(TOOLCHAIN):$(PATH)
+
 all:	build/config.status
 	@make -C build PATH=$(TOOLCHAIN):$(PATH)
 
@@ -24,7 +26,7 @@ build/configure:    $(FILE)
 	@touch build/configure
 
 build/config.status:	build/configure
-	@cd build; export PATH=$(TOOLCHAIN):$(PATH); ./configure --host=i686-buildroot-linux-uclibc --target=i686-buildroot-linux-uclibc prefix=/usr
+	@cd build; ./configure --host=i686-buildroot-linux-uclibc --target=i686-buildroot-linux-uclibc prefix=/usr
 	@cd build; make install DESTDIR=$(SYSROOT)
 	@cd build; make install DESTDIR=$(TOPDIR)/output
 

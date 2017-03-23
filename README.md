@@ -194,9 +194,48 @@ lirc can be used to operate an IR transceiver connected to the fritzbox
 	killall lircd
 
 - For irdroid/irtoy the cdc-acm kernel module is packaged and installed.
-  It is pre-built, but can be generated in packages/x86/avm (make kernel-config kernel-modules)
+  It is pre-built, but can be generated in packages/x86/avm
+  (make kernel-config kernel-modules)
 
 - lircd execution can be prevented by creating /var/media/ftp/.skip_lircd
+
+athtool: Atheros switch tool (ARM package)
+------------------------------------------
+A little tool i have written to access the external switch (AR8327).
+It supports
+
+- Reading and writing registers
+- Configuring port mirroring
+- Configuring VLANs
+- Reading port counters
+
+athtool -h gives detailed help.
+
+The port assignment of the switch is
+
+- 0   : CPU port
+- 1-4 : External 1000Base-T ports
+- 5,6 : Unused
+
+The CPU port connects to the l2sd0 (ARM) and eth0 (Atom) interfaces.
+Default VLANs:
+
+- 2  : Lan VLAN (connects to "lan" bridges on ARM/Atom via
+       l2sd0.2 / eth0.2)
+- 99 : Guest VLAN ("guest" bridges via l2sd0.99 / eth0.99)
+
+NOTES:
+
+- athtool operates the switch on register level. Any modifications done
+  are not known by upper layer box services and therefore might cause
+  unwanted side-effects (or get overwritten at some time).
+- Register access is protected by a semaphore (IPC key 0x61010760).
+  Should an application holding this semaphore crash, the semaphore is not
+  released and tools will hang endlessly (in fact they can't even be started,
+  since the loader of libticc.so attempts to get the semaphore).
+  Therefore i packaged the mdio-relese command, which forces a release operation
+  on the semaphore.
+- To dump port states and L2 entries use /usr/sbin/showextswitch.
 
 Miscellaneous tools (Atom/Arm packages)
 ---------------------------------------
@@ -294,16 +333,12 @@ The atom source tarball (packages/x86/avm) does not work for me.
 Build Host
 ----------
 
-Suggested build host is Debian Wheezy (7.x), newer OSes may have problems compiling the used
-buildroot enironment (esp. gcc 4.7 and an older/other version of binutils/ld seems to be required,
-see comment in packages/buildroot.mk).
-
-Also tested is Debian Jessie (8.x) with gcc-4.7. Ubuntu, CentOS failed.
+Tested: Debian 7, Debian 8.
 
 Used disk space is ca. 10G.
 
 Required (debian) packages are:
-squashfs-tools busybox rsync sudo gcc gcc-4.7 g++ flex bison git libncurses-dev gettext unzip automake
+squashfs-tools busybox rsync sudo gcc g++ flex bison git libncurses-dev gettext unzip automake
 
 Big endian squashfs tools
 -------------------------
@@ -320,10 +355,22 @@ TODO / Known Issues
 ===================
 - Fix usbplayd
 	- Fix libmaru to properly support for different sample rates (currently only 48KHz is detected)
-- Add support for l16 audio format for MPD/DLNA renderer
 
 HISTORY
 =======
+release 13
+----------
+- Atom
+	- buildroot
+		- New gcc version (4.7.3 -> 4.9.3)
+		- New binutils version (2.21.1 -> 2.23.1)
+			- Host gcc 4.7 no longer required
+	- New mpd version (0.19.21 -> 0.20.5)
+		- mpd/upmpdcli now support LPCM/l16 audio format
+- Arm
+	- version 0.3 of arm package
+		- added gdbserver
+		- Added athtool to access box switch
 
 release 12
 ----------
@@ -457,6 +504,8 @@ Standalone Package History
 
 ffritz-arm-XXX.tar.gz
 ---------------------
+- 0.3
+    - Added athtool to access box switch (see description above)
 - 0.2
     - Added curl
     - Added rsync
