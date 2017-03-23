@@ -94,7 +94,7 @@ struct counter cnt_list_tpl[] =
 	{.sz=0}
 };
 
-struct counter *cnt_list = NULL;
+static struct counter *cnt_list = NULL;
 
 /* sprintf value into string and insert , separators 
  * (like the ' printf format character).
@@ -127,7 +127,9 @@ static char *fmt1000 (uint64_t val, char *str, size_t slen)
     return str;
 }
 
-void cntShow (int port, uint64_t val, uint64_t *psum, const char *name, 
+/*! show a counter
+ */
+static void cntShow (int port, uint64_t val, uint64_t *psum, const char *name, 
                      int cor, int dtime, int showAll)
 {
     uint64_t sum;
@@ -164,6 +166,19 @@ void cntShow (int port, uint64_t val, uint64_t *psum, const char *name,
     printf ("\n");
 }
 
+/*! Print some/all per-port counters
+ *
+ * The function stores counter data in a shared memory segment, so that it is
+ * possible to print counter changes and rates for subsequent calls.
+ *
+ * \param port	port to show, or -1 for all
+ * \param filter if not NULL, print only counters that satisfy substring match
+ * \param all print all counters if 1, instead of only the changed ones.
+ *	A value of 2 causes the shared memory block to be destroyed and an error 
+ *	return code.
+ *
+ * \returns 0 on success, 1 on error
+ */
 int ath_counters (int port, const char *filter, int all)
 {
     uint32_t v32;
@@ -172,7 +187,6 @@ int ath_counters (int port, const char *filter, int all)
     uint64_t rtime, dtime;
     struct counter *c;
     int shmid;
-
 
     if (cnt_list == NULL)
     {

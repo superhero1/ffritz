@@ -194,9 +194,48 @@ lirc can be used to operate an IR transceiver connected to the fritzbox
 	killall lircd
 
 - For irdroid/irtoy the cdc-acm kernel module is packaged and installed.
-  It is pre-built, but can be generated in packages/x86/avm (make kernel-config kernel-modules)
+  It is pre-built, but can be generated in packages/x86/avm
+  (make kernel-config kernel-modules)
 
 - lircd execution can be prevented by creating /var/media/ftp/.skip_lircd
+
+athtool: Atheros switch tool (ARM package)
+------------------------------------------
+A little tool i have written to access the external switch (AR8327).
+It supports
+
+- Reading and writing registers
+- Configuring port mirroring
+- Configuring VLANs
+- Reading port counters
+
+athtool -h gives detailed help.
+
+The port assignment of the switch is
+
+- 0   : CPU port
+- 1-4 : External 1000Base-T ports
+- 5,6 : Unused
+
+The CPU port connects to the l2sd0 (ARM) and eth0 (Atom) interfaces.
+Default VLANs:
+
+- 2  : Lan VLAN (connects to "lan" bridges on ARM/Atom via
+       l2sd0.2 / eth0.2)
+- 99 : Guest VLAN ("guest" bridges via l2sd0.99 / eth0.99)
+
+NOTES:
+
+- athtool operates the switch on register level. Any modifications done
+  are not known by upper layer box services and therefore might cause
+  unwanted side-effects (or get overwritten at some time).
+- Register access is protected by a semaphore (IPC key 0x61010760).
+  Should an application holding this semaphore crash, the semaphore is not
+  released and tools will hang endlessly (in fact they can't even be started,
+  since the loader of libticc.so attempts to get the semaphore).
+  Therefore i packaged the mdio-relese command, which forces a release operation
+  on the semaphore.
+- To dump port states and L2 entries use /usr/sbin/showextswitch.
 
 Miscellaneous tools (Atom/Arm packages)
 ---------------------------------------
@@ -331,7 +370,7 @@ release 13
 - Arm
 	- version 0.3 of arm package
 		- added gdbserver
-	- Started implementing athtool to access Atheros switch
+		- Added athtool to access box switch
 
 release 12
 ----------
@@ -465,6 +504,8 @@ Standalone Package History
 
 ffritz-arm-XXX.tar.gz
 ---------------------
+- 0.3
+    - Added athtool to access box switch (see description above)
 - 0.2
     - Added curl
     - Added rsync

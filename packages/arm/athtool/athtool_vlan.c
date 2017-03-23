@@ -107,6 +107,16 @@ uint32_t ath_vid_get (uint32_t vid)
     return reg0;
 }
 
+/*! Modify port egress mode in attribute (VTU_FUNC0) value
+ *
+ * \param attr attribute (VTU_FUNC0) value
+ * \param port port number
+ * \mode port egress mode (AR8327_VTU_FUNC0_EG_MODE_KEEP,
+ *	AR8327_VTU_FUNC0_EG_MODE_UNTAG,
+ *	AR8327_VTU_FUNC0_EG_MODE_TAG
+ *
+ * \returns new VTU_FUNC0 value
+ */
 uint32_t ath_attr_set_port (uint32_t attr, uint32_t port, uint32_t mode)
 {
     if (port > 6)
@@ -150,6 +160,12 @@ int ath_vlan_create (uint32_t vid, uint32_t attr)
     return 0;
 }
 
+/*! delete a VLAN
+ * 
+ * \param vid	VLAN id
+ *
+ * \returns 0 on success, 1 on error
+ */
 int ath_vlan_delete (uint32_t vid)
 {
     uint32_t r1, r2;
@@ -161,6 +177,13 @@ int ath_vlan_delete (uint32_t vid)
 }
 
 
+/*! Remove a port from a VLAN
+ * 
+ * \param vid	VLAN id
+ * \param port	port number
+ *
+ * \returns 0 on success, 1 on error
+ */
 int ath_vlan_port_rm (uint32_t vid, uint32_t port)
 {
     uint32_t r1, r2;
@@ -177,6 +200,14 @@ int ath_vlan_port_rm (uint32_t vid, uint32_t port)
     return 0;
 }
 
+/*! Add a port to a VLAN
+ * 
+ * \param vid	VLAN id
+ * \param port	port number
+ * \param port	egress tag mode (see ath_attr_set_port())
+ *
+ * \returns 0 on success, 1 on error
+ */
 int ath_vlan_port_add (uint32_t vid, uint32_t port, uint32_t mode)
 {
     int rc;
@@ -235,6 +266,14 @@ int ath_pvid_port (uint32_t port, uint32_t vid)
 }
 
 
+/*! get first/next entry in VTU table
+ *
+ * \param reset	0 to get first entry, 1 for next entry
+ * \param reg0	holdt contents of VTU_FUNC0 register
+ * \param reg1	holds contents of VTU_FUNC1 register
+ *
+ * \returns 0 on success, 1 on error
+ */
 int ath_vtu_get_next (int reset, uint32_t *reg0, uint32_t *reg1)
 {
     int rc = 0;
@@ -304,6 +343,8 @@ int ath_vtu_get_next (int reset, uint32_t *reg0, uint32_t *reg1)
     return rc;
 }
 
+/*! Show some VLAN related information
+ */
 void ath_vlan_show (void)
 {
     int i, j;
