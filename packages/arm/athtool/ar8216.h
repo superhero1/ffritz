@@ -369,6 +369,8 @@ enum arl_op {
         AR8XXX_ARL_GET_NEXT
 };
 
+#if 0
+/* \cond
 struct arl_entry {
         uint8_t port;
         uint8_t mac[6];
@@ -382,7 +384,6 @@ struct ar8xxx_mib_desc {
         const char *name;
 };
 
-#if 0
 struct ar8xxx_chip {
         unsigned long caps;
         bool config_at_probe;
@@ -643,6 +644,7 @@ wait_for_page_switch(void)
 {
         udelay(5);
 }
+/* \endcond */
 #endif
 
 #endif

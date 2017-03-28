@@ -19,7 +19,7 @@
 #ifndef _libticch_
 #define _libticch_
 
-/*! \ingroup libticc */
+/*! \defgroup libticc libticc prototypes */
 /*! @{ */
 
 
@@ -55,6 +55,7 @@ extern int extSwitchMdioAccessLock (void);
 
 /*============================================================================
  * libticc .text segment, unknown API
+ * \cond
  */
 extern int armcode2str (void);
 extern int athMdioBusyWait (void);
@@ -657,6 +658,8 @@ extern int WLAN_Restart (void);
 extern int WLAN_Start (void);
 extern int WLAN_Stop (void);
 extern int xaddr2str (void);
+
+/* \endcond */
 
 #endif
 /*! @} */

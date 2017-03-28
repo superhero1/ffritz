@@ -31,6 +31,10 @@
 
 #include "athtool.h"
 
+/*! \ingroup athtool */
+/*! \subsection counters */
+/*! @{ */
+
 static inline uint64_t ullTime(void)
 {
     struct timeval tv;
@@ -38,18 +42,7 @@ static inline uint64_t ullTime(void)
     return ((uint64_t)tv.tv_sec * 1000000ULL + (uint64_t)tv.tv_usec);
 }
 
-struct counter
-{
-    const char  name[64];
-    int		 off;
-    int		 sz;
-
-    uint64_t	 sum;
-    uint64_t	 lastReadTime;
-};
-
-static int _initialized = 0;
-struct counter cnt_list_tpl[] =
+static struct ath_counter cnt_list_tpl[] =
 {
 	{.name="RxBroad", .off=0x00, .sz=4 },
 	{.name="RxPause", .off=0x04, .sz=4 },
@@ -93,8 +86,6 @@ struct counter cnt_list_tpl[] =
 
 	{.sz=0}
 };
-
-static struct counter *cnt_list = NULL;
 
 /* sprintf value into string and insert , separators 
  * (like the ' printf format character).
@@ -171,6 +162,7 @@ static void cntShow (int port, uint64_t val, uint64_t *psum, const char *name,
  * The function stores counter data in a shared memory segment, so that it is
  * possible to print counter changes and rates for subsequent calls.
  *
+ * \param dev	Device handle
  * \param port	port to show, or -1 for all
  * \param filter if not NULL, print only counters that satisfy substring match
  * \param all print all counters if 1, instead of only the changed ones.
@@ -179,21 +171,21 @@ static void cntShow (int port, uint64_t val, uint64_t *psum, const char *name,
  *
  * \returns 0 on success, 1 on error
  */
-int ath_counters (int port, const char *filter, int all)
+int ath_counters (struct ath_dev *dev, int port, const char *filter, int all)
 {
     uint32_t v32;
     uint64_t v64;
     int rc = 0;
     uint64_t rtime, dtime;
-    struct counter *c;
+    struct ath_counter *c;
     int shmid;
 
-    if (cnt_list == NULL)
+    if (dev->cnt_list == NULL)
     {
 	/* data is kept in IPC shared memory so that we can determine
 	 * per-second information
 	 */
-	shmid = shmget(0xfefec002, sizeof(cnt_list_tpl), IPC_CREAT);
+	shmid = shmget(0xfefec002 + dev->instance, sizeof(cnt_list_tpl), IPC_CREAT);
 
 	if (shmid == -1)
 	{
@@ -215,53 +207,53 @@ int ath_counters (int port, const char *filter, int all)
 	    }
 	}
 
-	cnt_list = shmat (shmid, NULL, 0);
+	dev->cnt_list = shmat (shmid, NULL, 0);
 
-	if (cnt_list == ((void *) -1))
+	if (dev->cnt_list == ((void *) -1))
 	{
 	    perror ("shmat");
 	    SETERR("shmat");
 	    return 1;
 	}
 
-	if (cnt_list[0].sz == 0)
+	if (dev->cnt_list[0].sz == 0)
 	{
-	    memcpy (cnt_list, cnt_list_tpl, sizeof(cnt_list_tpl));
-	    _initialized = 0;
+	    memcpy (dev->cnt_list, cnt_list_tpl, sizeof(cnt_list_tpl));
+	    dev->cnt_initialized = 0;
 	}
 	else
 	{
-	    _initialized = 1;
+	    dev->cnt_initialized = 1;
 	}
     }
 
     if (port == -1)
     {
-	for (port = 0; port < 7; port++)
-	    if (ath_counters (port, filter, all))
+	for (port = 0; port < dev->num_ports; port++)
+	    if (ath_counters (dev, port, filter, all))
 		return 1;
 	return 0;
     }
 
-    if ((port < 0) || (port > 6))
+    if ((port < 0) || (port >= dev->num_ports))
     {
 	SETERR("port number out of range");
 	return 1;
     }
 
-    for (c = cnt_list; c->sz != 0; c++)
+    for (c = dev->cnt_list; c->sz != 0; c++)
     {
 	if (filter && (!strstr (c->name, filter)))
 	    continue;
 
-	v32 = ath_rmw (0x1000 + port*0x100 + c->off, 0, 0, &rc);
+	v32 = ath_rmw (dev, 0x1000 + port*0x100 + c->off, 0, 0, &rc);
 	if (rc)
 	    return 1;
 
 	if (c->sz == 8)
 	{
 	    v64 = v32;
-	    v32 = ath_rmw (0x1000 + port*0x100 + c->off + 4, 0, 0, &rc);
+	    v32 = ath_rmw (dev, 0x1000 + port*0x100 + c->off + 4, 0, 0, &rc);
 	    if (rc)
 		return 1;
 	    v64 |= ((uint64_t)v32) << 32;
@@ -271,7 +263,7 @@ int ath_counters (int port, const char *filter, int all)
 	    v64 = v32;
 	}
 
-	if (!_initialized)
+	if (!dev->cnt_initialized)
 	{
 	    dtime = 0;
 	    c->sum = 0;
@@ -287,7 +279,8 @@ int ath_counters (int port, const char *filter, int all)
 	cntShow (port, v64, &c->sum, c->name, 0, dtime, all);
     }
 
-    _initialized = 1;
+    dev->cnt_initialized = 1;
     return 0;
 }
 
+/*! @} */

@@ -34,7 +34,7 @@ TARGETS	    = athtool mdio-release
 all:	$(TARGETS)
 
 
-athtool:	athtool.o athtool_vlan.o athtool_counters.o
+athtool:	athtool.o athtool_vlan.o athtool_counters.o athtool_atu.o
 athtool:	LDFLAGS=-L$(TGTLIB) -lticc
 mdio-release:	mdio-release.o
 
@@ -44,6 +44,11 @@ install:    all
 
 clean:
 	rm -f $(TARGETS) *.o *.d
+
+doc:	html/index.html
+
+html/index.html:    $(wildcard *.c *.h) Doxyfile
+	doxygen Doxyfile
 
 include ../../rules.mk
 -include $(wildcard *.d)
