@@ -310,7 +310,7 @@ enum ar8327_led_pattern {
 };
 
 #if 0
-/* \cond
+/* \cond */
 struct ar8327_led_entry {
         unsigned reg;
         unsigned shift;

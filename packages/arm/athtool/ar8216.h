@@ -370,7 +370,7 @@ enum arl_op {
 };
 
 #if 0
-/* \cond
+/* \cond */
 struct arl_entry {
         uint8_t port;
         uint8_t mac[6];

@@ -55,8 +55,8 @@ struct ath_arl_entry {
         uint8_t mac[6];
 };
 
-/*! MIB/Counter entry */
-struct ath_counter
+/*! MIB/Counter descriptor */
+struct ath_counter_desc
 {
     /*! Counter name */
     const char	name[64];
@@ -66,7 +66,11 @@ struct ath_counter
 
     /*! Counter size in bytes (4 or 8) */
     unsigned	sz;
+};
 
+/*! Counter history */
+struct ath_counter_state
+{
     /*! Last known total counter */
     uint64_t	sum;
 
@@ -91,7 +95,7 @@ struct ath_dev
     const char *ath_err;
 
     /*! Pointer to counter list (shared memory segment 0xfefec002+instance) */
-    struct ath_counter *cnt_list;
+    struct ath_counter_state *cnt_state;
 
     /*! Whether counters have been initialized */
     int		cnt_initialized;

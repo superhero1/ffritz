@@ -29,7 +29,7 @@ export PATH := $(TOOLCHAIN):$(PATH)
 
 ###############################################################################
 
-TARGETS	    = athtool mdio-release
+TARGETS	    = athtool mdio-release pswtool
 
 all:	$(TARGETS)
 
@@ -37,6 +37,8 @@ all:	$(TARGETS)
 athtool:	athtool.o athtool_vlan.o athtool_counters.o athtool_atu.o
 athtool:	LDFLAGS=-L$(TGTLIB) -lticc
 mdio-release:	mdio-release.o
+pswtool:	pswtool.o pswtool_counters.o
+pswtool:	LDFLAGS=-L$(TGTLIB) -lticc
 
 
 install:    all
