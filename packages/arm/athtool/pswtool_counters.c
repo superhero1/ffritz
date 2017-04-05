@@ -1,4 +1,4 @@
-/* Simple tool to access registers of atheros switch on FB6490.
+/* Tool to access internal switch of puma6
  *
  * Copyright (C) 2017 - Felix Schmidt
  *
@@ -43,6 +43,8 @@ static inline uint64_t ullTime(void)
     return ((uint64_t)tv.tv_sec * 1000000ULL + (uint64_t)tv.tv_usec);
 }
 
+/*! TODO Find out counter use ..
+ */
 static struct ath_counter_desc cnt_list_tpl[] =
 {
 	{.name="Counter1", .off=0x00, .sz=4 },

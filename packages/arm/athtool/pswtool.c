@@ -165,8 +165,6 @@ int main (int argc, char **argv)
 		if (!val)
 		    continue;
 
-		printf ("port %d: vid=%d val=%d\n", port, vid, val);
-
 		rc = L2SWITCH_AddPortToVlan (port, vid, (val == 2) ? 0 : 1);
 
 
