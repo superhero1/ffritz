@@ -86,7 +86,7 @@ struct ath_dev
     uint32_t	dev_id;
 
     /*! Number of ports */
-    unsigned	num_ports;
+    int		num_ports;
 
     /*! controlled device instance. */
     unsigned    instance;
