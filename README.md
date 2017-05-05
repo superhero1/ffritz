@@ -232,6 +232,11 @@ NOTES:
 - pswtool is based on some API calls provided by libticc. It is therefore 
   limited to the few calls i could more or less re-engineer.
 
+OpenVPN
+-------
+
+See OPENVPN.md
+
 Miscellaneous tools (Atom/Arm packages)
 ---------------------------------------
 - ldd
@@ -360,6 +365,9 @@ Change history of ffritz and packages:
 
 release 14
 ----------
+- Atom
+	- Add OpenVPN (experimental). See OPENVPN.md
+
 - Arm
 	- Add counter support to athtool
 	- Add pswtool to access internal Puma6 L2 switch
@@ -514,6 +522,9 @@ Standalone Package History
 
 ffritz-arm-XXX.tar.gz
 ---------------------
+- 0.4
+    - Added pswtool (for interlanl L2 switch)
+    - Some fixes to athtool (counter rate calculation)
 - 0.3
     - Added athtool to access box switch (see description above)
 - 0.2

@@ -134,5 +134,15 @@ if [ -x $rundir/etc/run_lircd -a ! -f /var/media/ftp/.skip_lircd ]; then
 else
     echo lircd not started 
 fi
+
+# and openvpn
+#
+if [ -x $rundir/etc/run_openvpn ]; then
+	echo starting OpenVPN
+	$rundir/etc/run_openvpn
+else
+	echo OpenVPN not started
+fi
+
 ) | tee -a $FFLOG 2>&1 &
 
