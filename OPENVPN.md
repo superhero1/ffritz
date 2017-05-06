@@ -67,3 +67,20 @@ TODO
 - Store private keys, configuration and scripts somewhere else, not in /var/media/ftp
 - Use Box DHCP server to assign addresses
 
+
+PERFORMANCE
+===========
+
+My performance numbers:
+
+	Cipher		Speed (Mbit/s)	openvpn daemon load
+	---------------	---------------	-------------------
+	BF-CBC		32 		47%
+	none		54		45%
+	AES-128-CBC	29		47%
+	
+
+The setup is:
+
+	PC[192.168.20.1] --- LAN --> Atom[192.168.20.253] -> OpenVPN -> lan bridge -> Cable(80mbit/sec) -> speedtest
+
