@@ -3,12 +3,10 @@
 # lircd startup file
 #                   
 . `dirname $0`/../etc/ffritz-env.sh || exit 1
-                                             
-if [ ! -d $FFRITZ_HOME/etc/openvpn ]; then
-    cp -ar $FFINSTDIR/etc/openvpn $FFRITZ_HOME/etc
-fi
 
-if [ ! -f $FFRITZ_HOME/etc/openvpn/openvpn.conf ]; then
+VPNDIR=/var/tmp/root-ssh/openvpn
+
+if [ ! -f $VPNDIR/openvpn.conf ]; then
 	echo OpenVPN not started, no config file
 	exit 0
 fi
@@ -30,5 +28,6 @@ nip=${net}.${naddr}
 /sbin/ifconfig lan:1 $nip || exit 1
 echo $0: $nip assigned to lan1:1 >> $FFLOG
 
+ln -s $FFINSTDIR/etc/openvpn/tap-up $VPNDIR
 
-$FFINSTDIR/bin/openvpn --daemon --writepid /var/run/openvpn.openvpn.pid --config $FFRITZ_HOME/etc/openvpn/openvpn.conf --cd $FFRITZ_HOME/etc/openvpn --script-security 2
+$FFINSTDIR/etc/ffdaemon $FFINSTDIR/bin/openvpn --writepid /var/run/openvpn.pid --config $VPNDIR/openvpn.conf --cd $VPNDIR --script-security 2

@@ -9,5 +9,3 @@ tap_dev=$1
 
 /usr/sbin/brctl addif lan $tap_dev || exit 1
 /sbin/ifconfig $tap_dev up || exit 1
-
-echo $* > /dev/console

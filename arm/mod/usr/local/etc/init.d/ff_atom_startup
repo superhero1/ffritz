@@ -137,7 +137,7 @@ fi
 
 # and openvpn
 #
-if [ -x $rundir/etc/run_openvpn ]; then
+if [ -x $rundir/etc/run_openvpn -a -r /var/tmp/root-ssh/openvpn/openvpn.conf ]; then
 	echo starting OpenVPN
 	$rundir/etc/run_openvpn
 else

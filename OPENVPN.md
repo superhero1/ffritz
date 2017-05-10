@@ -1,9 +1,8 @@
 OpenVPN Integration (experimental)
 ==================================
 
-An OpenVPN server will be started on the Atom core if the file
-/var/media/ftp/ffrits/etc/openvpn/openvpn.conf exists. openvpn.conf.template
-in the same directory can be used as template.
+An OpenVPN server will be started on the Atom core if persistent configuration data
+has been generated (see below).
 
 This particluar sample configuration starts OpenVPN as server in bridge mode
 with TLS. A connecting client is integrated into the LAN side of the box 
@@ -28,16 +27,22 @@ For this to work the following steps are performed at startup:
 	  bridge to provide access to the LAN domain.
 	- Enables TLS (see below)
 
-- Steps required by the user (once):
-	- Create/install TLS keys and certificates into /var/media/ftp/ffritz/etc/openvpn:
-		- certs/ca.crt - The CA authority file
-		- dh.pem - Diffie Hellman parameters
-		- certs/machine.cert - The certificate for the FritzBox
-		- keys/machine.key - The box private key
-	- Define an UDP forwarding rule for port 1194 so that the OpenVPN daemon can be
-	  reached.
-	- Create keys/certificates for the clients.
-
+Installation steps required by the user (once)
+----------------------------------------------
+- Create the directory /nvram/root-ssh_x86/openvpn (permission 700) on the ARM core.
+  This data is copied to the Atom core (to /var/tmp/root-ssh) at startup and is used
+  by the OpenVPN startup script.
+  All files mentioned below must be copied into this directory.
+- Create the daemon configuration file openvpn.conf.
+  /usr/local/etc/openvpn/openvpn.conf.template (in Atom FS) can be used as template.
+- Create/install TLS keys and certificates (see easy-rsa example below):
+	- ca.crt 	- The CA authority file
+	- dh.pem 	- Diffie Hellman parameters
+	- machine.cert	- The certificate for the FritzBox
+	- machine.key	- The box private key
+- Define an UDP forwarding rule in the FritzOS GUI for port 1194 so that the OpenVPN
+  daemon can be reached.
+- Create keys/certificates for the clients as required.
 
 TLS using easy-rsa
 ==================
@@ -52,9 +57,9 @@ Set up:
 For the Fritzbox (server):
 
 	./easyrsa build-server-full fbox nopass
-	scp ./pki/ca.crt ./pki/dh.pem root@192.168.178.254:/var/media/ftp/ffritz/etc/openvpn
-	scp ./pki/private/fbox.key root@192.168.178.254:/var/media/ftp/ffritz/etc/openvpn/keys/machine.key
-	scp ./pki/issued/fbox.crt root@192.168.178.254:/var/media/ftp/ffritz/etc/openvpn/certs/machine.cert
+	scp ./pki/ca.crt ./pki/dh.pem root@192.168.178.1:/nvram/root-ssh_x86/openvpn
+	scp ./pki/private/fbox.key root@192.168.178.1:/nvram/root-ssh_x86/openvpn/machine.key
+	scp ./pki/issued/fbox.crt root@192.168.178.1:/nvram/root-ssh_x86/openvpn/machine.cert
 
 For the clients:
 
@@ -64,7 +69,6 @@ Use pki/ca.crt, private/myclient.key and issued/myclient.crt for client initiali
 
 TODO
 ====
-- Store private keys, configuration and scripts somewhere else, not in /var/media/ftp
 - Use Box DHCP server to assign addresses
 
 

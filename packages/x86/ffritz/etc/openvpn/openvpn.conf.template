@@ -182,7 +182,7 @@ cipher BF-CBC
 
 # Certificate Authority file 
 # This file must be identical on all hosts that connect to your VPN
-ca certs/ca.crt
+ca ca.crt
 
 # If you are the server, you need to specify some Diffie Hellman parameters. 
 # OpenVPN provides some sample .pem files in documentation directory
@@ -190,8 +190,8 @@ dh dh.pem
 
 # Certificate and Key signed by Certificate Authority
 # Each machine needs to have their own unique certificate
-cert certs/machine.cert
-key keys/machine.key
+cert machine.cert
+key machine.key
 
 # To prevent some DoS attacks we can add another authentication layer in the
 # TLS control channel.  This needs to be enabled at both ends to work
