@@ -10,14 +10,22 @@
 #include <sys/ipc.h>
 #include <sys/sem.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 
 
 int main (int argc, char **argv)
 {
     struct sembuf sops;
+    key_t key = 0x61010760;
+    
 
-    int semid = semget(0x61010760, 1, 0);
+    if (argv[1] != NULL)
+    {
+	key = strtoul (argv[1], NULL, 16);
+    }
+
+    int semid = semget (key, 1, 0);
 
     if (semid == -1)
     {

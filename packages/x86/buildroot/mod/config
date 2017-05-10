@@ -1,6 +1,6 @@
 #
 # Automatically generated make config: don't edit
-# Buildroot 2013.02-g7b8dba0-dirty Configuration
+# Buildroot 2013.02-gb83e231 Configuration
 #
 BR2_HAVE_DOT_CONFIG=y
 # BR2_arm is not set
@@ -565,7 +565,7 @@ BR2_PACKAGE_LIBVORBIS=y
 # Compression and decompression
 #
 # BR2_PACKAGE_LIBARCHIVE is not set
-# BR2_PACKAGE_LZO is not set
+BR2_PACKAGE_LZO=y
 BR2_PACKAGE_ZLIB=y
 
 #
@@ -582,7 +582,10 @@ BR2_PACKAGE_LIBGPG_ERROR=y
 # BR2_PACKAGE_LIBSHA1 is not set
 BR2_PACKAGE_NETTLE=y
 # BR2_PACKAGE_OCF_LINUX is not set
-# BR2_PACKAGE_OPENSSL is not set
+BR2_PACKAGE_OPENSSL=y
+# BR2_PACKAGE_OPENSSL_BIN is not set
+# BR2_PACKAGE_OPENSSL_ENGINES is not set
+# BR2_PACKAGE_OPENSSL_OCF is not set
 # BR2_PACKAGE_POLARSSL is not set
 
 #
@@ -898,7 +901,11 @@ BR2_PACKAGE_NCURSES_TARGET_MENU=y
 # BR2_PACKAGE_OPENNTPD is not set
 # BR2_PACKAGE_OPENSSH is not set
 # BR2_PACKAGE_OPENSWAN is not set
-# BR2_PACKAGE_OPENVPN is not set
+BR2_PACKAGE_OPENVPN=y
+BR2_PACKAGE_OPENVPN_LZO=y
+BR2_PACKAGE_OPENVPN_SMALL=y
+BR2_PACKAGE_OPENVPN_CRYPTO_OPENSSL=y
+# BR2_PACKAGE_OPENVPN_CRYPTO_POLARSSL is not set
 # BR2_PACKAGE_PORTMAP is not set
 # BR2_PACKAGE_PPPD is not set
 # BR2_PACKAGE_PPTP_LINUX is not set

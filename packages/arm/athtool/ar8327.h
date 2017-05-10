@@ -199,6 +199,7 @@
 #define   AR8327_ATU_ADDR5                      BITS(8, 8)
 #define   AR8327_ATU_ADDR5_S                    8
 #define   AR8327_ATU_PORTS                      BITS(16, 7)
+#define   AR8327_ATU_PORTS_S                    16
 #define   AR8327_ATU_PORT0                      BIT(16)
 #define   AR8327_ATU_PORT1                      BIT(17)
 #define   AR8327_ATU_PORT2                      BIT(18)
@@ -206,8 +207,21 @@
 #define   AR8327_ATU_PORT4                      BIT(20)
 #define   AR8327_ATU_PORT5                      BIT(21)
 #define   AR8327_ATU_PORT6                      BIT(22)
+#define   AR8327_ATU_XPORT                      BIT(23)
+#define   AR8327_ATU_PRI                        BITS(24,3)
+#define   AR8327_ATU_PRI_S                      24
+#define   AR8327_ATU_SVL_LEARNED                BIT(27)
+#define   AR8327_ATU_PRI_OVR                    BIT(28)
+#define   AR8327_ATU_MIRROR                     BIT(29)
+#define   AR8327_ATU_DROP                       BIT(30)
 #define AR8327_REG_ATU_DATA2                    0x608
 #define   AR8327_ATU_STATUS                     BITS(0, 4)
+#define   AR8327_ATU_LEAKY                      BIT(4)
+#define   AR8327_ATU_REDIR_CPU                  BIT(5)
+#define   AR8327_ATU_COPY_CPU                   BIT(6)
+#define   AR8327_ATU_SHORT_LOOP                 BIT(7)
+#define   AR8327_ATU_VID                        BITS(8,12)
+#define   AR8327_ATU_VID_S                      8
 
 #define AR8327_REG_ATU_FUNC                     0x60c
 #define   AR8327_ATU_FUNC_OP                    BITS(0, 4)
@@ -223,6 +237,7 @@
 #define   AR8327_ATU_PORT_NUM                   BITS(8, 4)
 #define   AR8327_ATU_PORT_NUM_S                 8
 #define   AR8327_ATU_FUNC_BUSY                  BIT(31)
+#define   AR8327_ATU_FUNC_FULL_VIO		BIT(12)
 
 #define AR8327_REG_VTU_FUNC0                    0x0610
 #define   AR8327_VTU_FUNC0_EG_MODE              BITS(4, 14)
@@ -295,6 +310,7 @@ enum ar8327_led_pattern {
 };
 
 #if 0
+/* \cond */
 struct ar8327_led_entry {
         unsigned reg;
         unsigned shift;
@@ -326,6 +342,7 @@ struct ar8327_data {
         /* all fields below are cleared on reset */
         bool eee[AR8XXX_NUM_PHYS];
 };
+/* \endcond */
 
 #endif
 #endif

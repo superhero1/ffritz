@@ -128,23 +128,24 @@ dropbear/ssh/scp (Atom package)
 -------------------------------
 - The atom core has no direct access to the NVRAM
 - All non-volatile data is passed from arm to atom on startup:
-	- host keys for atom are stored in `/nvram/dropbear_x86`. They are generated
-	  on the ARM prior to starting the server on atom if they don't exist
-	  (in the `ff_atom_startup` script).
+	- host keys for atom are stored in `/nvram/dropbear_x86`. They are
+	  generated on the ARM prior to starting the server on atom if they
+	  don't exist (in the `ff_atom_startup` script).
 	  The data is copied to atom:/var/tmp/dropbear at box startup.
 
 	- /.ssh
 	  This is a symlink to /var/tmp/root-ssh, which is populated with the
 	  contents of /nvram/root-ssh_x86 at startup. This means:
 		- All unsaved runtime data in ~root/.ssh gets lost at reboot
-		- If public keys are added to `authorized_keys`, they should be saved to
-		  the arm nvram:
+		- If public keys are added to `authorized_keys`, they should be
+		  saved to the arm nvram:
 
 		  `scp /var/tmp/root-ssh/authorized_keys root@fritz.box:/nvram/root-ssh_x86`
 
-	- passwords (/etc/shadow) are copied from arm to atom at startup. Changing
-	  passwords locally on the atom is not persistent.
-	- Startup can be inhibited by creating file `/var/media/ftp/.skip_dropbear`
+	- passwords (/etc/shadow) are copied from arm to atom at startup.
+	  Changing passwords locally on the atom is not persistent.
+	- Startup can be inhibited by creating file
+	  `/var/media/ftp/.skip_dropbear`
 
 IPv6 (arm core feature)
 -----------------------
@@ -181,7 +182,8 @@ lirc (Atom Package)
 lirc can be used to operate an IR transceiver connected to the fritzbox
 (im using an irdroid module).
 
-- General configuration settings (used driver, network port, ...) can be modified in
+- General configuration settings (used driver, network port, ...) can be
+  modified in
 
     /var/media/ftp/ffritz/lirc_options.conf
 
@@ -199,30 +201,22 @@ lirc can be used to operate an IR transceiver connected to the fritzbox
 
 - lircd execution can be prevented by creating /var/media/ftp/.skip_lircd
 
-athtool: Atheros switch tool (ARM package)
+athtool/pswtool: Switch tools(ARM package)
 ------------------------------------------
-A little tool i have written to access the external switch (AR8327).
-It supports
+Some tools i have written to access the external switch (AR8327) and 
+internal switch (in puma6): athtool and pswtool respectively.
 
-- Reading and writing registers
-- Configuring port mirroring
-- Configuring VLANs
-- Reading port counters
+Supported features:
 
-athtool -h gives detailed help.
+- Reading and writing registers (athtool)
+- Configuring port mirroring (athtool)
+- Configuring VLANs (athtool, pswtool)
+- Reading port counters (athtool, pswtool)
 
-The port assignment of the switch is
+In general, -h shows detailed help.
 
-- 0   : CPU port
-- 1-4 : External 1000Base-T ports
-- 5,6 : Unused
-
-The CPU port connects to the l2sd0 (ARM) and eth0 (Atom) interfaces.
-Default VLANs:
-
-- 2  : Lan VLAN (connects to "lan" bridges on ARM/Atom via
-       l2sd0.2 / eth0.2)
-- 99 : Guest VLAN ("guest" bridges via l2sd0.99 / eth0.99)
+A topology diagram that shows the usage of these two switches
+is outlined in [MISC.md](MISC.html).
 
 NOTES:
 
@@ -235,7 +229,13 @@ NOTES:
   since the loader of libticc.so attempts to get the semaphore).
   Therefore i packaged the mdio-relese command, which forces a release operation
   on the semaphore.
-- To dump port states and L2 entries use /usr/sbin/showextswitch.
+- pswtool is based on some API calls provided by libticc. It is therefore 
+  limited to the few calls i could more or less re-engineer.
+
+OpenVPN
+-------
+
+See OPENVPN.md
 
 Miscellaneous tools (Atom/Arm packages)
 ---------------------------------------
@@ -286,9 +286,9 @@ defines:
 Installing to flash storage (NAS)
 ---------------------------------
 
-It is possible to install the packages to the NAS storage of the box (var/media/ftp)
-by simply unpacking them there. Atom binaries will be installed below "ffritz", 
-arm binaries below "ffritz-arm":
+It is possible to install the packages to the NAS storage of the box
+(var/media/ftp) by simply unpacking them there. Atom binaries will be
+installed below "ffritz", arm binaries below "ffritz-arm":
 
 Copy to the NAS storage:
 
@@ -318,8 +318,8 @@ Atom libraries
     conflicts/incompatibilies with other box services.
 
     In order to be able to call these binaries they are invoked via a wrapper
-    script (bin/exec/ffwrap) which sets `LD_LIBRARY_PATH` before actually calling
-    the binary.
+    script (bin/exec/ffwrap) which sets `LD_LIBRARY_PATH` before actually
+    calling the binary.
 
 Toolchain
 ---------
@@ -343,21 +343,35 @@ squashfs-tools busybox rsync sudo gcc g++ flex bison git libncurses-dev gettext 
 Big endian squashfs tools
 -------------------------
 
-Binaries are provided in the "hosts" directory. If they dont work, try cloning freetz and
-build them using "make squashfstools-be".
+Binaries are provided in the "hosts" directory. If they dont work, try cloning
+freetz and build them using "make squashfstools-be".
 
 Required (debian) packages are:
 apt-get install gawk libtool realpath pkg-config zlibc gnulib libcap-dev
 
-You might have to remove "composite" and "sys/acl.h" from the .build-prerequisites file
+You might have to remove "composite" and "sys/acl.h" from the
+.build-prerequisites file
 
 TODO / Known Issues
 ===================
 - Fix usbplayd
-	- Fix libmaru to properly support for different sample rates (currently only 48KHz is detected)
+	- Fix libmaru to properly support for different sample rates
+	  (currently only 48KHz is detected)
 
 HISTORY
 =======
+
+Change history of ffritz and packages:
+
+release 14
+----------
+- Atom
+	- Add OpenVPN (experimental). See OPENVPN.md
+
+- Arm
+	- Add counter support to athtool
+	- Add pswtool to access internal Puma6 L2 switch
+
 release 13
 ----------
 - Atom
@@ -377,8 +391,9 @@ release 12
 - Atom
 	- Added upmpdcli
 		- UPNP/DLNA renderer front-end for mpd
-		- l16/LPCM audio is currently not supported (would require latest
-		  mpd, which does not compile in this toolchain)
+		- l16/LPCM audio is currently not supported
+		  (would require latest mpd, which does not compile in this
+		  toolchain)
 	- Auto-start irexec
 	- Moved irexec config file to /var/media/ftp/ffritz/irexec.lircrc
 
@@ -388,13 +403,16 @@ release 11
 	- lirc
 		- switch back to main lirc repository
 		- replaced irdroid driver with fixed irtoy
-		  NOTE: _This requires replacing/merging existing lirc_options.conf with etc/lirc_options_dfl.conf!_
-		- lircd sometimes crashed after the very first start. Workaround is to start it in
-		  self-respawning mode (via ffdaemon).
+		  NOTE: _This requires replacing/merging existing
+		  lirc_options.conf with etc/lirc_options_dfl.conf!_
+		- lircd sometimes crashed after the very first start.
+		  Workaround is to start it in self-respawning mode
+		  (via ffdaemon).
 	- usbplayd
 		- Fix hanging daemon
 	- added ffdaemon script to start service as daemon
-	- some startup/daemon output is logged to /var/tmp/ffritz.log, added simple logrotate
+	- some startup/daemon output is logged to /var/tmp/ffritz.log,
+	  added simple logrotate
 	- moved usbplayd.pid to /var/run
 	- moved mpd.pid to /var/run/mpd
 	- Add udev rule for /dev/ttyACM* permission
@@ -441,14 +459,14 @@ release 8
 	  tcpreplay
 	  su
 	  mpc
-	- Replaced usbplay with usbplayd, which is fifo based and accepts several
-	  inputs. It also performs sample rate conversion if required.
+	- Replaced usbplay with usbplayd, which is fifo based and accepts
+	  several inputs. It also performs sample rate conversion if required.
 	- Accordingly, mpd uses fifo output driver instead of pipe driver
 	- Added shairport (AirPort audio receiver)
 	- Added user mount table (var/media/ftp/ffritz/.mtab)
 - ARM
-	- Added /usr/local/etc/switch_bootbank script to help bank switch without
-	  having to invoke the bootloader.
+	- Added /usr/local/etc/switch_bootbank script to help bank switch
+	  without having to invoke the bootloader.
 	  Also in installer tar: var/switch_bootbank
 	- Use toolchain from avm source tarball for dropbear binaries
 
@@ -504,6 +522,9 @@ Standalone Package History
 
 ffritz-arm-XXX.tar.gz
 ---------------------
+- 0.4
+    - Added pswtool (for interlanl L2 switch)
+    - Some fixes to athtool (counter rate calculation)
 - 0.3
     - Added athtool to access box switch (see description above)
 - 0.2
@@ -531,8 +552,13 @@ telnet via pseudo-root
 	- `name=ConfigImportFile`   --->      `name=UploadFile`
 - Select "Datei auswaehlen" and upload the pseudo-image (telnet-1.tar)
 
-After ca. 15 sec a dialog should appear to confirm installation of a inofficial firmware.
-Do this, telnet access should now be possible (with the regular login password of the box).
+After ca. 15 sec a dialog should appear to confirm installation of a
+inofficial firmware.
+Do this, telnet access should now be possible (with the regular login password
+of the box).
 
-You might need to repeat this, sometimes the box completely crashes. Note that the first
-telnet session might receive lots of console messages. Leave it open and connect a 2nd time.
+You might need to repeat this, sometimes the box completely crashes. Note that
+the first
+telnet session might receive lots of console messages. Leave it open and
+connect a 2nd time.
+

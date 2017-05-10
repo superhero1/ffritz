@@ -1,0 +1,33 @@
+#!/bin/sh
+#        
+# lircd startup file
+#                   
+. `dirname $0`/../etc/ffritz-env.sh || exit 1
+
+VPNDIR=/var/tmp/root-ssh/openvpn
+
+if [ ! -f $VPNDIR/openvpn.conf ]; then
+	echo OpenVPN not started, no config file
+	exit 0
+fi
+
+# Create lan:1 so that a forwarding rule for the Atom core can be set up
+# IP is one below the lan IP
+#
+lanip=`/sbin/ifconfig lan|grep 'inet addr:'|sed -e 's/.*inet addr:\(.*\) B.*/\1/'`
+net=`echo $lanip | sed -e 's/\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/'`
+addr=`echo $lanip | sed -e 's/[0-9]*\.[0-9]*\.[0-9]*\.\(.*\)/\1/'`
+
+test -z $lanip && exit 1
+test -z $net && exit 1
+test -z $addr && exit 1
+
+naddr=`expr $addr - 1`
+nip=${net}.${naddr}
+
+/sbin/ifconfig lan:1 $nip || exit 1
+echo $0: $nip assigned to lan1:1 >> $FFLOG
+
+ln -s $FFINSTDIR/etc/openvpn/tap-up $VPNDIR
+
+$FFINSTDIR/etc/ffdaemon $FFINSTDIR/bin/openvpn --writepid /var/run/openvpn.pid --config $VPNDIR/openvpn.conf --cd $VPNDIR --script-security 2

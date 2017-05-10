@@ -30,67 +30,93 @@
 
 /* ========================================================================= */
 
-const char *usage =
+/*! \defgroup athtool Atheros AR8327 switch tool
+ * A tool for operating an Atheros AR8327 switch on FritzBox 6490 Cable.
+ *
+ * It supports
+ *  - Register access
+ *  - Port mirroring
+ *  - Controlling VLANs
+ *  - Counter output, rate measurement
+ *  - L2 table handling
+ *
+ * Register access is accomplished via reverse-engineered MDIO functions from
+ * libticc.so.
+ *
+ * For usage details refer to "athtool -h".
+ */
+/*! @{ */
+
+static const char *usage =
 "athtool           : Atheros AR8327 switch tool\n"
-" -h               : This message\n"
-" -v               : Increase verbose level\n"
-" --verbose\n"
+" --help|-h        : This message\n"
+" --verbose|-v     : Increase verbose level\n"
 " ==== Register Access ====\n"
-" -r <adrs>        : Read register at offset\n"
-" -w <ards>,<val>[,<mask>] : Write val to register, use optional mask\n"
+" --read|-r <adrs> : Read register at offset\n"
+" --write|-w <ards>,<val>[,<mask>]\n"
+"                  : Write val to register, use optional mask\n"
 " ==== Mirroring ====\n"
-" -M <port>        : Set mirror-to port (0..6), or -1 to disable\n"
+" --mirror-to|-M <port>\n"
+"                  : Set mirror-to port (0..6), or -1 to disable\n"
 "                    If <port> is ?, print current mirror configuration.\n"
-" -I [+]<port>     : Set/add ingress/egress mirror-from port\n"
-" -E [+]<port>       (-1 to disable mirroring)\n"
+" --ingress-mirror|-I [+]<port>\n"
+" --egress-mirror|-E [+]<port>\n"
+"                  : Set/add ingress/egress mirror-from port\n"
+"                    (-1 to disable mirroring).\n"
 "                    + allows adding multiple ports, otherwise only the given\n"
 "                      port is mirrored.\n"
 " ==== VLANs ====\n"
-" -V               : Show VLAN setup of all ports/VLANs\n"
-" -D <vid>         : Delete VLAN <vid>\n"
-" -R <p>,<vid>     : Remove port <p> from VLAN <vid>\n"
-" -A <p>[,<t>]     : Add port <p> to new VLAN (-C) with egress-tag mode t:\n"
+" --vlan-show|-V   : Show VLAN setup of all ports/VLANs\n"
+" --vlan-delete|-D <vid>\n"
+"                  : Delete VLAN <vid>\n"
+" --vlan-remove|-R <p>,<vid>\n"
+"                  : Remove port <p> from VLAN <vid>\n"
+" --vlan-add|-A <p>[,<t>]\n"
+"                  : Add port <p> to new VLAN (-C) with egress-tag mode t:\n"
 "                     keep  : keep existing tag (default)\n"
 "                     untag : remove tag\n"
 "                     tag   : add/replace with PVID\n"
 "                    One or more -A statements are parameters to a subsequent\n"
 "                    create command:\n"
-" -C <vid>         : Create VLAN <vid>, using previous -A statememts as port\n"
+" --vlan-create|-C <vid>\n"
+"                  : Create VLAN <vid>, using previous -A statememts as port\n"
 "                    list/attributes.\n"
-" -P <p>,<vid>     : Assign default VID (PVID)\n"
+" --pvid-set|-P <p>,<vid>\n"
+"                  : Assign default VID (PVID)\n"
 " ==== Counters ====\n"
-" -c <p>[,<all>[,<filter>]]\n"
+" --show-counters|-c <p>[,<all>[,<filter>]]\n"
 "                  : Print counters of port <p> (-1 for all ports).\n"
 "                    If <all> is 1 all counters are printed, otherwise only\n"
 "                    those that have changed since the previous call.\n"
 "                    Use optional <filter> for counter name substring match.\n"
 "                    Uses shared memory segment 0xfefec002.\n"
-" ==== long options ====\n"
-"  -r : --read\n"
-"  -w : --write\n"
-"  -M : --mirror-to\n"
-"  -I : --ingress-mirror\n"
-"  -E : --egress-mirror\n"
-"  -V : --vlan-show\n"
-"  -C : --vlan-create\n"
-"  -D : --vlan-delete\n"
-"  -A : --vlan-add\n"
-"  -R : --vlan-remove\n"
-"  -P : --pvid-set\n"
-"  -c : --show-counters\n"
-"  -v : --verbose\n"
-"  -h : --help\n"
+" ==== L2 Table ====\n"
+" --l2-show|-t     : Dump L2 table\n"
+" --l2-add|-m <MAC>,<ports>[,<opt>]\n"
+"                  : Add static L2 entry with given MAC.\n"
+"                    <ports> is a comma separated list of ports\n"
+"                    (at least on e is required).\n"
+"                    <opt> is a list of options:\n"
+"        VID=<vid> : VLAN id (required)\n"
+"        PRI=<pri> : Priority field override\n"
+"      SVL_LEARNED : SVL learned instead of IVL learned\n"
+"           MIRROR : Mirror to mirrot-port\n"
+"             DROP : Drop packets\n"
+"            LEAKY : leaky VLAN enable\n"
+"        REDIR_CPU : Redirect to CPU port\n"
+"         COPY_CPU : Copy to CPU port\n"
+" --l2-del|-d <MAC>,<ports>[,<opt>]\n"
+"                  : Delete specific L2 entry. Same syntax as -m.\n"
+"                    MAC address, ports and VID must match.\n"
 ;
 
 int _ath_verbose = 0;
-const char *_ath_err = NULL;
-
-
 
 /* ========================================================================= */
 
 /*! Read-modify-write a switch register
  *
+ * \param dev	Device handle
  * \param reg	Register offset
  * \param mask	Which bits to modify. If all one register is not read,
  *		if all zero register is not written.
@@ -99,7 +125,7 @@ const char *_ath_err = NULL;
  *
  * \returns The register value on success, 0xffffffff on error
  */
-uint32_t ath_rmw (uint32_t reg, uint32_t mask, uint32_t value, int *err)
+uint32_t ath_rmw (struct ath_dev *dev, uint32_t reg, uint32_t mask, uint32_t value, int *err)
 {
     uint32_t tmp = 0;
 
@@ -140,21 +166,22 @@ uint32_t ath_rmw (uint32_t reg, uint32_t mask, uint32_t value, int *err)
 
 /*! Set mirror-to port 
  *
+ * \param dev	Device handle
  * \param port	port number (0..6) or -1 to disable mirroring
  *
  * \returns 0 on success, 1 on error
  */
-int ath_mirror_to (int port)
+int ath_mirror_to (struct ath_dev *dev, int port)
 {
     int rc = 0;
 
-    if ((port < -1) || (port > 6))
+    if ((port < -1) || (port >= dev->num_ports))
     {
 	SETERR("bad port index");
 	return 1;
     }
 
-    ath_rmw (AR8327_REG_FWD_CTRL0,
+    ath_rmw (dev, AR8327_REG_FWD_CTRL0,
 	AR8327_FWD_CTRL0_MIRROR_PORT,
 	(port << AR8327_FWD_CTRL0_MIRROR_PORT_S), &rc);
 
@@ -163,19 +190,20 @@ int ath_mirror_to (int port)
 
 /*! Set ingress mirror source
  *
+ * \param dev	Device handle
  * \param port	port number (0..6) or -1 to disable ingress mirror
  * \param multi	0 to allow only one mirror source (all others will be disabled),
  *		1 to allow multiple
  *
  * \returns 0 on success, 1 on error
  */
-int ath_ig_mirror_from (int port, int multi)
+int ath_ig_mirror_from (struct ath_dev *dev, int port, int multi)
 {
     int i;
     uint32_t reg;
     int rc = 0;
 
-    if ((port < -1) || (port > 6))
+    if ((port < -1) || (port >= dev->num_ports))
     {
 	SETERR("bad port index");
 	return 1;
@@ -184,20 +212,20 @@ int ath_ig_mirror_from (int port, int multi)
     if (port == -1)
 	multi = 0;
 
-    for (i = 0; i < 7; i++)
+    for (i = 0; i < dev->num_ports; i++)
     {
 	reg = AR8327_REG_PORT_LOOKUP(i);
 
 	if (i == port)
 	{
-	    ath_rmw (reg,
+	    ath_rmw (dev, reg,
 		    AR8327_PORT_LOOKUP_ING_MIRROR_EN,
 		    AR8327_PORT_LOOKUP_ING_MIRROR_EN,
 		    &rc);
 	}
 	else if (!multi)
 	{
-	    ath_rmw (reg,
+	    ath_rmw (dev, reg,
 		    AR8327_PORT_LOOKUP_ING_MIRROR_EN,
 		    0,
 		    &rc);
@@ -209,19 +237,20 @@ int ath_ig_mirror_from (int port, int multi)
 
 /*! Set egress mirror source
  *
- * \param port	port number (0..6) or -1 to disable egress mirror
+ * \param dev	Device handle
+ * \param port	port number (0..n) or -1 to disable egress mirror
  * \param multi	0 to allow only one mirror source (all others will be disabled),
  *		1 to allow multiple
  *
  * \returns 0 on success, 1 on error
  */
-int ath_eg_mirror_from (int port, int multi)
+int ath_eg_mirror_from (struct ath_dev *dev, int port, int multi)
 {
     int i;
     uint32_t reg;
     int rc = 0;
 
-    if ((port < -1) || (port > 6))
+    if ((port < -1) || (port >= dev->num_ports))
     {
 	SETERR("bad port index");
 	return 1;
@@ -230,20 +259,20 @@ int ath_eg_mirror_from (int port, int multi)
     if (port == -1)
 	multi = 0;
 
-    for (i = 0; i < 7; i++)
+    for (i = 0; i < dev->num_ports; i++)
     {
 	reg = AR8327_REG_PORT_HOL_CTRL1(i);
 
 	if (i == port)
 	{
-	    ath_rmw (reg,
+	    ath_rmw (dev, reg,
 		    AR8327_PORT_HOL_CTRL1_EG_MIRROR_EN,
 		    AR8327_PORT_HOL_CTRL1_EG_MIRROR_EN,
 		    &rc);
 	}
 	else if (!multi)
 	{
-	    ath_rmw (reg,
+	    ath_rmw (dev, reg,
 		    AR8327_PORT_HOL_CTRL1_EG_MIRROR_EN,
 		    0,
 		    &rc);
@@ -253,7 +282,11 @@ int ath_eg_mirror_from (int port, int multi)
     return rc;
 }
 
-void ath_mirror_show (void)
+/*! Show mirroring configuration
+ *
+ * \param dev device handle
+ */
+void ath_mirror_show (struct ath_dev *dev)
 {
     uint32_t tmp;
     int i;
@@ -261,7 +294,7 @@ void ath_mirror_show (void)
 
     printf ("mirror-to           : ");
 
-    tmp = ath_rmw (AR8327_REG_FWD_CTRL0, 0, 0, &rc);
+    tmp = ath_rmw (dev, AR8327_REG_FWD_CTRL0, 0, 0, &rc);
     if (rc)
     {
 	printf ("FAILED\n");
@@ -269,16 +302,16 @@ void ath_mirror_show (void)
     else
     {
 	tmp = (tmp & AR8327_FWD_CTRL0_MIRROR_PORT) >> AR8327_FWD_CTRL0_MIRROR_PORT_S;
-	if (tmp < 7)
+	if (tmp < dev->num_ports)
 	    printf ("%d\n", tmp);
 	else
 	    printf ("DISABLED\n");
     }
 
     printf ("ingress-mirror-from : ");
-    for (i = 0; i < 7; i++)
+    for (i = 0; i < dev->num_ports; i++)
     {
-	tmp = ath_rmw (AR8327_REG_PORT_LOOKUP(i), 0, 0, &rc);
+	tmp = ath_rmw (dev, AR8327_REG_PORT_LOOKUP(i), 0, 0, &rc);
 	if (rc)
 	{
 	    rc = 0;
@@ -291,9 +324,9 @@ void ath_mirror_show (void)
     printf ("\n");
 
     printf ("egress-mirror-from  : ");
-    for (i = 0; i < 7; i++)
+    for (i = 0; i < dev->num_ports; i++)
     {
-	tmp = ath_rmw (AR8327_REG_PORT_HOL_CTRL1(i), 0, 0, &rc);
+	tmp = ath_rmw (dev, AR8327_REG_PORT_HOL_CTRL1(i), 0, 0, &rc);
 	if (rc)
 	{
 	    rc = 0;
@@ -307,6 +340,8 @@ void ath_mirror_show (void)
 }
 
 
+/*! athtool main
+ */
 int main (int argc, char **argv)
 {
     int c;
@@ -318,6 +353,30 @@ int main (int argc, char **argv)
     uint32_t port, mode, vid;
     int all = 0;
     const char *filter = NULL;
+    struct ath_dev *dev;
+    struct ath_arl_entry entry;
+
+    dev = calloc (1, sizeof(*dev));
+    if (!dev)
+    {
+	perror ("calloc");
+	return 1;
+    }
+
+    if (extSwitchReadAthReg (0, &dev->dev_id))
+    {
+	fprintf (stderr, "athtool :: Failed to read ID register\n");
+	return 1;
+    }
+
+    switch (dev->dev_id & 0xff00)
+    {
+	case 0x1200:	dev->num_ports = 7; break;
+	default:	fprintf (stderr, "athtool :: Warning: unknown device ID: 0x%x\n", dev->dev_id);
+			dev->num_ports = 7; break;
+    }
+    dev->ath_rmw = ath_rmw;
+
 
     /* default vlan create attributes
      */
@@ -339,18 +398,73 @@ int main (int argc, char **argv)
 	    {"vlan-remove", required_argument, 0, 'R'},
 	    {"pvid-set", required_argument, 0, 'P'},
 	    {"show-counters", required_argument, 0, 'c'},
+	    {"l2-show", no_argument, 0, 't'},
+	    {"l2-add", required_argument, 0, 'm'},
+	    {"l2-del", required_argument, 0, 'd'},
 	    {"verbose", no_argument, 0, 'v'},
 	    {"help", no_argument, 0, 'h'},
 	    {0, 0, 0, 0}
 	};
 
-	c = getopt_long (argc, argv, "Vr:w:hM:E:I:vC:D:A:R:P:c:", long_options, &option_index);
+	c = getopt_long (argc, argv, "Vr:w:hM:E:I:vC:D:A:R:P:c:tm:d:", long_options, &option_index);
 
 	if (c == -1)
 	    break;
 
 	switch (c)
 	{
+	case 'm':
+	    if (ath_arl_flags_parse (dev, &entry, optarg))
+	    {
+		PRERR("ath_arl_flags_parse");
+		return 1;
+	    }
+	    if (entry.ports == 0)
+	    {
+		fprintf (stderr, "athtool :: at least one port must be given\n");
+		return 1;
+	    }
+	    if (entry.vid == 0)
+	    {
+		fprintf (stderr, "athtool :: VID attribute must be given and not be 0\n");
+		return 1;
+	    }
+
+	    if (ath_arl_add (dev, &entry))
+	    {
+		PRERR("ath_arl_add");
+		return 1;
+	    }
+	    break;
+
+	case 'd':
+	    if (ath_arl_flags_parse (dev, &entry, optarg))
+	    {
+		PRERR("ath_arl_flags_parse");
+		return 1;
+	    }
+	    if (entry.ports == 0)
+	    {
+		fprintf (stderr, "athtool :: at least one port must be given\n");
+		return 1;
+	    }
+	    if (entry.vid == 0)
+	    {
+		fprintf (stderr, "athtool :: VID attribute must be given and not be 0\n");
+		return 1;
+	    }
+
+
+	    if (ath_arl_rm (dev, &entry))
+	    {
+		PRERR("ath_arl_rm");
+		return 1;
+	    }
+	    break;
+	case 't':
+	    ath_arl_dump (dev);
+	    break;
+
 	case 'c':
 	    s = strtok (optarg, ",");
 	    if (s)
@@ -369,7 +483,7 @@ int main (int argc, char **argv)
 	    if (s)
 		filter = strdup (s);
 
-	    if (ath_counters (port, filter, all))
+	    if (ath_counters (dev, port, filter, all))
 	    {
 		PRERR("ath_counters");
 		return 1;
@@ -383,7 +497,7 @@ int main (int argc, char **argv)
 	    printf ("0x%03x : ", reg);
 
 	    rc = 0;
-	    val = ath_rmw (reg, 0, 0, &rc);
+	    val = ath_rmw (dev, reg, 0, 0, &rc);
 
 	    if (rc)
 	    {
@@ -416,7 +530,7 @@ int main (int argc, char **argv)
 		mask = strtoul (s, NULL, 0);
 
 	    rc = 0;
-	    ath_rmw (reg, mask, val, &rc);
+	    ath_rmw (dev, reg, mask, val, &rc);
 
 	    if (rc)
 	    {
@@ -429,11 +543,11 @@ int main (int argc, char **argv)
 	case 'M':
 	    if (!strcmp (optarg, "?"))
 	    {
-		ath_mirror_show();
+		ath_mirror_show(dev);
 		break;
 	    }
 
-	    if (ath_mirror_to (atoi(optarg)))
+	    if (ath_mirror_to (dev, atoi(optarg)))
 	    {
 		PRERR ("ath_mirror_to");
 		return 1;
@@ -452,7 +566,7 @@ int main (int argc, char **argv)
 		src_port = atoi (optarg);
 	    }
 
-	    if (ath_eg_mirror_from (src_port, multi))
+	    if (ath_eg_mirror_from (dev, src_port, multi))
 	    {
 		PRERR ("ath_eg_mirror_from (%d %d)", src_port, multi);
 		return 1;
@@ -471,7 +585,7 @@ int main (int argc, char **argv)
 		src_port = atoi (optarg);
 	    }
 
-	    if (ath_ig_mirror_from (src_port, multi))
+	    if (ath_ig_mirror_from (dev, src_port, multi))
 	    {
 		PRERR("ath_ig_mirror_from (%d %d)",
 		    src_port, multi);
@@ -480,7 +594,7 @@ int main (int argc, char **argv)
 	    break;
 	
 	case 'V':
-	    ath_vlan_show();
+	    ath_vlan_show(dev);
 	    break;
 
 	case 'C':
@@ -490,7 +604,7 @@ int main (int argc, char **argv)
 		return 1;
 	    }
 
-	    if (ath_vlan_create (strtoul (optarg, NULL, 0), mode))
+	    if (ath_vlan_create (dev, strtoul (optarg, NULL, 0), mode))
 	    {
 		PRERR("ath_vlan_create");
 		return 1;
@@ -498,7 +612,7 @@ int main (int argc, char **argv)
 	    break;
 
 	case 'D':
-	    if (ath_vlan_delete (atoi(optarg)))
+	    if (ath_vlan_delete (dev, atoi(optarg)))
 	    {
 		PRERR("ath_vlan_delete");
 		return 1;
@@ -529,7 +643,7 @@ int main (int argc, char **argv)
 		return 1;
 	    }
 
-	    mode = ath_attr_set_port (mode, port, val);
+	    mode = ath_attr_set_port (dev, mode, port, val);
 	    break;
 	    
 	case 'R':
@@ -547,7 +661,7 @@ int main (int argc, char **argv)
 		return 1;
 	    }
 
-	    if (ath_vlan_port_rm (vid, port))
+	    if (ath_vlan_port_rm (dev, vid, port))
 	    {
 		PRERR("ath_vlan_port_rm");
 		return 1;
@@ -569,7 +683,7 @@ int main (int argc, char **argv)
 		return 1;
 	    }
 
-	    if (ath_pvid_port (port, vid))
+	    if (ath_pvid_port (dev, port, vid))
 	    {
 		PRERR("ath_pvid_port");
 		return 1;
@@ -591,3 +705,4 @@ int main (int argc, char **argv)
 
     return 0;
 }
+/*! @} */

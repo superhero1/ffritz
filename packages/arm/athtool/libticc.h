@@ -19,7 +19,7 @@
 #ifndef _libticch_
 #define _libticch_
 
-/*! \ingroup libticc */
+/*! \defgroup libticc libticc prototypes */
 /*! @{ */
 
 
@@ -50,11 +50,85 @@ extern int extSwitchMdioAccessUnLock (void);
 /*! Obtain lock for MDIO (extSwitch functions will block if lock is held)
  *
  * /returns 0 on success, !=0 on error
- */
+	 */
 extern int extSwitchMdioAccessLock (void);
+
+/****************** Internal L2 Switch *****************/
+
+/*! Atom Core switch port */
+#define L2SW_ATOM	0 
+/*! Media-over-Cable switch port */
+#define L2SW_MOCA	1
+/*! RGMII0 switch port (to ext switch) */
+#define L2SW_RGMII0	2
+/*! RGMII1 (unused) */
+#define L2SW_RGMII1	3
+/*! UDMA0 port */
+#define L2SW_UDMA0	5
+/*! UDMA1 port */
+#define L2SW_UDMA1	6
+/*! DOCSIS port */
+#define L2SW_DOCSIS	7
+
+/*! Internal L2 port name assignment table */
+extern const char L2SWITCH_PortNames[8][7];
+
+/*! Enable internal L2 switch port
+ *
+ * \param port [in] switch port
+ */
+extern int L2SWITCH_EnablePort (int port);
+
+/*! Disable internal L2 switch port
+ *
+ * \param port [in] switch port
+ */
+extern int L2SWITCH_DisablePort (int port);
+
+/*! Add port to new/existing VLAN
+ *
+ * \param port   [in] switch port
+ * \param vid    [in] VLAN id
+ * \param tagged [in] 1 if tagged, 0 if not
+ * 
+ * \returns 0 on success
+ */
+extern int L2SWITCH_AddPortToVlan (int port, int vid, int tagged);
+
+/*! Remove port from VLAN
+ *
+ * \param port [in] switch port
+ * \param vid  [in] VLAN id
+ * 
+ * \returns 0 on success
+ */
+extern int L2SWITCH_RemovePortFromVlan (int port, int vid);
+
+/*! Set ports PVLAN (UNTESTED)
+ *
+ * \param port [in] switch port
+ * \param vid  [in] VLAN id
+ * 
+ * \returns 0 on success
+ */
+extern int L2SWITCH_SetPortNativeVlan (int port, int vid);
+
+/*! Get port statistics
+ *
+ * The size of the stats array seems to be 14 elements.
+ *
+ * TODO: Determine the meaning of the elements.
+ *
+ * \param port	 [in] switch port
+ * \param stats  [out] pointer to port statistics.
+ * 
+ * \returns 0 on success
+ */
+extern int L2SWITCH_GetPortStats (int port, uint32_t *stats);
 
 /*============================================================================
  * libticc .text segment, unknown API
+ * \cond
  */
 extern int armcode2str (void);
 extern int athMdioBusyWait (void);
@@ -283,15 +357,12 @@ extern int kcalloc (void);
 extern int kfree (void);
 extern int kmalloc (void);
 extern int krealloc (void);
-extern int L2SWITCH_AddPortToVlan (void);
 extern int L2SWITCH_AddStaticMac (void);
 extern int L2SWITCH_DbgDumpCam (void);
 extern int L2SWITCH_DbgGetFwDbgData (void);
 extern int L2SWITCH_DeleteStaticMac (void);
 extern int L2SWITCH_DisableIgmpSnooping (void);
-extern int L2SWITCH_DisablePort (void);
 extern int L2SWITCH_EnableIgmpSnooping (void);
-extern int L2SWITCH_EnablePort (void);
 extern int L2SWITCH_EnterPsmMode (void);
 extern int L2SWITCH_ExitPsmMode (void);
 extern int L2SWITCH_GetConfig (void);
@@ -299,7 +370,6 @@ extern int L2SWITCH_GetFwLog (void);
 extern int L2SWITCH_GetMachState (void);
 extern int L2SWITCH_GetMcastMacs (void);
 extern int L2SWITCH_GetMcastRouterPorts (void);
-extern int L2SWITCH_GetPortStats (void);
 extern int L2SWITCH_GetStartupConfig (void);
 extern int L2SWITCH_GetUcastMacs (void);
 extern int L2SWITCH_InitL2Switch (void);
@@ -308,12 +378,10 @@ extern int L2SWITCH_MdioAccessLock (void);
 extern int L2SWITCH_MdioAccessUnlock (void);
 extern int L2SWITCH_ReadCbusReg (void);
 extern int L2SWITCH_ReadMdio (void);
-extern int L2SWITCH_RemovePortFromVlan (void);
 extern int L2SWITCH_SetEgressLogStatus (void);
 extern int L2SWITCH_SetFwLogStatus (void);
 extern int L2SWITCH_SetIngressLogStatus (void);
 extern int L2SWITCH_SetPortMode (void);
-extern int L2SWITCH_SetPortNativeVlan (void);
 extern int L2SWITCH_SetPortTaggingMode (void);
 extern int L2SWITCH_SetStaticMcastRouterPorts (void);
 extern int L2SWITCH_StartForwarding (void);
@@ -657,6 +725,8 @@ extern int WLAN_Restart (void);
 extern int WLAN_Start (void);
 extern int WLAN_Stop (void);
 extern int xaddr2str (void);
+
+/* \endcond */
 
 #endif
 /*! @} */

@@ -27,10 +27,14 @@
 
 #include "athtool.h"
 
+/*! \ingroup athtool */
+/*! @{ */
+
 /*! Execute VTU command
  *
  * If required, VTU_FUNC0 register must be assigned before calling this function
  *
+ * \param dev	Device handle
  * \param cmd	VTU command bytes (bits 0..3 of VTU_FUNC1)
  * \param vid	VID part of VTU_FUNC1 (if applicable)
  * \param port  PORT part of VTU_FUNC1 (if applicable)
@@ -39,7 +43,7 @@
  *
  * \returns 0 on success, 1 on error
  */
-int ath_vtu_cmd (int cmd, uint32_t vid, uint32_t port, uint32_t *reg0, uint32_t *reg1)
+int ath_vtu_cmd (struct ath_dev *dev, int cmd, uint32_t vid, uint32_t port, uint32_t *reg0, uint32_t *reg1)
 {
     int rc = 0;
     int i;
@@ -57,14 +61,14 @@ int ath_vtu_cmd (int cmd, uint32_t vid, uint32_t port, uint32_t *reg0, uint32_t 
     cmd = cmd | AR8327_VTU_FUNC1_BUSY |
 	(vid << AR8327_VTU_FUNC1_VID_S) | (port << AR8327_VTU_FUNC1_PORT_S);
 
-    ath_rmw (AR8327_REG_VTU_FUNC1, 0xffffffff, cmd, &rc);
+    ath_rmw (dev, AR8327_REG_VTU_FUNC1, 0xffffffff, cmd, &rc);
 
     if (rc)
 	return 1;
 
     for (i = 0; i < 100; i++)
     {
-	cmd = ath_rmw (AR8327_REG_VTU_FUNC1, 0, 0, &rc);
+	cmd = ath_rmw (dev, AR8327_REG_VTU_FUNC1, 0, 0, &rc);
 	if (rc)
 	    return 1;
 	
@@ -82,7 +86,7 @@ int ath_vtu_cmd (int cmd, uint32_t vid, uint32_t port, uint32_t *reg0, uint32_t 
 	return 1;
     }
 
-    *reg0 = ath_rmw (AR8327_REG_VTU_FUNC0, 0, 0, &rc);
+    *reg0 = ath_rmw (dev, AR8327_REG_VTU_FUNC0, 0, 0, &rc);
     *reg1 = cmd;
 
     return rc;
@@ -90,15 +94,16 @@ int ath_vtu_cmd (int cmd, uint32_t vid, uint32_t port, uint32_t *reg0, uint32_t 
 
 /*! Get attributes of a specific VLAN
  *
+ * \param dev	Device handle
  * \param vid	VLAN ID
  *
  * \returns VTU_FUNC_REG0 content on success, 0 on error
  */
-uint32_t ath_vid_get (uint32_t vid)
+uint32_t ath_vid_get (struct ath_dev *dev, uint32_t vid)
 {
     uint32_t reg0, reg1;
 
-    if (ath_vtu_cmd (AR8327_VTU_FUNC1_OP_GET_ONE, vid, 0, &reg0, &reg1))
+    if (ath_vtu_cmd (dev, AR8327_VTU_FUNC1_OP_GET_ONE, vid, 0, &reg0, &reg1))
 	return 0;
 
     if ((reg0 & AR8327_VTU_FUNC0_VALID) == 0)
@@ -109,15 +114,16 @@ uint32_t ath_vid_get (uint32_t vid)
 
 /*! Modify port egress mode in attribute (VTU_FUNC0) value
  *
+ * \param dev  Device handle
  * \param attr attribute (VTU_FUNC0) value
  * \param port port number
- * \mode port egress mode (AR8327_VTU_FUNC0_EG_MODE_KEEP,
+ * \param mode port egress mode (AR8327_VTU_FUNC0_EG_MODE_KEEP,
  *	AR8327_VTU_FUNC0_EG_MODE_UNTAG,
  *	AR8327_VTU_FUNC0_EG_MODE_TAG
  *
  * \returns new VTU_FUNC0 value
  */
-uint32_t ath_attr_set_port (uint32_t attr, uint32_t port, uint32_t mode)
+uint32_t ath_attr_set_port (struct ath_dev *dev, uint32_t attr, uint32_t port, uint32_t mode)
 {
     if (port > 6)
 	return attr;
@@ -130,18 +136,20 @@ uint32_t ath_attr_set_port (uint32_t attr, uint32_t port, uint32_t mode)
 
 /*! Create new VLAN
  *
+ * \param dev	Device handle
  * \param vid	VLAN ID
+ * \param attr  An value defining the member ports and their attributes (see ath_attr_set_port()).
  *
  * \returns 0 on success, 1 on error
  */
-int ath_vlan_create (uint32_t vid, uint32_t attr)
+int ath_vlan_create (struct ath_dev *dev, uint32_t vid, uint32_t attr)
 {
     int rc = 0;
     uint32_t r1, r2;
 
     /* does it already exist?
      */
-    if (ath_vid_get (vid))
+    if (ath_vid_get (dev, vid))
     {
 	SETERR("VLAN exists");
 	return 1;
@@ -150,11 +158,11 @@ int ath_vlan_create (uint32_t vid, uint32_t attr)
     attr = (attr & (AR8327_VTU_FUNC0_IVL|AR8327_VTU_FUNC0_LLD|AR8327_VTU_FUNC0_PO|AR8327_VTU_FUNC0_PRI|AR8327_VTU_FUNC0_EG_MODE)) |
 	    AR8327_VTU_FUNC0_VALID;
 
-    ath_rmw (AR8327_REG_VTU_FUNC0, 0xffffffff, attr, &rc);
+    ath_rmw (dev, AR8327_REG_VTU_FUNC0, 0xffffffff, attr, &rc);
     if (rc)
 	return 1;
 
-    if (ath_vtu_cmd (AR8327_VTU_FUNC1_OP_LOAD, vid, 0, &r1, &r2))
+    if (ath_vtu_cmd (dev, AR8327_VTU_FUNC1_OP_LOAD, vid, 0, &r1, &r2))
 	return 1;
 
     return 0;
@@ -162,15 +170,16 @@ int ath_vlan_create (uint32_t vid, uint32_t attr)
 
 /*! delete a VLAN
  * 
+ * \param dev	Device handle
  * \param vid	VLAN id
  *
  * \returns 0 on success, 1 on error
  */
-int ath_vlan_delete (uint32_t vid)
+int ath_vlan_delete (struct ath_dev *dev, uint32_t vid)
 {
     uint32_t r1, r2;
 
-    if (ath_vtu_cmd (AR8327_VTU_FUNC1_OP_PURGE, vid, 0, &r1, &r2))
+    if (ath_vtu_cmd (dev, AR8327_VTU_FUNC1_OP_PURGE, vid, 0, &r1, &r2))
 	return 1;
 
     return 0;
@@ -179,12 +188,13 @@ int ath_vlan_delete (uint32_t vid)
 
 /*! Remove a port from a VLAN
  * 
+ * \param dev	Device handle
  * \param vid	VLAN id
  * \param port	port number
  *
  * \returns 0 on success, 1 on error
  */
-int ath_vlan_port_rm (uint32_t vid, uint32_t port)
+int ath_vlan_port_rm (struct ath_dev *dev, uint32_t vid, uint32_t port)
 {
     uint32_t r1, r2;
 
@@ -194,7 +204,7 @@ int ath_vlan_port_rm (uint32_t vid, uint32_t port)
 	return 1;
     }
 
-    if (ath_vtu_cmd (AR8327_VTU_FUNC1_OP_REMOVE_PORT, vid, port, &r1, &r2))
+    if (ath_vtu_cmd (dev, AR8327_VTU_FUNC1_OP_REMOVE_PORT, vid, port, &r1, &r2))
 	return 1;
 
     return 0;
@@ -202,13 +212,14 @@ int ath_vlan_port_rm (uint32_t vid, uint32_t port)
 
 /*! Add a port to a VLAN
  * 
+ * \param dev	Device handle
  * \param vid	VLAN id
  * \param port	port number
- * \param port	egress tag mode (see ath_attr_set_port())
+ * \param mode	egress tag mode (see ath_attr_set_port())
  *
  * \returns 0 on success, 1 on error
  */
-int ath_vlan_port_add (uint32_t vid, uint32_t port, uint32_t mode)
+int ath_vlan_port_add (struct ath_dev *dev, uint32_t vid, uint32_t port, uint32_t mode)
 {
     int rc;
     uint32_t r1, r2;
@@ -220,7 +231,7 @@ int ath_vlan_port_add (uint32_t vid, uint32_t port, uint32_t mode)
 	return 1;
     }
 
-    attr = ath_vid_get (vid);
+    attr = ath_vid_get (dev, vid);
     if (attr == 0)
     {
 	SETERR("VLAN does not exist");
@@ -230,11 +241,11 @@ int ath_vlan_port_add (uint32_t vid, uint32_t port, uint32_t mode)
     attr = (attr & ~(3 << AR8327_VTU_FUNC0_EG_MODE_S(port))) |
 	   (mode << AR8327_VTU_FUNC0_EG_MODE_S(port));
 
-    ath_rmw (AR8327_REG_VTU_FUNC0, 0xffffffff, attr, &rc);
+    ath_rmw (dev, AR8327_REG_VTU_FUNC0, 0xffffffff, attr, &rc);
     if (rc)
 	return 1;
 
-    if (ath_vtu_cmd (AR8327_VTU_FUNC1_OP_LOAD, vid, 0, &r1, &r2))
+    if (ath_vtu_cmd (dev, AR8327_VTU_FUNC1_OP_LOAD, vid, 0, &r1, &r2))
 	return 1;
 
     return 0;
@@ -242,12 +253,13 @@ int ath_vlan_port_add (uint32_t vid, uint32_t port, uint32_t mode)
 
 /*! Set default VID for untagged ingress frames
  *
+ * \param dev	Device handle
  * \param port port number
  * \param vid  VLAN id
  *
  * \returns 0 on success, 1 on error
  */
-int ath_pvid_port (uint32_t port, uint32_t vid)
+int ath_pvid_port (struct ath_dev *dev, uint32_t port, uint32_t vid)
 {
     int rc = 0;
 
@@ -257,7 +269,7 @@ int ath_pvid_port (uint32_t port, uint32_t vid)
 	return 1;
     }
 
-    ath_rmw (AR8327_REG_PORT_VLAN0(port),
+    ath_rmw (dev, AR8327_REG_PORT_VLAN0(port),
 	AR8327_PORT_VLAN0_DEF_CVID,
 	vid << AR8327_PORT_VLAN0_DEF_CVID_S,
 	&rc);
@@ -268,13 +280,14 @@ int ath_pvid_port (uint32_t port, uint32_t vid)
 
 /*! get first/next entry in VTU table
  *
+ * \param dev	Device handle
  * \param reset	0 to get first entry, 1 for next entry
  * \param reg0	holdt contents of VTU_FUNC0 register
  * \param reg1	holds contents of VTU_FUNC1 register
  *
  * \returns 0 on success, 1 on error
  */
-int ath_vtu_get_next (int reset, uint32_t *reg0, uint32_t *reg1)
+int ath_vtu_get_next (struct ath_dev *dev, int reset, uint32_t *reg0, uint32_t *reg1)
 {
     int rc = 0;
     uint32_t cmd = 0;
@@ -288,12 +301,12 @@ int ath_vtu_get_next (int reset, uint32_t *reg0, uint32_t *reg1)
 
     if (reset)
     {
-	ath_rmw (AR8327_REG_VTU_FUNC0, 0xffffffff, 0, &rc);
+	ath_rmw (dev, AR8327_REG_VTU_FUNC0, 0xffffffff, 0, &rc);
 	if (rc)
 	    return 1;
     }
 	
-    cmd = ath_rmw (AR8327_REG_VTU_FUNC1, 0, 0, &rc);
+    cmd = ath_rmw (dev, AR8327_REG_VTU_FUNC1, 0, 0, &rc);
     if (rc)
 	return 1;
 
@@ -312,14 +325,14 @@ int ath_vtu_get_next (int reset, uint32_t *reg0, uint32_t *reg1)
      * issue get-next command
      */
     cmd = (cmd & ~7) | 0x80000005;
-    ath_rmw (AR8327_REG_VTU_FUNC1, 0xffffffff, cmd, &rc);
+    ath_rmw (dev, AR8327_REG_VTU_FUNC1, 0xffffffff, cmd, &rc);
 
     if (rc)
 	return 1;
 
     for (i = 0; i < 100; i++)
     {
-	cmd = ath_rmw (AR8327_REG_VTU_FUNC1, 0, 0, &rc);
+	cmd = ath_rmw (dev, AR8327_REG_VTU_FUNC1, 0, 0, &rc);
 	if (rc)
 	    return 1;
 	
@@ -337,7 +350,7 @@ int ath_vtu_get_next (int reset, uint32_t *reg0, uint32_t *reg1)
 	return 1;
     }
 
-    *reg0 = ath_rmw (AR8327_REG_VTU_FUNC0, 0, 0, &rc);
+    *reg0 = ath_rmw (dev, AR8327_REG_VTU_FUNC0, 0, 0, &rc);
     *reg1 = cmd;
 
     return rc;
@@ -345,7 +358,7 @@ int ath_vtu_get_next (int reset, uint32_t *reg0, uint32_t *reg1)
 
 /*! Show some VLAN related information
  */
-void ath_vlan_show (void)
+void ath_vlan_show (struct ath_dev *dev)
 {
     int i, j;
     uint32_t r1[7], r2[7];
@@ -360,8 +373,8 @@ void ath_vlan_show (void)
     {
 	rc = 0;
 
-	r1[i] = ath_rmw (AR8327_REG_PORT_VLAN0(i), 0, 0, &rc);
-	r2[i] = ath_rmw (AR8327_REG_PORT_VLAN1(i), 0, 0, &rc);
+	r1[i] = ath_rmw (dev, AR8327_REG_PORT_VLAN0(i), 0, 0, &rc);
+	r2[i] = ath_rmw (dev, AR8327_REG_PORT_VLAN1(i), 0, 0, &rc);
 
 	printf ("%8d ", i);
     }
@@ -442,7 +455,7 @@ void ath_vlan_show (void)
     {
 	/* get first/next table entry
 	 */
-	rc = ath_vtu_get_next ((i == 0) ? 1 : 0, &vr1, &vr2);
+	rc = ath_vtu_get_next (dev, (i == 0) ? 1 : 0, &vr1, &vr2);
 
 	if (rc)
 	    break;
@@ -483,3 +496,4 @@ void ath_vlan_show (void)
 
 
 
+/*! @} */

@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-LOGFILES=/var/tmp/ffritz.log
+LOGFILES="/var/tmp/ffritz.log /var/log/openvpn.log"
 
 while true; do
     sleep 1200

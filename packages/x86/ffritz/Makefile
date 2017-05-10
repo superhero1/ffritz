@@ -22,9 +22,11 @@ BINFILES   += $(BR_TGT_BIN)/strace $(BR_TGT_BIN)/ldd $(BR_TGT_SBIN)/tcpdump
 BINFILES   += $(BR_TGT_BIN)/tcpbridge $(BR_TGT_BIN)/tcpprep $(BR_TGT_BIN)/tcpreplay $(BR_TGT_BIN)/tcpreplay-edit $(BR_TGT_BIN)/tcprewrite
 BINFILES   += $(BR_TGT_BIN)/mpc $(BR_TGT_BIN)/rsync $(BR_TGT_BIN)/socat
 BINFILES   += $(BR_TGT)/../host/usr/i686-buildroot-linux-uclibc/sysroot/usr/bin/curl
+BINFILES   += $(BR_TGT_SBIN)/openvpn
 BINFILES   += ../shairport/build/shairport
 ETCFILES    = etc/ffritz-env.sh etc/mpd.conf etc/runmpd etc/ff_atom_startup etc/mkusers etc/run_usbplay etc/run_shairport etc/usrmount
 ETCFILES   += etc/run_lircd etc/lirc_options_dfl.conf etc/ffdaemon etc/fflogrotate etc/upmpdcli.conf-dist
+ETCFILES   += etc/run_openvpn
 MODFILES    = lib/modules/cdc-acm.ko
 
 STAGEDIR    = $(TOPDIR)/output/ffritz
@@ -67,6 +69,7 @@ install: $(SUBDIRS) $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls 
 	cp -a $(MODFILES) $(INSTDIR)/lib/modules
 	cp -a  $(shell ls  $(BR_TGT_LIB)/lib*so*) $(INSTDIR)/lib
 	cp $(ETCFILES) $(INSTDIR)/etc
+	cp -ar etc/openvpn $(INSTDIR)/etc
 	sed -i -e 's@^rundir=.*@rundir=/var/media/ftp/ffritz@' $(INSTDIR)/etc/ff_atom_startup
 	chmod +x $(INSTDIR)/etc/ff_atom_startup
 	make -C ../dropbear install DESTDIR=$(INSTDIR)
