@@ -15,7 +15,8 @@ SUDO	= sudo
 #ORIG=$(TOPDIR)/../original_141.06.50.tar
 #ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.61.image
 #ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.62.image
-ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.63.image
+#ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.63.image
+ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.83.image
 
 # Keep original rootfs for diff?
 # sudo dirdiff arm/orig/ arm/squashfs-root/
@@ -83,12 +84,6 @@ ifeq ($(RSYNC),)
 $(error rsync missing, please install)
 endif
 
-ifneq ($(FFRITZ_X86_PACKAGE),)
-    ATOMFS=atomfs
-else
-    $(warning Atom filesystem will not be modified, no package file specified)
-endif
-
 all: release
 
 ###############################################################################################
@@ -116,7 +111,7 @@ $(ARM_PATCHST):	$(@:arm/.applied.%=%)
 	@cd arm/squashfs-root; $(SUDO) patch -p1 < $(@:arm/.applied.%=../%)
 	@touch $@
 
-arm/filesystem.image: $(ARM_MODFILES) arm/squashfs-root $(ARM_PATCHST) $(FFRITZ_ARM_PACKAGE)
+arm/.applied.fs: $(ARM_MODFILES) arm/squashfs-root $(ARM_PATCHST) $(FFRITZ_ARM_PACKAGE)
 	@echo "PATCH  arm/squashfs-root"
 	@$(SUDO) rm -rf arm/squashfs-root/usr/local
 	@$(SUDO) $(RSYNC) -a --no-perms arm/mod/ arm/squashfs-root/
@@ -126,6 +121,9 @@ arm/filesystem.image: $(ARM_MODFILES) arm/squashfs-root $(ARM_PATCHST) $(FFRITZ_
 	    $(SUDO) tar xf $(FFRITZ_ARM_PACKAGE) --strip-components=2 -C arm/squashfs-root/usr/local ./ffritz-arm; \
 	    $(TOPDIR)/mklinks arm/squashfs-root/usr/bin ../local/bin $(SUDO); \
 	fi
+	@touch $@
+
+arm/filesystem.image: arm/.applied.fs
 	@rm -f arm/filesystem.image
 	@echo "PACK  arm/squashfs-root"
 	@cd arm; $(SUDO) $(HOSTTOOLS)/mksquashfs4-lzma-avm-be squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 >/dev/null
@@ -152,7 +150,7 @@ packages/arm/ffritz/ffritz-arm-$(ARM_VER).tar.gz:
 #
 atomfs:	atom/filesystem.image
 
-ATOM_PATCHES = 50-udev-default.patch
+ATOM_PATCHES = 50-udev-default.patch rc.tail.patch
 
 ATOM_PATCHST=$(ATOM_PATCHES:%=atom/.applied.%)
 
@@ -169,16 +167,19 @@ $(ATOM_PATCHST):	$(@:atom/.applied.%=%)
 	@cd atom/squashfs-root; $(SUDO) patch -p1 < $(@:atom/.applied.%=../%)
 	@touch $@
 
-atom/filesystem.image: $(ATOM_MODFILES) atom/squashfs-root $(ATOM_PATCHST) $(FFRITZ_X86_PACKAGE)
+atom/.applied.fs: $(ATOM_MODFILES) atom/squashfs-root $(ATOM_PATCHST) $(FFRITZ_X86_PACKAGE)
 	@echo "PATCH  atom/squashfs-root"
 	@$(SUDO) $(RSYNC) -a --no-perms atom/mod/ atom/squashfs-root/
 	@if [ -f "$(FFRITZ_X86_PACKAGE)" ]; then \
 	    echo Integrating Atom extensions from $(FFRITZ_X86_PACKAGE); \
-	    $(SUDO) rm -rf atom/squashfs-root/usr/local; \
+#	    $(SUDO) rm -rf atom/squashfs-root/usr/local; \
 	    $(SUDO) mkdir -p atom/squashfs-root/usr/local; \
 	    $(SUDO) tar xf $(FFRITZ_X86_PACKAGE) --strip-components=2 -C atom/squashfs-root/usr/local ./ffritz; \
 	    $(TOPDIR)/mklinks atom/squashfs-root/usr/bin ../local/bin $(SUDO); \
 	fi
+	@touch $@
+
+atom/filesystem.image: atom/.applied.fs
 	@rm -f atom/filesystem.image
 	@echo "PACK  atom/squashfs-root"
 	@cd atom; $(SUDO) mksquashfs squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 >/dev/null
@@ -206,19 +207,18 @@ packages/x86/ffritz/ffritz-x86-$(VERSION).tar.gz:
 ###############################################################################################
 release:    $(RELDIR)/fb6490_$(FWVER)-$(VERSION).tar
 	
-$(RELDIR)/fb6490_$(FWVER)-$(VERSION).tar: armfs $(ATOMFS) $(RELDIR) 
+$(RELDIR)/fb6490_$(FWVER)-$(VERSION).tar: armfs atomfs $(RELDIR) 
 	@cd $(RELDIR); tar xf $(ORIG)
 	@echo "PACK   $(RELDIR)/fb6490_$(FWVER)-$(VERSION).tar"
 	@cp arm/filesystem.image $(RELDIR)/var/remote/var/tmp/filesystem.image
 	@cp arm/mod/usr/local/etc/switch_bootbank $(RELDIR)/var
-	@test -z $(ATOMFS) || cp atom/filesystem.image $(RELDIR)/var/remote/var/tmp/x86/filesystem.image
+	@cp atom/filesystem.image $(RELDIR)/var/remote/var/tmp/x86/filesystem.image
 	@cd $(RELDIR); $(TAR) cf fb6490_$(FWVER)-$(VERSION).tar var
 	@rm -rf $(RELDIR)/var
 
 $(RELDIR):
 	@echo "PREP   $(RELDIR)"
 	@mkdir -p $(RELDIR)
-	@cd $(RELDIR); ln -sf ../telnet-1.tar .
 
 ###############################################################################################
 #

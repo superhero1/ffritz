@@ -1,15 +1,19 @@
---- orig/etc/init.d/rc.tail.sh	2016-08-23 16:30:24.000000000 +0200
-+++ squashfs-root/etc/init.d/rc.tail.sh	2016-10-19 16:01:32.531099094 +0200
-@@ -46,5 +46,58 @@
+--- orig/etc/init.d/rc.tail.sh	2017-05-05 12:44:34.000000000 +0000
++++ squashfs-root/etc/init.d/rc.tail.sh	2017-05-11 08:18:53.091167577 +0000
+@@ -46,5 +46,56 @@
  set_m_sleep=$((10*60))
  nohup sh -c "echo \"\$0[\$\$]: ++++fork set_modulemen, sleep ${set_m_sleep}++++\" > /dev/console ; sleep ${set_m_sleep}; echo \"\$0[\$\$]: ++++do set_modulemen++++\" > /dev/console; /bin/set_modulemem;" &
  fi
 +
  #########################################################################
 +# MOD: Make sure telnetd is started after startup for 5 mins
++#	Do this only if /sbin/ar7login exists. If not then this is 
++#	Likely firmware >= 6.83 where we don't need it.
 +#########################################################################
-+/usr/sbin/telnetd -l /sbin/ar7login
-+nohup sh -c "sleep 300; echo killing telnetd > /dev/console; sleep 10; killall telnetd" &
++if [ -f /sbin/ar7login ]; then
++	/usr/sbin/telnetd -l /sbin/ar7login
++	nohup sh -c "sleep 300; echo killing telnetd > /dev/console; sleep 10; killall telnetd" &
++fi
 +
 +#########################################################################
 +# MOD: Start a SSH daemon (dropbear)
@@ -50,12 +54,6 @@
 +    ln -sf /nvram/root-ssh /var/tmp/root-ssh
 +
 +    /usr/local/sbin/dropbear -R
-+fi
-+
-+# Do the atom startup
-+#
-+if [ -x /usr/local/etc/init.d/ff_atom_startup ]; then
-+    /usr/local/etc/init.d/ff_atom_startup
 +fi
 +
  exit 0

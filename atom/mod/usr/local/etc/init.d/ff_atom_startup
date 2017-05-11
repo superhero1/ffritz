@@ -8,9 +8,6 @@
 #	- transferring roots .ssh from persistent memory
 #	
 #
-# Executed on arm at startup, and on atom by means of this
-# script.
-#
 
 FFLOG=/var/log/ffritz.log
 touch $FFLOG
@@ -22,6 +19,7 @@ echo ffritz_startup on $mach >> $FFLOG
 
 rundir=/usr/local
 
+CP=/usr/local/bin/rpc_cp
 
 # Create ffritz user/group on both arm and atom
 # Audio group required to allow access to usb devices
@@ -30,57 +28,44 @@ grep ffritz /etc/passwd >/dev/null || echo ffritz:x:8000:8000:ffritz user:/var/m
 grep ffritz /etc/group >/dev/null  || echo ffritz:x:8000: >> /etc/group
 grep usb /etc/group >/dev/null     || echo usb:x:8001:ffritz >> /etc/group
 
-if [ $mach == armv6b ]; then
-	## ARM
-	#
+## Transfer passwords from arm
+#
+$CP /etc/shadow /var/tmp/shadow
 
-	## Create dummy shadow entry for ffritz so that it's possible to 
-	# assign a login
-	#
-	grep ffritz /etc/shadow >/dev/null  || echo ffritz:x:1:0:99999:7::: >> /etc/shadow
+## Create dummy shadow entry for ffritz so that it's possible to 
+# assign a login
+#
+grep ffritz /etc/shadow >/dev/null  || echo ffritz:x:1:0:99999:7::: >> /etc/shadow
 
-	## Transfer passwords to x86
-	#
-	cp /etc/shadow /var/remote/var/tmp/shadow
+## transfer dropbear data from nvram
+#
+rm -rf /var/tmp/dropbear
+mkdir -p /var/tmp/dropbear
+chmod 700 /var/tmp/dropbear
 
-	## create host keys for atom 
-	# Since atom does not have a non-volatile storage, and i dont want to use
-	# the ftp directory, store them in nvram on arm and transfer them
-	# at boot time
-	#
-	if [ ! -d /nvram/dropbear_x86 ]; then
-	    mkdir /nvram/dropbear_x86 || echo failed to create /nvram/dropbear_x86 >> $FFLOG
+rpc test -d /nvram/dropbear_x86 || rpc mkdir /nvram/dropbear_x86 && rpc chmod 700 /nvram/dropbear_x86
+$CP -r /nvram/dropbear_x86 /var/tmp/dropbear
+
+# check for presence of keys. If required, create them on the arm (don't know how to push a file there) and
+# copy them to here.
+#
+for key in rsa dss ecdsa; do
+	if [ ! -f /var/tmp/dropbear/dropbear_${key}_host_key ]; then
+		echo creating /var/tmp/dropbear/dropbear_${key}_host_key >> $FFLOG
+		rpc /usr/local/bin/dropbearkey -t $key -f /nvram/dropbear_x86/dropbear_${key}_host_key || echo dropbearkey failed >> $FFLOG
+		$CP /nvram/dropbear_x86/dropbear_${key}_host_key /var/tmp/dropbear
 	fi
-	chmod 700 /nvram/dropbear_x86 || echo failed to create /nvram/dropbear_x86 >> $FFLOG
-	
-	for key in rsa dss ecdsa; do
-		if [ ! -f /nvram/dropbear_x86/dropbear_${key}_host_key ]; then
-			echo creating /nvram/dropbear_x86/dropbear_${key}_host_key >> $FFLOG
-			dropbearkey -t $key -f /nvram/dropbear_x86/dropbear_${key}_host_key || echo dropbearkey failed >> $FFLOG
-		fi
-	done
-	rm -rf /var/remote/var/tmp/dropbear
-	cp -ar /nvram/dropbear_x86 /var/remote/var/tmp/dropbear
+done
 
-	## same for root's .ssh
-	#
-	if [ ! -d /nvram/root-ssh_x86 ]; then
-	    mkdir /nvram/root-ssh_x86 || echo failed to create /nvram/root-ssh_x86 >> $FFLOG
-	    chmod 700 /nvram/root-ssh_x86
-	fi
-	cp -ar /nvram/root-ssh_x86 /var/remote/var/tmp/root-ssh
-	chmod 700 /var/remote/var/tmp/root-ssh
+# copy roots ssh stuff
+#
+rpc test -d /nvram/root-ssh_x86 || rpc mkdir /nvram/root-ssh_x86 && rpc chmod 700 /nvram/root-ssh_x86
+mkdir -p /var/tmp/root-ssh
+chmod 700 /var/tmp/root-ssh
+$CP -r /nvram/root-ssh_x86 /var/tmp/root-ssh
 
-	# Call this script on atom to finalize startup
-	#
-	cp $0 /var/remote/var/tmp/ffprep || echo failed to install /var/remote/var/tmp/ffprep from $0 >> $FFLOG
-	chmod +x /var/remote/var/tmp/ffprep
-
-	rpc /var/tmp/ffprep
-
-	exit 0
-fi
-
+# Start services
+#
 (
 mkdir -p /var/run/mpd
 chown ffritz /var/run/mpd
@@ -102,8 +87,12 @@ nohup $rundir/etc/fflogrotate >/dev/null&
 # run dropbear
 #
 if [ -x $rundir/bin/dropbear -a ! -f /var/media/ftp/.skip_dropbear ]; then
-    echo Starting dropbear 
-    $rundir/bin/dropbear 2>/dev/console || echo dropbear startup failed 
+    if [ -f /var/run/dropbear.pid ]; then
+	echo dropbear running, pid `cat /var/run/dropbear.pid`
+    else
+    	echo Starting dropbear 
+    	$rundir/bin/dropbear 2>/dev/console || echo dropbear startup failed 
+    fi
 else
     echo dropbear not started 
 fi
