@@ -40,4 +40,4 @@ echo $0: $nip assigned to lan1:1 >> $FFLOG
 
 ln -s $FFINSTDIR/etc/openvpn/tap-up $VPNDIR
 
-$FFINSTDIR/etc/ffdaemon $FFINSTDIR/bin/openvpn --writepid /var/run/openvpn.pid --config $VPNDIR/openvpn.conf --cd $VPNDIR --script-security 2
+$FFINSTDIR/bin/ffdaemon $FFINSTDIR/bin/openvpn --writepid /var/run/openvpn.pid --config $VPNDIR/openvpn.conf --cd $VPNDIR --script-security 2

@@ -69,4 +69,4 @@ DAEMON_ARGS="--daemon --pidfile $PIDFILE --log $LOGFILE"
 #
 touch $PIDFILE                                                     
 chown ffritz $PIDFILE                                              
-$FFINSTDIR/bin/su ffritz $FFINSTDIR/bin/shairport $DAEMON_ARGS
+$FFINSTDIR/bin/ffdaemon -n -r ffritz $FFINSTDIR/bin/shairport $DAEMON_ARGS

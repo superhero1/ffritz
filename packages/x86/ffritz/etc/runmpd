@@ -41,7 +41,7 @@ fi
 
 # Run mpd (as respawning daemon)
 #
-$FFINSTDIR/etc/ffdaemon -r ffritz $FFINSTDIR/bin/mpd --no-daemon $FFRITZ_HOME/mpd.conf
+$FFINSTDIR/bin/ffdaemon -r ffritz $FFINSTDIR/bin/mpd --no-daemon $FFRITZ_HOME/mpd.conf
 
 # Run upmpdcli (UPNP frontent to MPD)
 #

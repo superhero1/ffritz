@@ -10,9 +10,9 @@ LDFLAGS += ../../libmaru/libmaru.a -lusb-1.0 -pthread
 .c.o:
 	$(CC) -Wall -c $< -std=c99 $(CFLAGS)
 
-all:	sndlist usbplay usbplayd su
+all:	sndlist usbplay usbplayd ffdaemon
 
-su:	su.o
+ffdaemon:	ffdaemon.o daemon.o
 	$(CC) -o $@ $^ -std=c99 
 
 sndlist:    sndlist.o

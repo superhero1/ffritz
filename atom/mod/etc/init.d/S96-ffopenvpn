@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# and openvpn
+#
+if [ -x $FFINSTDIR/etc/run_openvpn -a -r /var/tmp/root-ssh/openvpn/openvpn.conf ]; then
+	echo starting OpenVPN
+	$FFINSTDIR/etc/run_openvpn
+else
+	echo OpenVPN not started
+fi
+

@@ -118,7 +118,7 @@ arm/.applied.fs: $(ARM_MODFILES) arm/squashfs-root $(ARM_PATCHST) $(FFRITZ_ARM_P
 	@if [ -f "$(FFRITZ_ARM_PACKAGE)" ]; then \
 	    echo Integrating ARM extensions from $(FFRITZ_ARM_PACKAGE); \
 	    $(SUDO) mkdir -p arm/squashfs-root/usr/local; \
-	    $(SUDO) tar xf $(FFRITZ_ARM_PACKAGE) --strip-components=2 -C arm/squashfs-root/usr/local ./ffritz-arm; \
+	    $(SUDO) tar xfk $(FFRITZ_ARM_PACKAGE) --strip-components=2 -C arm/squashfs-root/usr/local ./ffritz-arm; \
 	    $(TOPDIR)/mklinks arm/squashfs-root/usr/bin ../local/bin $(SUDO); \
 	fi
 	@touch $@
@@ -169,12 +169,12 @@ $(ATOM_PATCHST):	$(@:atom/.applied.%=%)
 
 atom/.applied.fs: $(ATOM_MODFILES) atom/squashfs-root $(ATOM_PATCHST) $(FFRITZ_X86_PACKAGE)
 	@echo "PATCH  atom/squashfs-root"
-	@$(SUDO) $(RSYNC) -a --no-perms atom/mod/ atom/squashfs-root/
+	@$(SUDO) $(RSYNC) -a atom/mod/ atom/squashfs-root/
 	@if [ -f "$(FFRITZ_X86_PACKAGE)" ]; then \
 	    echo Integrating Atom extensions from $(FFRITZ_X86_PACKAGE); \
 #	    $(SUDO) rm -rf atom/squashfs-root/usr/local; \
 	    $(SUDO) mkdir -p atom/squashfs-root/usr/local; \
-	    $(SUDO) tar xf $(FFRITZ_X86_PACKAGE) --strip-components=2 -C atom/squashfs-root/usr/local ./ffritz; \
+	    $(SUDO) tar xfk $(FFRITZ_X86_PACKAGE) --strip-components=2 -C atom/squashfs-root/usr/local ./ffritz; \
 	    $(TOPDIR)/mklinks atom/squashfs-root/usr/bin ../local/bin $(SUDO); \
 	fi
 	@touch $@
@@ -208,6 +208,7 @@ packages/x86/ffritz/ffritz-x86-$(VERSION).tar.gz:
 release:    $(RELDIR)/fb6490_$(FWVER)-$(VERSION).tar
 	
 $(RELDIR)/fb6490_$(FWVER)-$(VERSION).tar: armfs atomfs $(RELDIR) 
+	@rm -rf $(RELDIR)/var
 	@cd $(RELDIR); tar xf $(ORIG)
 	@echo "PACK   $(RELDIR)/fb6490_$(FWVER)-$(VERSION).tar"
 	@cp arm/filesystem.image $(RELDIR)/var/remote/var/tmp/filesystem.image

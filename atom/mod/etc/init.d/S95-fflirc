@@ -1,0 +1,10 @@
+#!/bin/sh
+
+#
+if [ -x $FFINSTDIR/etc/run_lircd -a ! -f /var/media/ftp/.skip_lircd ]; then
+    echo Starting lircd 
+    $FFINSTDIR/etc/run_lircd
+else
+    echo lircd not started 
+fi
+

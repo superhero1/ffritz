@@ -1,0 +1,74 @@
+#! /bin/sh
+#
+# Startup preparations for ffritz on atom.
+#
+#	- creating/transferring passwords and users
+#	- creating dropbear host keys if required
+#	- transferring dropbear host keys from persistent memory
+#	- transferring roots .ssh from persistent memory
+#	
+#
+echo `date` :: ffinit
+
+export FFINSTDIR=/usr/local
+export FFRITZ_HOME=/var/media/ftp/ffritz
+export FFLOG=/var/log/ffritz.log
+PATH=$PATH:$FFINSTDIR/bin
+
+touch $FFLOG
+chmod 666 $FFLOG
+
+CP="$FFINSTDIR/bin/rpc_cp -s -t10 -- "
+
+$FFINSTDIR/etc/mkusers
+
+## Transfer required nvram stuff from arm
+#
+rpc tar cf - nvram/shadow nvram/root-ssh_x86 nvram/dropbear_x86 | (cd /var/tmp; tar xf -)
+
+mv /var/tmp/nvram/shadow /var/tmp/shadow
+
+## Create dummy shadow entry for ffritz so that it's possible to 
+# assign a login
+#
+grep ffritz /etc/shadow >/dev/null  || echo ffritz:x:1:0:99999:7::: >> /etc/shadow
+
+## transfer dropbear data from nvram
+#
+rm -rf /var/tmp/dropbear
+
+if [ -d /var/tmp/nvram/dropbear_x86 ]; then
+	mv /var/tmp/nvram/dropbear_x86 /var/tmp/dropbear
+else
+	rpc mkdir /nvram/dropbear_x86 && rpc chmod 700 /nvram/dropbear_x86
+	mkdir /var/tmp/dropbear
+	chmod 700 /var/tmp/dropbear
+fi
+
+# check for presence of keys. If required, create them.
+#
+for key in rsa dss ecdsa; do
+	if [ ! -f /var/tmp/dropbear/dropbear_${key}_host_key ]; then
+		echo creating /var/tmp/dropbear/dropbear_${key}_host_key >> $FFLOG
+		$FFINSTDIR/bin/dropbearkey -t $key -f /var/tmp/dropbear/dropbear_${key}_host_key > /var/tmp/dropbear/id_${key}.pub || echo dropbearkey failed >> $FFLOG
+		rpc sh $CP /var/tmp/dropbear/dropbear_${key}_host_key /var/tmp/dropbear/id_${key}.pub /nvram/dropbear_x86
+	fi
+done
+
+# copy roots ssh stuff
+#
+rm -rf /var/tmp/root-ssh
+if [ -d /var/tmp/nvram/root-ssh_x86 ]; then
+	mv /var/tmp/nvram/root-ssh_x86 /var/tmp/root-ssh
+else
+	mkdir -p /var/tmp/root-ssh
+	chmod 700 /var/tmp/root-ssh
+	rpc mkdir /nvram/root-ssh_x86 && rpc chmod 700 /nvram/root-ssh_x86
+fi
+
+mkdir -p /var/run/mpd
+chown ffritz /var/run/mpd
+
+# A log rotator
+#
+$FFINSTDIR/bin/ffdaemon -i 1200 $FFINSTDIR/etc/fflogrotate 

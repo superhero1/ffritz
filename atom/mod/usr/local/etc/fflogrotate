@@ -1,0 +1,10 @@
+#!/bin/sh
+#
+LOGFILES="/var/log/ffritz.log /var/log/openvpn.log"
+
+for f in $LOGFILES; do
+if [ -f $f -a `wc -c < $f` -gt 250000 ]; then
+    cp ${f} ${f}.1
+    echo > $f
+fi
+done

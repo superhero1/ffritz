@@ -17,15 +17,15 @@ BR_TGT_LIB  = $(BR_TGT)/usr/lib
 BR_TGT_BIN  = $(BR_TGT)/usr/bin
 BR_TGT_SBIN = $(BR_TGT)/usr/sbin
 
-BINFILES    = ../mpd/build/src/mpd src/sndlist src/usbplay src/usbplayd src/su
+BINFILES    = ../mpd/build/src/mpd src/sndlist src/usbplay src/usbplayd src/su src/ffdaemon
 BINFILES   += $(BR_TGT_BIN)/strace $(BR_TGT_BIN)/ldd $(BR_TGT_SBIN)/tcpdump 
 BINFILES   += $(BR_TGT_BIN)/tcpbridge $(BR_TGT_BIN)/tcpprep $(BR_TGT_BIN)/tcpreplay $(BR_TGT_BIN)/tcpreplay-edit $(BR_TGT_BIN)/tcprewrite
 BINFILES   += $(BR_TGT_BIN)/mpc $(BR_TGT_BIN)/rsync $(BR_TGT_BIN)/socat
 BINFILES   += $(BR_TGT)/../host/usr/i686-buildroot-linux-uclibc/sysroot/usr/bin/curl
 BINFILES   += $(BR_TGT_SBIN)/openvpn
 BINFILES   += ../shairport/build/shairport
-ETCFILES    = etc/ffritz-env.sh etc/mpd.conf etc/runmpd etc/ff_atom_startup etc/mkusers etc/run_usbplay etc/run_shairport etc/usrmount
-ETCFILES   += etc/run_lircd etc/lirc_options_dfl.conf etc/ffdaemon etc/fflogrotate etc/upmpdcli.conf-dist
+ETCFILES    = etc/ffritz-env.sh etc/mpd.conf etc/runmpd etc/ff_atom_startup etc/run_usbplay etc/run_shairport etc/usrmount
+ETCFILES   += etc/run_lircd etc/lirc_options_dfl.conf etc/upmpdcli.conf-dist
 ETCFILES   += etc/run_openvpn
 MODFILES    = lib/modules/cdc-acm.ko
 

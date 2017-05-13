@@ -10,7 +10,7 @@
 # Recursive copy only transfers FILES
 #
 # Files are not copied if source is identical to destination
-# (lacking diff, md5sum is used).
+# (lacking diff, md5sum is used for comparison).
 #
 
 copy_file()

@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# run shairport
+#
+if [ -x $FFINSTDIR/etc/run_shairport -a ! -f /var/media/ftp/.skip_shairport ]; then
+    echo Starting shairport 
+    $FFINSTDIR/etc/run_shairport
+else
+    echo shairport skipped 
+fi
+

@@ -21,6 +21,6 @@
 
 void log_put (const char *format, ...);
 void log_set (const char *logf, int consOut);
-int daemon2 (char *pdfile, int nochdir, int noclose);
+int daemon2 (char *pdfile, int delay, int nochdir, int noclose);
 
 #endif
