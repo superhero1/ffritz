@@ -5,20 +5,25 @@
 #
 # MOUNT mountpoint options
 #
+# mountpoint is a existing directory below /var/media/ftp
+# options is the servers URI in libnfs format (nfs://server/share), followed
+# by additional options for fuse-nfs.
+#
 # Lines with two ..'s are not considered to avoid remounting
 # of system directories.
 #
+. `dirname $0`/ffritz-env.sh || exit 1
 
 if [ ! -r $1 ]; then
 exit 1
 fi
 
-grep MOUNT $1 | grep -v '\.\.' | while read line; do
-        set $line
+grep MOUNT $1 | grep -v '\.\.' | grep nfs:// | while read line; do
+	set $line
 
 	shift
 	mountpoint=/var/media/ftp/$1
 	shift
 	mountopts=$*
-	mount -t nfs $mountopts $mountpoint
+	$FFINSTDIR/bin/fuse-nfs -m $mountpoint -n $mountopts
 done

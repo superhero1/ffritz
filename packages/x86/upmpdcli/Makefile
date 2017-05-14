@@ -28,12 +28,12 @@ build/configure:    $(FILE)
 
 build/config.status:	build/configure
 	@cd build; ./configure --host=i686-buildroot-linux-uclibc --target=i686-buildroot-linux-uclibc prefix=/usr --datarootdir=$(FFHOME)/share --sysconfdir=$(FFHOME)/etc
-	@cd build; make install DESTDIR=$(TOPDIR)/output
+#	@cd build; make install DESTDIR=$(TOPDIR)/output
 
 install:    all
 	@mkdir -p $(DESTDIR)/bin $(DESTDIR)/share/upmpdcli/cdplugins $(DESTDIR)/etc
 	@cp -f output/usr/bin/* $(DESTDIR)/bin
-	@for f in output/var/media/ftp/ffritz/share/upmpdcli/*; do test -f $$f && cp -v $$f $(DESTDIR)/share/upmpdcli; done; true
+	@for f in output/var/media/ftp/ffritz/share/upmpdcli/*; do test -f $$f && cp -f $$f $(DESTDIR)/share/upmpdcli; done; true
 
 clean:
 	rm -rf build

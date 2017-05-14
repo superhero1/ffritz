@@ -9,13 +9,22 @@ release 15 (under construction)
 	- Don't invoke atom startup
 - Atom
 	- Pull nvram data from Arm using rpc
-	- Always integrate/start dropbear
+	- Always integrate/start dropbear, removed from atom package
 	- Start temporary telnetd
+	- mpd
+		- add libnfs support
+	- usrmount/.mtab
+		- uses fuse-nfs (kernel no longer supports nfs).
+		- The options field in .mtab has changed and needs
+		  to be adjusted:
+		  It is the servers URI in libnfs format
+		  (nfs://server/share), followed by additional options
+		  for fuse-nfs.
 
 - TODO
 	- TEST
 	- sync passwords with /nvram after change
-	- remote athtool (no longer required)
+	- remote athtool (no longer supported/required)
 	- .....
 
 release 14

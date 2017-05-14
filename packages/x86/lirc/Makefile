@@ -38,17 +38,27 @@ build/config.status:	build/configure
 	    --localstatedir=/var \
 	    --prefix=$(PREFIX)
 
-install:
+BFILE = build/daemons/lircd
+DFILE1 = $(TOPDIR)/output/$(PREFIX)/sbin/lircd
+DFILE2 = $(DESTDIR)/bin/lircd
+
+install: $(DFILE2)
+
+$(DFILE2):	$(DFILE1)
 	mkdir -p $(DESTDIR)
-	export PATH=$(TOOLCHAIN):$(PATH); make -C build install DESTDIR=$(TOPDIR)/output
-	rm -f output/$(PREFIX)/lib/lirc/plugins/atilibusb.so
-	cp -arnv output/$(PREFIX)/bin $(DESTDIR)
+	cp -arn output/$(PREFIX)/bin $(DESTDIR)
 	cp output/$(PREFIX)/sbin/* $(DESTDIR)/bin
-	cp -arnv output/$(PREFIX)/lib $(DESTDIR)
+	cp -arn output/$(PREFIX)/lib $(DESTDIR)
 	rm -rf $(DESTDIR)/lib/python3
 	mkdir -p $(DESTDIR)/share
-	cp -arnv output/$(PREFIX)/share/lirc $(DESTDIR)/share
-	cp -arnv output/$(PREFIX)/etc $(DESTDIR)
+	cp -arn output/$(PREFIX)/share/lirc $(DESTDIR)/share
+	cp -arn output/$(PREFIX)/etc $(DESTDIR)
+
+$(DFILE1):	$(BFILE)
+	export PATH=$(TOOLCHAIN):$(PATH); make -C build install DESTDIR=$(TOPDIR)/output
+	rm -f output/$(PREFIX)/lib/lirc/plugins/atilibusb.so
+
+$(BFILE):	build/config.status
 
 clean:
-	rm -rf build
+	rm -rf build output
