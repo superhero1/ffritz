@@ -20,6 +20,8 @@ release 15 (under construction)
 		  It is the servers URI in libnfs format
 		  (nfs://server/share), followed by additional options
 		  for fuse-nfs.
+	- added openssl binary
+	- add build of privatekeypassword
 
 - TODO
 	- TEST

@@ -14,7 +14,7 @@ export CC   := i686-buildroot-linux-uclibc-gcc
 
 URL	= $(shell cat $(PKGTOP)/url-lirc)
 COMMIT	= $(shell cat $(PKGTOP)/commit-lirc)
-FILE	= $(DLDIR)/$(shell basename $(URL))
+REPO	= $(DLDIR)/lirc
 
 .PHONY:	build
 
@@ -23,11 +23,11 @@ all:	build/config.status
 	make -k -C build/doc; true
 	make -C build
 
-$(FILE):
-	@cd $(DLDIR); wget $(URL)
+$(REPO):
+	git clone $(URL) $(REPO)
 
 build/configure:
-	git clone $(URL) build
+	git clone $(REPO) build
 	cd build; git reset --hard $(COMMIT)
 	cd build; ./autogen.sh
 	

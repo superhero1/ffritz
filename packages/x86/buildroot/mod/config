@@ -1,6 +1,6 @@
 #
 # Automatically generated make config: don't edit
-# Buildroot 2013.02-gb83e231 Configuration
+# Buildroot 2013.02-gfa18f7b-dirty Configuration
 #
 BR2_HAVE_DOT_CONFIG=y
 # BR2_arm is not set
@@ -330,7 +330,7 @@ BR2_PACKAGE_BZIP2=y
 #
 # BR2_PACKAGE_RAMSPEED is not set
 # BR2_PACKAGE_RT_TESTS is not set
-# BR2_PACKAGE_STRACE is not set
+BR2_PACKAGE_STRACE=y
 # BR2_PACKAGE_STRESS is not set
 # BR2_PACKAGE_SYSPROF is not set
 # BR2_PACKAGE_WHETSTONE is not set
@@ -583,7 +583,7 @@ BR2_PACKAGE_LIBGPG_ERROR=y
 BR2_PACKAGE_NETTLE=y
 # BR2_PACKAGE_OCF_LINUX is not set
 BR2_PACKAGE_OPENSSL=y
-# BR2_PACKAGE_OPENSSL_BIN is not set
+BR2_PACKAGE_OPENSSL_BIN=y
 # BR2_PACKAGE_OPENSSL_ENGINES is not set
 # BR2_PACKAGE_OPENSSL_OCF is not set
 # BR2_PACKAGE_POLARSSL is not set
@@ -611,7 +611,7 @@ BR2_PACKAGE_SQLITE=y
 # BR2_PACKAGE_GAMIN is not set
 # BR2_PACKAGE_LIBCONFIG is not set
 # BR2_PACKAGE_LIBCONFUSE is not set
-# BR2_PACKAGE_LIBFUSE is not set
+BR2_PACKAGE_LIBFUSE=y
 # BR2_PACKAGE_LIBLOCKFILE is not set
 # BR2_PACKAGE_LIBSYSFS is not set
 
@@ -815,7 +815,7 @@ BR2_PACKAGE_NCURSES_TARGET_MENU=y
 # JSON/XML
 #
 # BR2_PACKAGE_CJSON is not set
-# BR2_PACKAGE_EXPAT is not set
+BR2_PACKAGE_EXPAT=y
 # BR2_PACKAGE_EZXML is not set
 # BR2_PACKAGE_JSON_C is not set
 # BR2_PACKAGE_LIBROXML is not set

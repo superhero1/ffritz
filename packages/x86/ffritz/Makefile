@@ -4,10 +4,6 @@
 # to and executed from /usr/local.
 #
 # For the first, just call make
-# For the latter, call make install INSTDIR=<install-path>
-#   where install-path is the absolute path where bin, lib and etc shall
-#   reside (etc. $squashfs-root/usr/local)
-#
 #
 TOPDIR	    = $(shell pwd)
 PKGDIR	    = $(shell cd ..; pwd)
@@ -20,7 +16,8 @@ BR_TGT_SBIN = $(BR_TGT)/usr/sbin
 BINFILES    = ../mpd/build/src/mpd src/sndlist src/usbplay src/usbplayd src/su src/ffdaemon
 BINFILES   += $(BR_TGT_BIN)/strace $(BR_TGT_BIN)/ldd $(BR_TGT_SBIN)/tcpdump 
 BINFILES   += $(BR_TGT_BIN)/tcpbridge $(BR_TGT_BIN)/tcpprep $(BR_TGT_BIN)/tcpreplay $(BR_TGT_BIN)/tcpreplay-edit $(BR_TGT_BIN)/tcprewrite
-BINFILES   += $(BR_TGT_BIN)/mpc $(BR_TGT_BIN)/rsync $(BR_TGT_BIN)/socat
+BINFILES   += $(BR_TGT_BIN)/mpc $(BR_TGT_BIN)/rsync $(BR_TGT_BIN)/socat 
+BINFILES   += $(BR_TGT_BIN)/openssl
 BINFILES   += $(BR_TGT)/../host/usr/i686-buildroot-linux-uclibc/sysroot/usr/bin/curl
 BINFILES   += $(BR_TGT_SBIN)/openvpn
 BINFILES   += ../shairport/build/shairport
@@ -40,18 +37,18 @@ ifeq ($(INSTDIR),)
 endif
 
 SUBDIRS	    = ../buildroot ../libmaru ../shairport ../libmpdclient ../mpc ../lirc ../libupnpp ../jsoncpp ../upmpdcli ../libnfs ../nfs ../mpd src
+INSTDIRS    = ../lirc/install ../libupnpp/install ../upmpdcli/install ../nfs/install
 
 .PHONY:	$(SUBDIRS) $(IMAGE)
 
-#all:	$(SUBDIRS) $(IMAGE)
-all:	$(IMAGE)
+all:	$(SUBDIRS) $(IMAGE)
 
 $(SUBDIRS):	
 	mkdir -p ../../dl
 	make -C $@
 
 $(INSTDIRS):
-	make -C $@ install DESTDIR=$(INSTDIR)
+	make -C `dirname $@` install DESTDIR=$(INSTDIR)
 
 $(IMAGE): $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_LIB)/lib*so*)
 	rm -rf $(STAGEDIR)
@@ -64,7 +61,7 @@ $(IMAGE): $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_L
 # which is linked to for each binary. This makes the package position independent, i.e.
 # it can be installed to /var/media/ftp, or integrated into the atom squashfs (to /usr/local).
 #
-install: $(SUBDIRS) $(BINFILES) $(ETCFILES) $(INSTDIRS) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_LIB)/lib*so*)
+install: $(BINFILES) $(ETCFILES) $(INSTDIRS) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_LIB)/lib*so*)
 	mkdir -p $(INSTDIR)/bin/exec
 	mkdir -p $(INSTDIR)/lib/modules
 	mkdir -p $(INSTDIR)/etc
@@ -74,13 +71,10 @@ install: $(SUBDIRS) $(BINFILES) $(ETCFILES) $(INSTDIRS) $(shell test -d $(BR_TGT
 	cp $(ETCFILES) $(INSTDIR)/etc
 	cp -ar etc/openvpn $(INSTDIR)/etc
 	sed -i -e 's@^rundir=.*@rundir=/var/media/ftp/ffritz@' $(INSTDIR)/etc/ff_atom_startup
-	chmod +x $(INSTDIR)/etc/ff_atom_startup
 	make -C ../lirc install DESTDIR=$(INSTDIR)
 	make -C ../libupnpp install DESTDIR=$(INSTDIR)
 	make -C ../upmpdcli install DESTDIR=$(INSTDIR)
 	make -C ../nfs install DESTDIR=$(INSTDIR)
-#	mv $(INSTDIR)/usr/local/bin/* $(INSTDIR)/bin
-#	mv $(INSTDIR)/usr/local/sbin/* $(INSTDIR)/bin
 	cp -a bin/ffwrap $(INSTDIR)/bin/exec
 	@cd $(INSTDIR)/bin; \
 	    for f in `ls | xargs file | grep ELF | sed -e 's/:.*//'`; do\
