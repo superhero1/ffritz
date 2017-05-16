@@ -16,8 +16,6 @@ URL	= $(shell cat $(PKGTOP)/url-lirc)
 COMMIT	= $(shell cat $(PKGTOP)/commit-lirc)
 REPO	= $(DLDIR)/lirc
 
-.PHONY:	build
-
 all:	build/config.status
 	mkdir -p $(TOPDIR)/output
 	make -k -C build/doc; true
@@ -26,10 +24,13 @@ all:	build/config.status
 $(REPO):
 	git clone $(URL) $(REPO)
 
-build/configure: $(REPO)
+build/autogen.sh:	$(REPO)
 	git clone $(REPO) build
 	cd build; git reset --hard $(COMMIT)
+
+build/configure: build/autogen.sh
 	cd build; ./autogen.sh
+	touch $@
 	
 build/config.status:	build/configure
 	@cd build; export PATH=$(TOOLCHAIN):$(PATH); ./configure \
@@ -57,8 +58,6 @@ $(DFILE2):	$(DFILE1)
 $(DFILE1):	$(BFILE)
 	export PATH=$(TOOLCHAIN):$(PATH); make -C build install DESTDIR=$(TOPDIR)/output
 	rm -f output/$(PREFIX)/lib/lirc/plugins/atilibusb.so
-
-$(BFILE):	build/config.status
 
 clean:
 	rm -rf build output
