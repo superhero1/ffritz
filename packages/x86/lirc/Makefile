@@ -26,7 +26,7 @@ all:	build/config.status
 $(REPO):
 	git clone $(URL) $(REPO)
 
-build/configure:
+build/configure: $(REPO)
 	git clone $(REPO) build
 	cd build; git reset --hard $(COMMIT)
 	cd build; ./autogen.sh
