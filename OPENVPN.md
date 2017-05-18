@@ -40,9 +40,20 @@ Installation steps required by the user (once)
 	- dh.pem 	- Diffie Hellman parameters
 	- machine.cert	- The certificate for the FritzBox
 	- machine.key	- The box private key
-- Define an UDP forwarding rule in the FritzOS GUI for port 1194 so that the OpenVPN
-  daemon can be reached.
+- Define an UDP forwarding rule in the FritzOS GUI for port 1194 to NET.253 so that
+  the OpenVPN daemon can be reached.
+
+NOTE FOR firmware 6.83: This is no longer possible, the box will recognize that this address
+	belongs to the box (or does not exist at all) and reject the operation.
+	The workaround is to declare a forwarding rule to redirect UDP 
+	port 1194 to some existing/known node in the local network (this node should not have port 1194
+	open!).
+	The startup script for OpenVPN will then re-define this rule to point to the new
+	logical ip address (NET.253) before creating the actual virtual interface and starting the
+	OpenVPN daemon.
+
 - Create keys/certificates for the clients as required.
+
 
 TLS using easy-rsa
 ==================

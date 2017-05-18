@@ -29,6 +29,32 @@ test -z $addr && exit 1
 #
 if [ $addr -eq 1 ]; then
 	naddr=253
+
+	# look for a forwarding rule from external port 1194
+	#
+	for i in 0 1 2 3 4 5 6 7 8 9; do
+		prule=`ctlmgr_ctl r forwardrules settings/rule${i}/port`
+		if [ "x$prule" = "x1194" ]; then
+			break;
+		fi
+	done
+
+	if [ "x$prule" != "x1194" ]; then
+		echo no forwarding rule for external port 1194 found
+		exit 1
+	fi
+	
+	# Redirect address of rule to the address of the interface we
+	# are going to create.
+	# If the interface already exists the operation failes since 
+	# ctlmgr detects that this is a local address of the box.
+	#
+	ctlmgr_ctl w forwardrules settings/rule${i}/fwip ${net}.${naddr}
+
+	if [ $? -ne 0 ]; then
+		echo Failed to redefine forwarding rule $i to ${net}.${naddr}
+		exit 1
+	fi
 else
 	naddr=`expr $addr - 1`
 fi
