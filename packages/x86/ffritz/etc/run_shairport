@@ -64,7 +64,11 @@ DAEMON_ARGS="--daemon --pidfile $PIDFILE --log $LOGFILE"
 [ -z "$OUTPUT" ]      || DAEMON_ARGS="$DAEMON_ARGS --output $OUTPUT"
 [ -z "$MDNS" ]        || DAEMON_ARGS="$DAEMON_ARGS --mdns $MDNS"
 [ -z "$OUTPUT_OPTS" ] || DAEMON_ARGS="$DAEMON_ARGS -- $OUTPUT_OPTS"
- 
+
+# make sure mdns multicast responses go to the correct interface
+#
+ip route add 224.0.0.251/32 dev lan
+
 # Run the shairport daemon
 #
 touch $PIDFILE                                                     
