@@ -21,6 +21,7 @@ all:	build/Makefile
 	make -C build
 
 build/Makefile: $(REPO)
+	rm -rf build
 	git clone $(REPO) build
 
 $(REPO):

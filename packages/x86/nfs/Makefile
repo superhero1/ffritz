@@ -20,6 +20,7 @@ $(FILE):
 	@cd $(DLDIR); wget $(URL)
 
 build/configure:    $(FILE)
+	@rm -rf build
 	@mkdir -p build
 	@cd build; unzip $(FILE) && mv fuse-nfs-master/* .
 	cd build; ./setup.sh

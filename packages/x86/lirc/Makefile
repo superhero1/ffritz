@@ -25,6 +25,7 @@ $(REPO):
 	git clone $(URL) $(REPO)
 
 build/autogen.sh:	$(REPO)
+	rm -rf build
 	git clone $(REPO) build
 	cd build; git reset --hard $(COMMIT)
 
