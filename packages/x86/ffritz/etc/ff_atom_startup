@@ -1,0 +1,3 @@
+#!/bin/sh
+#
+/usr/local/bin/ffdaemon -l 1 /usr/local/etc/ffservices
