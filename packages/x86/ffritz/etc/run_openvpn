@@ -25,7 +25,7 @@ test -z $net && exit 1
 test -z $addr && exit 1
 
 # Firmware >= 6.83: Atom is .1 in lan
-# For now, just use .253, which was the default calculation for older fw
+# For now just use .253, which was the default calculation for older fw
 #
 if [ $addr -eq 1 ]; then
 	naddr=253
@@ -43,6 +43,10 @@ if [ $addr -eq 1 ]; then
 		echo no forwarding rule for external port 1194 found
 		exit 1
 	fi
+
+	# Make sure our pseudo interface is down
+	#
+	/sbin/ifconfig lan:1 down
 	
 	# Redirect address of rule to the address of the interface we
 	# are going to create.

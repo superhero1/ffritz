@@ -49,9 +49,11 @@ else
     echo lircd not started 
 fi
 
-# and openvpn
+# and openvpn.
+# XXX need some delay for network
 #
 if [ -x $FFINSTDIR/etc/run_openvpn -a -r /var/tmp/root-ssh/openvpn/openvpn.conf ]; then
+	sleep 20
 	echo starting OpenVPN
 	$FFINSTDIR/etc/run_openvpn
 else

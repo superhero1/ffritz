@@ -13,7 +13,7 @@
 # Change the "search" path to /etc/openvpn
 # All files referenced in this configuration will be relative to 
 # whatever directory is specified here - we default to /etc/openvpn 
-cd /var/media/ftp/ffritz/etc/openvpn
+cd /var/tmp/root-ssh/openvpn
 
 # If running as a server, which local IP address should OpenVPN
 # listen on? Specify this as either a hostname or IP address. If
@@ -23,12 +23,8 @@ cd /var/media/ftp/ffritz/etc/openvpn
 # FB6490 NOTE:
 # This IP address must be accessible via port forwarding from outside.
 # However, the 6490 web GUI does not allow to add forwarding rules
-# directly to the Atom core (192.168.178.254), so an additional IP
-# address must be assigned, e.g.:
-#
-#   ifconfig lan:1 192.168.178.253
-#
-# Then add a forwarding rule for port 1194 to this IP
+# directly to an address owned by the fritzbox. See run_openvpn
+# script how this is handled.
 #
 local 192.168.178.253
 
