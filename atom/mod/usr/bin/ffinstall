@@ -1,0 +1,59 @@
+#!/bin/sh
+#
+# Simple installer for ff release image
+# Verifies checksum, copies to right places and updates nvram
+#
+# usage: ffinstall image-file sha256sum
+#
+#
+
+if [ "$1" = "" -o "$2" = "" ]; then
+	echo "usage: $0 release-image sha256sum"
+	echo "       release-image can be relative to /var/media/ftp"
+	exit 1
+fi
+
+if [ -f $1 ]; then
+	relfile=$1
+elif [ -f /var/media/ftp/$1 ]; then
+	relfile=/var/media/ftp/$1
+else
+	echo usage: $0 release-image
+	exit 1
+fi
+
+csum=$2
+
+mkdir -p /var/media/ftp/ffritz/data/tmp || exit 1
+
+echo +++ Unpacking
+gunzip -c $relfile | tar -x -C /var/media/ftp/ffritz/data/tmp -f - || exit 1
+
+echo +++ Verifying sha256sum
+
+FSIG=`cat /var/media/ftp/ffritz/data/tmp/ffimage.sha256sum`
+VSIG=`openssl dgst -sha256 /var/media/ftp/ffritz/data/tmp/ffimage.bin | sed -e 's/.* //'`
+
+if [ "$VSIG" != "$FSIG" ]; then
+	echo " Does not match, expected $FSIG, got $VSIG"
+	exit 1
+fi
+
+if [ "$VSIG" != "$csum" ]; then
+	echo " Does not match, expected $FSIG, given $csum"
+	exit 1
+fi
+
+if [ -f /var/media/ftp/ffritz/data/ffimage.bin ]; then
+	echo +++ Backing up old image
+	rm -f /var/media/ftp/ffritz/data/ffimage.bin.old
+	mv /var/media/ftp/ffritz/data/ffimage.bin /var/media/ftp/ffritz/data/ffimage.bin.old
+fi
+
+echo +++ Installing
+mv /var/media/ftp/ffritz/data/tmp/ffimage.sha256sum /var/tmp/ffnvram/ffimage.sha256 || exit 1
+mv /var/media/ftp/ffritz/data/tmp/ffimage.bin /var/media/ftp/ffritz/data/ffimage.bin || exit 1
+
+echo +++ Synchronizing nvram
+nvsync || exit 1
+

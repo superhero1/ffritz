@@ -1,8 +1,0 @@
-#!/bin/sh
-
-# Run user mounts
-#
-if [ -f /var/media/ftp/ffritz/.mtab ]; then
-    $FFINSTDIR/etc/usrmount /var/media/ftp/ffritz/.mtab
-fi
-

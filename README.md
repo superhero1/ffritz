@@ -5,12 +5,13 @@ You still need the original image to build a modified install image, and you
 need a way to upgrade.  I'm assuming you already have telnet/ssh access to
 the box by either already running a modified image or having gained access.
 
-There are some known methods how to perform a firmware update and/or
-gain login access to the box. For recent firmware ( > 6.30), a known 
-"attack vector" is [480894](https://github.com/PeterPawn/YourFritz/tree/master/reported_threats/480894)
+It _might_ work on the FritzBox 6590, but i have never tested it.
 
-For older firmware it is possible to use the pseudo-root method
-(see "telnet via pseudo-root" section below).
+There are some known methods how to perform an initial firmware update
+from a box that runs an original image.
+The one known to work on current firmware versions is to directly write 
+kernel and filesystem images via the boot loader (eva). Search IPPF threads
+for information on how to accomplish this.
 
 I take no responsibility for broken devices or other problems (e.g. with
 your provider).  Use this at your own risk.
@@ -25,24 +26,36 @@ Creating an install/update image
 --------------------------------
 
 - Obtain original install image (default is
-    FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.63.image)
+    FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.83.image)
 
 - Clone repository (master branch) in the directory where the original
     install image is located:
 
     `git clone https://fesc2000@bitbucket.org/fesc2000/ffritz.git`
 
-- Decide whether to add additional packages to the arm/atom filesystems
-    (see "Software Packages" below)
+- Go to ffritz directory and `make` (sudo required).
 
-- Go to ffritz directory and `make release` (sudo required).
-
-Installing the image
---------------------
+Installing the image (when running firmware < 6.8x)
+---------------------------------------------------
 
 - Copy the release tar image to the box, e.g. NAS (/var/media/ftp)
 - Extract in / directory of arm core:
     tar xf /var/media/ftp/fb6490_XXX.tar
+- Call var/install (from the / directory !!)
+	- Monitor the output on the console (1st telnet/ssh login session).
+	  There should be a SUCCESS message at the end.
+	- The return code $? of var/install should be 1
+- After successful upgrade, execute "nohup sh var/post_install&"
+
+Installing the image (when running firmware >= 6.8x)
+----------------------------------------------------
+- Copy the release tar image to the box, e.g. NAS (/var/media/ftp)
+- From there, copy it to the arm core: 
+    scp /var/media/ftp/fb6490_XXX.tar root@169.254.1.2:/tmp
+- Log in to the arm core:
+    ssh root@169.254.1.2
+- Extract in / directory of arm core:
+    tar xf /tmp/fb6490_XXX.tar
 - Call var/install (from the / directory !!)
 	- Monitor the output on the console (1st telnet/ssh login session).
 	  There should be a SUCCESS message at the end.
@@ -91,15 +104,13 @@ and never use telnet any more:
 - Assign a different password once more:
     passwd
 
-- If you run ssh on the atom core, copy passwords there:
-    cp /nvram/shadow /var/remote/var/tmp/shadow
+- Store password persistently
+    ffsync
 
 - Assign a new WEB GUI password
 
 The password is stored persistently in the box'es NVRAM, and is valid for
 both arm and atoms ssh service.
-
-Note: The arm core is usually accessible at x.x.x.1, the atom core at x.x.x.254
 
 Features
 ========
@@ -146,6 +157,10 @@ dropbear/ssh/scp (Atom core feature)
 	  Changing passwords locally on the atom is not persistent.
 	- Startup can be inhibited by creating file
 	  `/var/media/ftp/.skip_dropbear`
+
+openssl (Atom core feature)
+---------------------------
+Nothing to say here.
 
 IPv6 (arm core feature)
 -----------------------
@@ -252,58 +267,30 @@ Miscellaneous tools (Atom/Arm packages)
 Software Packages
 =================
 
-By default only the Atom filesystem is modified, adding (temporary) telnet and
-ssh access (see arm core feature in the feature list).
-In addition the repository contains additional software packages for the arm and
-atom cores which can either be built from scratch or downloaded from the
-repository (https://bitbucket.org/fesc2000/ffritz/downloads).
+In addition to the core features it is possible to install an application image
+to the atom core (see Atom Package features listed above).
 
-To build the packages by yourself, go to packages/x86 and/or packages/arm and type make.
-Output images are placed into packages/x86/ffritz / packages/arm/ffritz
-respectively.
+The image is distributed as ffritz-x86-VERSION.tar.gz. To install it,
 
-The packages can either be integrated into the root filesystems of the arm/atom 
-core(s), or be installed into the NAS/flash storage of the box. The latter
-is more flexible, but has some drawbacks:
+- Copy it to the box NAS directory 
 
-- IT IS INSECURE!
-  There are various scripts/binaries that are (have to be) executed as root.
-  If someone has access to the box NAS storage he can modify these
-  binaries/scripts and do evil things.
+	scp ffritz-x86-VERSION.tar.gz root@192.168.178.1:/var/media/ftp
 
-- The provided services on the Atom core are not automatically started when the
-  box restarts.
+- Log in and install it
 
-Integrating into install image
-------------------------------
-To integrate the packages into the root filesystem(s), edit the 
-Makefile before building the installer image and comment out the following
-defines:
+	ffinstall ffritz-x86-VERSION.tar.gz CHECKSUM
 
-- FFRITZ_X86_PACKAGE must point to the Atom image file
-- FFRITZ_ARM_PACKAGE must point to the ARM image file
+  The checksum is the sha256sum listed on the download page. It is also contained
+  in the file ffimage.sha256sum within the release .tar.gz archive.
 
-Installing to flash storage (NAS)
----------------------------------
+- After the success message, restart the box.
 
-It is possible to install the packages to the NAS storage of the box
-(var/media/ftp) by simply unpacking them there. Atom binaries will be
-installed below "ffritz", arm binaries below "ffritz-arm":
 
-Copy to the NAS storage:
-
-    scp packages/x86/ffritz/ffritz-x86-VERSION.tar.gz root@192.168.178.1:/var/media/ftp   
-    scp packages/arm/ffritz/ffritz-arm-VERSION.tar.gz root@192.168.178.1:/var/media/ftp
-
-Log in to the arm core:
-
-    cd /var/media/ftp
-    gunzip -c ffritz-x86-VERSION.tar.gz | tar xf -
-    gunzip -c ffritz-arm-VERSION.tar.gz | tar xf -
-
-If required, the atom services can be started manually:
-
-    /var/media/ftp/ffritz/etc/ff_atom_startup
+Steps performed by the startup script:
+- check if /var/media/ftp/ffritz/data/ffimage.bin exists
+- compare its SHA256 checksum against the checksum that was given at installation.
+- if it matches, ffimage.bin is mounted to /usr/local
+- The target checksum is kept in an encrypted persistent storage.
 
 Notes
 =====
@@ -333,7 +320,7 @@ The atom source tarball (packages/x86/avm) does not work for me.
 Build Host
 ----------
 
-Tested: Debian 7, Debian 8.
+Tested: Debian 7, Debian 8, CentOS 7.
 
 Used disk space is ca. 10G.
 
@@ -357,25 +344,3 @@ TODO / Known Issues
 - Fix usbplayd
 	- Fix libmaru to properly support for different sample rates
 	  (currently only 48KHz is detected)
-
-telnet via pseudo-root
-======================
-
-- In the GUI navigate to System/Sicherung/Wiederherstellen
-- Activate your browsers developer tools
-- Right click on "Datei auswaehlen" Button --> Inspect
-- Change the following elements in the html code:
-	- `id=uiImport`             --->      `id=uiFile`
-	- `name=ConfigImportFile`   --->      `name=UploadFile`
-- Select "Datei auswaehlen" and upload the pseudo-image (telnet-1.tar)
-
-After ca. 15 sec a dialog should appear to confirm installation of a
-inofficial firmware.
-Do this, telnet access should now be possible (with the regular login password
-of the box).
-
-You might need to repeat this, sometimes the box completely crashes. Note that
-the first
-telnet session might receive lots of console messages. Leave it open and
-connect a 2nd time.
-

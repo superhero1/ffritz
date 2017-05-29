@@ -23,19 +23,7 @@ ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.83.image
 #
 KEEP_ORIG = 1
 
-# UNCOMMENT THIS if you want to modify the Atom core filesystem, adding
-# stuff from the x86/ffritz package (dropbear, mpd, shairport, tools).
-# To keep the atom FS unmodified, comment this out.
-#
-# Otherwise the ffritz-x86 package can be installed to the ftp directory, which is more 
-# flexible but unsafe.
-#
-# The package can be either downloaded (https://bitbucket.org/fesc2000/ffritz/downloads),
-# or built with "make atom-package"
-#
-#FFRITZ_X86_PACKAGE=../ffritz-x86-$(VERSION).tar.gz
-
-# Same for ARM. The package contains some optional binaries which may as well be installed to
+# The optional arm package contains some binaries which may as well be installed to
 # to the ftp directory (-> /var/media/ftp/ffritz-arm)
 # To build: "make arm-package"
 #
@@ -55,7 +43,6 @@ RELDIR  = release$(VERSION)
 ARM_MODFILES = $(shell find arm/mod/ -type f -o -type d)
 ATOM_MODFILES = $(shell find atom/mod/ -type f -o -type d)
 
-
 ###############################################################################################
 ###############################################################################################
 FWVER=$(shell strings $(ORIG) | grep -i ^newFWver=|sed -e 's/.*=//')
@@ -66,7 +53,6 @@ $(error Could not determine firmware version ($(ORIG) missing?))
 endif
 
 ifeq ($(PKGMAKE),1)
-FFRITZ_X86_PACKAGE=packages/x86/ffritz/ffritz-x86-$(VERSION).tar.gz
 FFRITZ_ARM_PACKAGE=packages/arm/ffritz/ffritz-arm-$(ARM_VER).tar.gz
 endif
 
@@ -91,7 +77,7 @@ all: release
 #
 armfs:	arm/filesystem.image
 
-ARM_PATCHES  = rc.tail.patch
+ARM_PATCHES += rc.tail.patch
 ARM_PATCHES += $(shell test $(FWNUM) -gt 660 && echo nvram_dontremove.patch)
 ARM_PATCHES += $(shell test $(FWNUM) -lt 663 && echo ipv6_enable.patch)
 
@@ -119,8 +105,8 @@ arm/.applied.fs: $(ARM_MODFILES) arm/squashfs-root $(ARM_PATCHST) $(FFRITZ_ARM_P
 	    echo Integrating ARM extensions from $(FFRITZ_ARM_PACKAGE); \
 	    $(SUDO) mkdir -p arm/squashfs-root/usr/local; \
 	    $(SUDO) tar xfk $(FFRITZ_ARM_PACKAGE) --strip-components=2 -C arm/squashfs-root/usr/local ./ffritz-arm; \
-	    $(TOPDIR)/mklinks arm/squashfs-root/usr/bin ../local/bin $(SUDO); \
 	fi
+	$(TOPDIR)/mklinks arm/squashfs-root/usr/bin ../local/bin $(SUDO); 
 	@touch $@
 
 arm/filesystem.image: arm/.applied.fs
@@ -150,7 +136,7 @@ packages/arm/ffritz/ffritz-arm-$(ARM_VER).tar.gz:
 #
 atomfs:	atom/filesystem.image
 
-ATOM_PATCHES = 50-udev-default.patch rc.tail.patch
+ATOM_PATCHES = 50-udev-default.patch profile.patch
 
 ATOM_PATCHST=$(ATOM_PATCHES:%=atom/.applied.%)
 
@@ -167,40 +153,16 @@ $(ATOM_PATCHST):	$(@:atom/.applied.%=%)
 	@cd atom/squashfs-root; $(SUDO) patch -p1 < $(@:atom/.applied.%=../%)
 	@touch $@
 
-atom/.applied.fs: $(ATOM_MODFILES) atom/squashfs-root $(ATOM_PATCHST) $(FFRITZ_X86_PACKAGE)
+atom/.applied.fs: $(ATOM_MODFILES) atom/squashfs-root $(ATOM_PATCHST)
 	@echo "PATCH  atom/squashfs-root"
 	@$(SUDO) $(RSYNC) -a atom/mod/ atom/squashfs-root/
-	@if [ -f "$(FFRITZ_X86_PACKAGE)" ]; then \
-	    echo Integrating Atom extensions from $(FFRITZ_X86_PACKAGE); \
-#	    $(SUDO) rm -rf atom/squashfs-root/usr/local; \
-	    $(SUDO) mkdir -p atom/squashfs-root/usr/local; \
-	    $(SUDO) tar xfk $(FFRITZ_X86_PACKAGE) --strip-components=2 -C atom/squashfs-root/usr/local ./ffritz; \
-	    $(TOPDIR)/mklinks atom/squashfs-root/usr/bin ../local/bin $(SUDO); \
-	fi
+	@mkdir -p atom/squashfs-root/usr/local
 	@touch $@
 
 atom/filesystem.image: atom/.applied.fs
 	@rm -f atom/filesystem.image
 	@echo "PACK  atom/squashfs-root"
 	@cd atom; $(SUDO) mksquashfs squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 >/dev/null
-
-## Normally the package should be pre-compiled.
-#
-ifneq ($(FFRITZ_X86_PACKAGE),)
-ifeq ($(PKGMAKE),)
-$(FFRITZ_X86_PACKAGE):
-	@echo Please download $(FFRITZ_X86_PACKAGE) from https://bitbucket.org/fesc2000/ffritz/downloads
-	@echo "(or try to build it with \"make atom-package\")"
-	@echo
-endif
-endif
-
-atom-package: packages/x86/ffritz/ffritz-x86-$(VERSION).tar.gz
-
-packages/x86/ffritz/ffritz-x86-$(VERSION).tar.gz:
-	make -C packages/x86/ffritz
-	@echo
-	@echo Successfully built $@
 
 #.PHONY:		$(RELDIR)
 

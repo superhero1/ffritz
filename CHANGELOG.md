@@ -8,8 +8,21 @@ release 15 (under construction)
 	- Don't start temporary telnetd any more
 	- Don't invoke atom startup
 - Atom
-	- Pull nvram data from Arm using rpc
-	- Always integrate/start dropbear, removed from atom package
+	- Application tarball is no longer integrated into root
+	  filesystem
+		- Replaced by sqaushfs image mounted at startup
+		  (/var/media/ftp/ffritz/data/ffimage.bin)
+		- Only if sha256 checksum matches
+	- Support for 6.83 (older versions no longer tested)
+	- Replace nvram access by an encrypted storage on the nas
+		(/var/media/ftp/ffritz/data/ffstore.dat)
+		- Runtime copy is in /tmp/ffnvram
+		- Added nvsync tool to store current state of
+		  ffnvram to ffstore
+		- Lacking a ffstore.dat, ffnvram is populated
+		  traditionally from /nvram
+	- Dropbear, openssl and telnetd are part of default
+	  squashfs install image.
 	- Start temporary telnetd
 	- mpd
 		- add libnfs support
@@ -22,11 +35,16 @@ release 15 (under construction)
 		  for fuse-nfs.
 	- added openssl binary
 	- add build of privatekeypassword
+	- Change license of source to GPLv3 to be compatible with
+	  apache code
 
 - TODO
 	- TEST
-	- sync passwords with /nvram after change
-	- remote athtool (no longer supported/required)
+	- remove athtool (no longer supported/required)
+	- Get rid of privatekeypassword binary, integrate into openssl
+	- libfuse nfs mounts can't be accessed by mpd
+	- Assign default root passwords if none exist
+	- Fix README
 	- .....
 
 release 14

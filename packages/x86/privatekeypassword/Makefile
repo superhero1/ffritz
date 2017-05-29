@@ -10,7 +10,7 @@ SYSROOT	    = $(BUILDROOT)/output/host/usr/i686-buildroot-linux-uclibc/sysroot
 PREFIX=/usr/local
 
 export PATH := $(TOOLCHAIN):$(PATH)
-export CC   := i686-buildroot-linux-uclibc-gcc
+export CROSS_COMPILE   := i686-buildroot-linux-uclibc-
 
 URL	= $(shell cat $(PKGTOP)/url-privatekeypassword)
 REPO	= $(DLDIR)/privatekeypassword
@@ -23,6 +23,7 @@ all:	build/Makefile
 build/Makefile: $(REPO)
 	rm -rf build
 	git clone $(REPO) build
+	sed -i -e 's/CC = gcc/CC = $(CROSS_COMPILE)gcc/' build/Makefile
 
 $(REPO):
 	git clone $(URL) $(REPO)

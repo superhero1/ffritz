@@ -17,11 +17,10 @@ chown ffritz /var/run/mpd
 $FFINSTDIR/etc/mkusers
 
 # Run user mounts
-# XXX TODO
 #
-#if [ -f /var/media/ftp/ffritz/.mtab ]; then
-#    $FFINSTDIR/etc/usrmount /var/media/ftp/ffritz/.mtab
-#fi
+if [ -f /var/media/ftp/ffritz/.mtab ]; then
+    $FFINSTDIR/etc/usrmount /var/media/ftp/ffritz/.mtab
+fi
 
 # run shairport
 #

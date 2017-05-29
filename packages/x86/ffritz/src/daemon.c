@@ -4,7 +4,7 @@
  * This file is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 3 of the License, or (at your option) any later version.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -184,12 +184,13 @@ void log_set (const char *logf, int consOut)
 }
 
 
-int daemon2 (char *pdfile, int interval, int nochdir, int noclose)
+int daemon2 (char *pdfile, int interval, int loops, int nochdir, int noclose)
 {
     int first = 1;
     int status;
     struct stat st;
     int rc;
+    int loop = 0;
     
     if (interval == 0)
 	interval = 2;
@@ -241,9 +242,6 @@ int daemon2 (char *pdfile, int interval, int nochdir, int noclose)
 	    if (rc == worker_pid)
 		break;
 
-	    if (wait (&status) == -1)
-		log_put ("wait: %s", strerror(errno));
-
 	    sleep (1);
 	}
 
@@ -251,8 +249,11 @@ int daemon2 (char *pdfile, int interval, int nochdir, int noclose)
             log_put ("worker process terminated with status %d (pid %d)\n", 
                     status, worker_pid);
 
-        sleep (interval);
+ 	loop++;
+	if ((loops > 0) && (loop >= loops))
+	    return 2;
 
+        sleep (interval);
     }
     
     return 0;

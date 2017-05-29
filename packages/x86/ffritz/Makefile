@@ -17,11 +17,10 @@ BINFILES    = ../mpd/build/src/mpd src/sndlist src/usbplay src/usbplayd src/ffda
 BINFILES   += $(BR_TGT_BIN)/strace $(BR_TGT_BIN)/ldd $(BR_TGT_SBIN)/tcpdump 
 BINFILES   += $(BR_TGT_BIN)/tcpbridge $(BR_TGT_BIN)/tcpprep $(BR_TGT_BIN)/tcpreplay $(BR_TGT_BIN)/tcpreplay-edit $(BR_TGT_BIN)/tcprewrite
 BINFILES   += $(BR_TGT_BIN)/mpc $(BR_TGT_BIN)/rsync $(BR_TGT_BIN)/socat 
-BINFILES   += $(BR_TGT_BIN)/openssl
 BINFILES   += $(BR_TGT)/../host/usr/i686-buildroot-linux-uclibc/sysroot/usr/bin/curl
 BINFILES   += $(BR_TGT_SBIN)/openvpn
 BINFILES   += ../shairport/build/shairport
-ETCFILES    = etc/ffritz-env.sh etc/mpd.conf etc/runmpd etc/ff_atom_startup etc/run_usbplay etc/run_shairport
+ETCFILES    = etc/ffritz-env.sh etc/mpd.conf etc/runmpd etc/ff_atom_startup etc/ffservices etc/run_usbplay etc/run_shairport etc/mkusers
 ETCFILES   += etc/run_lircd etc/lirc_options_dfl.conf etc/upmpdcli.conf-dist
 ETCFILES   += etc/run_openvpn etc/usrmount
 MODFILES    = lib/modules/cdc-acm.ko
@@ -50,11 +49,16 @@ $(SUBDIRS):
 $(INSTDIRS):
 	make -C `dirname $@` install DESTDIR=$(INSTDIR)
 
-$(IMAGE): $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_LIB)/lib*so*)
+$(IMAGE): ffimage.bin
+	sha256sum ffimage.bin | sed -e 's/ .*//' > ffimage.sha256sum
+	tar cfz $(IMAGE) ffimage.bin ffimage.sha256sum
+
+ffimage.bin: $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_LIB)/lib*so*)
 	rm -rf $(STAGEDIR)
 	make install INSTDIR=$(STAGEDIR)
 	cp ../../../*.md output/
-	cd output; tar cfz ../$(IMAGE) --owner=8000 --group=8000 .
+	rm -f $@
+	cd output; mksquashfs ffritz ../$@ -all-root -no-progress -no-exports -no-sparse -b 65536 
 
 # Install everything to target
 # LD_LIBRARY_PATH needs to be set correctly for binaries. This is done by the ffwrap wrapper script,
@@ -89,7 +93,7 @@ install: $(BINFILES) $(ETCFILES) $(INSTDIRS) $(shell test -d $(BR_TGT_LIB) && ls
 #	rm -rf $(INSTDIR)/usr
 	
 clean: 
-	rm -rf output $(IMAGE)
+	rm -rf output $(IMAGE) ffimage.bin
 
 cleanall:
 	for d in $(SUBDIRS); do make -C $${d} clean; done

@@ -1,4 +1,4 @@
 #!/bin/sh
 
 echo Starting dropbear 
-$FFINSTDIR/bin/dropbear 2>/dev/console || echo dropbear startup failed 
+/usr/bin/dropbear 2>/dev/console || echo dropbear startup failed 

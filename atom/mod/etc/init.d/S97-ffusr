@@ -1,0 +1,8 @@
+#!/bin/sh
+
+## run startup script
+##
+if [ -x /usr/local/etc/init.d/rc.user ]; then
+	/usr/local/etc/init.d/rc.user >> $FFLOG
+fi
+

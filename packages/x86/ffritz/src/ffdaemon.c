@@ -1,6 +1,8 @@
 /*
+* vim: si ai sw=4 ts=8
 **
 ** Copyright 2008, The Android Open Source Project
+** Copyright 2017, Felix Schmidt                       
 **
 ** Licensed under the Apache License, Version 2.0 (the "License"); 
 ** you may not use this file except in compliance with the License. 
@@ -13,6 +15,7 @@
 ** WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
 ** See the License for the specific language governing permissions and 
 ** limitations under the License.
+**
 */
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,9 +27,9 @@
 #include <time.h>
 #include <pwd.h>
 
-extern int daemon2 (char *pdfile, int delay, int nochdir, int noclose);
+extern int daemon2 (char *pdfile, int delay, int loops, int nochdir, int noclose);
 
-const char *usage = "usage: %s [-n] [-r user] [-p pidfile] [-i interval] command args ...\n";
+const char *usage = "usage: %s [-n] [-r user] [-p pidfile] [-i interval] [-l loops] command args ...\n";
 
 /*
  * SU can be given a specific command to exec. UID _must_ be
@@ -45,6 +48,7 @@ int main(int argc, char **argv)
     char *pidfile = NULL;
     int nargs;
     int interval = 2;
+    int loops = 0;
 
     /* Until we have something better, only root and the shell can use su. */
     myuid = getuid();
@@ -73,6 +77,14 @@ int main(int argc, char **argv)
 		{
 		    i++;
 		    interval = atoi(argv[i]);
+		    break;
+		}
+		/* fall through */
+	    case 'l':
+	    	if (i < argc-1)
+		{
+		    i++;
+		    loops = atoi(argv[i]);
 		    break;
 		}
 		/* fall through */
@@ -111,7 +123,7 @@ int main(int argc, char **argv)
     }
 
     if (daemon_mode) {
-	if (daemon2 (pidfile, interval, 0, 0))
+	if (daemon2 (pidfile, interval, loops, 0, 0))
 	    exit (1);
     }
 

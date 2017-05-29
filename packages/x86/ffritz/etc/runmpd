@@ -39,6 +39,11 @@ if [ ! -f $FFRITZ_HOME/upmpdcli.conf ]; then
     chown ffritz:ffritz $FFRITZ_HOME/upmpdcli.conf
 fi
 
+touch /var/log/mpd.log
+chmod 666 /var/log/mpd.log
+mkdir -p /var/run/mpd
+chmod 777 /var/run/mpd
+
 # Run mpd (as respawning daemon)
 #
 $FFINSTDIR/bin/ffdaemon -r ffritz $FFINSTDIR/bin/mpd --no-daemon $FFRITZ_HOME/mpd.conf
