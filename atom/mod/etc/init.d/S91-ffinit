@@ -21,6 +21,9 @@ PRIVKEY=/var/flash/websrv_ssl_key.pem
 
 NVRAM_COPY=/var/tmp/ffnvram
 
+KEY_ENC=$DATADIR/key.enc
+KEY_PLAIN=/tmp/key.bin
+
 echo `date` :: ffinit >>$FFLOG
 
 ## Temporarily start telnetd
@@ -35,16 +38,27 @@ nohup sh -c "sleep 300; echo killing telnetd > /dev/console; sleep 10; killall t
 decrypt_nvram()
 {
 ## look for encrypted storage
-	if [ ! -r $NVRAM_FILE ]; then
-		echo encrypted storage $NVRAM_FILE not present >>$FFLOG
+	if [ ! -r $NVRAM_FILE -o ! -r $KEY_ENC ]; then
+		echo Encrypted storage $NVRAM_FILE or key $KEY_ENC not present >>$FFLOG
 		return 1
 	fi
 
-### if found, try to decrypt it into ramfs
-	privatekeypassword | openssl enc -d -pass stdin -aes-256-cbc -in $NVRAM_FILE -out $NVRAM_COPY/nv.tar
+### Decrypt the key
+	privatekeypassword | openssl rsautl -passin stdin -decrypt -inkey $PRIVKEY -in $KEY_ENC -out $KEY_PLAIN
 
 	if [ $? -ne 0 ]; then
-		echo failed to decypt $NVRAM_FILE >>$FFLOG
+		echo failed to decrypt key $PRIVKEY >>$FFLOG
+		return 1
+	fi
+
+### if found, try to decrypt it into ramfs using our private key
+	openssl enc -d -pass file:$KEY_PLAIN -aes-256-cbc -in $NVRAM_FILE -out $NVRAM_COPY/nv.tar
+	rc=$?
+
+	rm -f $KEY_PLAIN
+
+	if [ $rc -ne 0 ]; then
+		echo failed to decrypt $NVRAM_FILE >>$FFLOG
 		return 1
 	fi
 
@@ -104,11 +118,20 @@ if [ $? -ne 0 ]; then
 	rmdir $NVRAM_COPY/nvram
 fi
 
-## install data to correct places
-if [ -r $NVRAM_COPY/shadow ]; then
-	rm -f /var/tmp/shadow
-	ln -s $NVRAM_COPY/shadow /var/tmp/shadow
+# by default, /var/tmp/shadow is the default from var.tar, use it if we don't have one
+#
+if [ ! -r $NVRAM_COPY/shadow ]; then
+	touch /var/tmp/shadow
+	cp /var/tmp/shadow $NVRAM_COPY/shadow
 fi
+chmod 600 $NVRAM_COPY/shadow
+
+## install data to correct places
+rm -f /var/tmp/shadow
+ln -s $NVRAM_COPY/shadow /var/tmp/shadow
+
+# Assign a default password (guess what) if none is assigned (default shadow entry)
+sed -i -e 's@root:\*:@root:vtkAjfLuCv31E:@' /etc/shadow
 
 rm -rf /var/tmp/dropbear
 mkdir -p $NVRAM_COPY/dropbear
