@@ -27,7 +27,7 @@ if [ ! -d $NVRAM_COPY ]; then
 fi
 
 # Check if the encrypted key to the storage is present.
-# - If not, create it (using the box public key), leave the plain key
+# - If not, create it (using the box private key), leave the plain key for later
 # - Otherwise, decrypt it (using the box private key)
 #
 if [ ! -r $KEY_ENC ]; then
@@ -44,7 +44,7 @@ chmod 700 $DATADIR
 cd $NVRAM_COPY
 tar cf /tmp/ffstore.tar . 
 
-## encrypt it with our public key
+## encrypt it 
 openssl enc -pass file:$KEY_PLAIN -salt -aes-256-cbc -in /tmp/ffstore.tar  -out /tmp/ffstore.dat
 
 rc=$?

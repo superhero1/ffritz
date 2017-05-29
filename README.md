@@ -83,150 +83,76 @@ If the return code is not 1, check the console messages. Known errors are
 First use
 ---------
 
-After first installation a ssh login password must be assigned (if you plan to
-use ssh).
-Since you need telnet for this, and all traffic of the telnet session can
-theoretically be sniffed, you should re-assign passwords after the session
-and never use telnet any more:
+After first installation there is no login password for ssh. To assign one:
 
-- telnet to the box:
-    telnet 192.168.178.1
-    Password is the WEB GUI login.
-
-- Assign a password for root
-    passwd
-
-- Log out of the telnet session
-
-- ssh to the box (using the new password):
-    ssh root@192.168.178.1
-
-- Assign a different password once more:
-    passwd
-
-- Store password persistently
-    ffsync
-
-- Assign a new WEB GUI password
-
-The password is stored persistently in the box'es NVRAM, and is valid for
-both arm and atoms ssh service.
+- Log in to the box using telnet and the web password within the first 10
+  minutes after startup.
+- Call "passwd" to change the root password
+- Call "nvsync" to make the change persistent
+- Consider doing this again using ssh, and change the web gui password
+  afterwards if you are paranoid regarding telnet.
 
 Features
 ========
 
-telnet (arm core feature)
--------------------------
+Persistent storage
+------------------
+Various data is stored persistently in an encrypted tar archive
+(/var/media/ftp/ffrits/data/ffstore.dat). The password to this
+storage is also stored here persistenty (key.enc), but it is
+encrypted.
 
-- telnetd is available on the ARM CPU for 5 minutes after startup, then it's
-    killed
-- telnetd on atom CPU can be started via /usr/sbin/start_atom_telnetd from ARM
+ffstore.dat is basically a tar image of everything below /var/tmp/ffnvram.
+By default this is
+- the password database (shadow file)
+- dropbear data (dropbear directory)
+- the roots .ssh directory (root_ssh directory), which also contains a subfolder
+  with the data for OpenVPN (root_ssh/openvpn).
 
-dropber/ssh/scp (arm core feature)
+If no ffstore.dat or key.enc is present, or can't be loaded for some reason,
+an attempt is made to get the data from the /nvram partition of the SPI
+flash (as it was done in previous versions).
+
+telnet (Atom)
+-------------
+- A telnetd service is started at boot time and killed after 600 seconds.
+
+dropber/ssh/scp (Atom)
 ----------------------------------
-- By default, root has no password, and other users do not have rights to get
-    a tty, so no login possible by default.
-- A root password can be assigned via a telnet login within 5 mins after
-    bootup (passwd).
-- The system startup script makes sure it's persistent by storing /etc/shadow
-    in /nvram, so future updates do not require setting the password again
-- The box host keys are created on demand (first ssh login) and stored in
-  /nvram/dropbear
-- The roots .ssh directory is a symlink to
-  /nvram/root-ssh
+- The dropbear host key (/var/tmp/dropbear/dropbear_rsa_host_key) is always
+  overriden with the data derived from the web/SSL key of the box
+  (/var/flash/websrv_ssl_key.pem).
+- In order to use a different box key, create the file
+  /var/tmp/dropbear/rsa_key_dontoverwrite and create a different rsa key
+  using dropbearkey.
+  Don't forget to save the chages using nvsync.
 
-dropbear/ssh/scp (Atom core feature)
-------------------------------------
-- The atom core has no direct access to the NVRAM
-- All non-volatile data is passed from arm to atom on startup:
-	- host keys for atom are stored in `/nvram/dropbear_x86`. They are
-	  generated on the ARM prior to starting the server on atom if they
-	  don't exist (in the `ff_atom_startup` script).
-	  The data is copied to atom:/var/tmp/dropbear at box startup.
-
-	- /.ssh
-	  This is a symlink to /var/tmp/root-ssh, which is populated with the
-	  contents of /nvram/root-ssh_x86 at startup. This means:
-		- All unsaved runtime data in ~root/.ssh gets lost at reboot
-		- If public keys are added to `authorized_keys`, they should be
-		  saved to the arm nvram:
-
-		  `scp /var/tmp/root-ssh/authorized_keys root@fritz.box:/nvram/root-ssh_x86`
-
-	- passwords (/etc/shadow) are copied from arm to atom at startup.
-	  Changing passwords locally on the atom is not persistent.
-	- Startup can be inhibited by creating file
-	  `/var/media/ftp/.skip_dropbear`
-
-openssl (Atom core feature)
+dropbear/ssh/scp (Arm)
 ---------------------------
-Nothing to say here.
+- There is a dropbear service running on arm core which fetches it's persistent
+  data from /nvram. This might be dropped in future.
+- If no password is assigned, use the rpc command to transfer the shadow file
+  from atom to arm
 
-IPv6 (arm core feature)
+	rpc sh -c "rpc_cp /etc/shadow /nvram/shadow"
+
+openssl (Atom)
+---------------------------
+- /usr/bin/openssl is a wrapper to make sure openssl uses the correct libraries.
+
+IPv6 (Arm)
 -----------------------
 For firmware < 6.63 selection of native IPv6 is forced to be enabled in
 the GUI together with the general IPv6 availability.
 
-Music Player Daemon (Atom package)
-----------------------------------
-- Uses user space audio tool (via libusb/libmaru) to access an USB audio DAC
-- Refer to MPD.md for details
-- Startup can be inhibited by creating /var/media/ftp/.skip_mpd
-
-ShairPort Daemon (Atom package)
--------------------------------
-- Acts as AirPort receiver
-- Refer to MPD.txt for details
-- Startup can be inhibited by creating /var/media/ftp/.skip_shairport
-
-nfs mounter (Atom package)
---------------------------
-The file /var/media/ftp/ffritz/.mtab exists can be created to mount specific
-nfs directories to an (existing) location below /var/media/ftp.
-
-The format of the file is:
-
-    MOUNT mountpoint mount-options
-
-For example, to mount the music database from an external NAS:
-
-    MOUNT Musik/NAS -o soft nas:Multimedia/Music
-
-lirc (Atom Package)
--------------------
-lirc can be used to operate an IR transceiver connected to the fritzbox
-(im using an irdroid module).
-
-- General configuration settings (used driver, network port, ...) can be
-  modified in
-
-    /var/media/ftp/ffritz/lirc_options.conf
-
-- Remote control configuration can be placed into
-
-    /var/media/ftp/ffritz/etc/lirc/lircd.conf.d
-
-- To restart lirc after doing this:
-
-	killall lircd
-
-- For irdroid/irtoy the cdc-acm kernel module is packaged and installed.
-  It is pre-built, but can be generated in packages/x86/avm
-  (make kernel-config kernel-modules)
-
-- lircd execution can be prevented by creating /var/media/ftp/.skip_lircd
-
-athtool/pswtool: Switch tools(ARM package)
-------------------------------------------
-Some tools i have written to access the external switch (AR8327) and 
-internal switch (in puma6): athtool and pswtool respectively.
+pswtool: Switch tools (Arm)
+---------------------------
+A tool i have written to access the internal switch (in puma6). 
 
 Supported features:
 
-- Reading and writing registers (athtool)
-- Configuring port mirroring (athtool)
-- Configuring VLANs (athtool, pswtool)
-- Reading port counters (athtool, pswtool)
+- Configuring VLANs (pswtool)
+- Reading port counters (pswtool)
 
 In general, -h shows detailed help.
 
@@ -235,78 +161,46 @@ is outlined in [MISC.md](MISC.html).
 
 NOTES:
 
-- athtool operates the switch on register level. Any modifications done
-  are not known by upper layer box services and therefore might cause
-  unwanted side-effects (or get overwritten at some time).
-- Register access is protected by a semaphore (IPC key 0x61010760).
-  Should an application holding this semaphore crash, the semaphore is not
-  released and tools will hang endlessly (in fact they can't even be started,
-  since the loader of libticc.so attempts to get the semaphore).
-  Therefore i packaged the mdio-relese command, which forces a release operation
-  on the semaphore.
 - pswtool is based on some API calls provided by libticc. It is therefore 
   limited to the few calls i could more or less re-engineer.
-
-OpenVPN
--------
-
-See OPENVPN.md
-
-Miscellaneous tools (Atom/Arm packages)
----------------------------------------
-- ldd
-- su
-- strace
-- tcpdump
-- tcpreplay
-- mpc
-- curl
-- rsync
-- socat
 
 Software Packages
 =================
 
 In addition to the core features it is possible to install an application image
-to the atom core (see Atom Package features listed above).
+to the Atom core (see README-APP.md).
 
-The image is distributed as ffritz-x86-VERSION.tar.gz. To install it,
+The image is distributed as ffritz-app-VERSION.tar. To install it,
 
 - Copy it to the box NAS directory 
 
-	scp ffritz-x86-VERSION.tar.gz root@192.168.178.1:/var/media/ftp
+	scp ffritz-app-VERSION.tar root@192.168.178.1:/var/media/ftp
 
 - Log in and install it
 
-	ffinstall ffritz-x86-VERSION.tar.gz CHECKSUM
+	ffinstall ffritz-app-VERSION.tar CHECKSUM
 
   The checksum is the sha256sum listed on the download page. It is also contained
-  in the file ffimage.sha256sum within the release .tar.gz archive.
+  in the file ffimage.sha256sum within the release .tar archive.
 
 - After the success message, restart the box.
-
 
 Steps performed by the startup script:
 - check if /var/media/ftp/ffritz/data/ffimage.bin exists
 - compare its SHA256 checksum against the checksum that was given at installation.
 - if it matches, ffimage.bin is mounted to /usr/local
-- The target checksum is kept in an encrypted persistent storage.
+- The target checksum is saved in the encrypted persistent storage.
+- Execute /usr/local/etc/ff_atom_startup
+
+Optional Arm package
+--------------------
+
+The file ffritz-arm-VERSION.tar.gz contains some optional tools for the arm core.
+It can be integrated into the install image by editing Makefile and defining its
+location via the FFRITZ_ARM_PACKAGE variable.
 
 Notes
 =====
-
-Atom libraries
---------------
-
-- Espcially mpd requires a lot of additional shared libraries. Rather than
-    integrating them into /lib / /usr/lib, they remain in their own lib
-    directory (/usr/local/lib).
-    Also, the systems's `LD_LIBRARY_PATH` is not modified. This is to avoid any
-    conflicts/incompatibilies with other box services.
-
-    In order to be able to call these binaries they are invoked via a wrapper
-    script (bin/exec/ffwrap) which sets `LD_LIBRARY_PATH` before actually
-    calling the binary.
 
 Toolchain
 ---------
@@ -338,9 +232,3 @@ apt-get install gawk libtool realpath pkg-config zlibc gnulib libcap-dev
 
 You might have to remove "composite" and "sys/acl.h" from the
 .build-prerequisites file
-
-TODO / Known Issues
-===================
-- Fix usbplayd
-	- Fix libmaru to properly support for different sample rates
-	  (currently only 48KHz is detected)

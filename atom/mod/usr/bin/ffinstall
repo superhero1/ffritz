@@ -27,7 +27,7 @@ csum=$2
 mkdir -p /var/media/ftp/ffritz/data/tmp || exit 1
 
 echo +++ Unpacking
-gunzip -c $relfile | tar -x -C /var/media/ftp/ffritz/data/tmp -f - || exit 1
+tar -x -C /var/media/ftp/ffritz/data/tmp -f $relfile || exit 1
 
 echo +++ Verifying sha256sum
 

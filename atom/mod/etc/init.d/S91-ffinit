@@ -131,7 +131,8 @@ rm -f /var/tmp/shadow
 ln -s $NVRAM_COPY/shadow /var/tmp/shadow
 
 # Assign a default password (guess what) if none is assigned (default shadow entry)
-sed -i -e 's@root:\*:@root:vtkAjfLuCv31E:@' /etc/shadow
+# Not
+### sed -i -e 's@root:\*:@root:vtkAjfLuCv31E:@' /etc/shadow
 
 rm -rf /var/tmp/dropbear
 mkdir -p $NVRAM_COPY/dropbear

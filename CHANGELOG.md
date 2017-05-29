@@ -1,5 +1,13 @@
-Change history of ffritz and packages:
-======================================
+Change history of application package
+=====================================
+
+Release 1
+---------
+- Renamed from release 14 of combined core/application release
+- Re-packaged as squashfs binary to be installed using ffinstall
+
+Change history of ffritz core integration:
+==========================================
 
 release 15 (under construction)
 -------------------------------
@@ -39,12 +47,7 @@ release 15 (under construction)
 	  apache code
 
 - TODO
-	- TEST
-	- remove athtool (no longer supported/required)
-	- Get rid of privatekeypassword binary, integrate into openssl
 	- libfuse nfs mounts can't be accessed by mpd
-	- Assign default root passwords if none exist
-	- Fix README
 	- .....
 
 release 14
@@ -217,10 +220,3 @@ ffritz-arm-XXX.tar.gz
 - 0.1
     - Created, to be installed to /var/media/ftp/ffritz-arm
       Contains some libs, tcpreplay, dump, ..., strace, ldd
-    
-ffritz-x86-XXX.tar.gz
----------------------
-- Version >= 9
-    - Aligned versioning with repository version
-- Version 0.4
-    - Corresponds to release 8

@@ -27,9 +27,9 @@ MODFILES    = lib/modules/cdc-acm.ko
 
 STAGEDIR    = $(TOPDIR)/output/ffritz
 
-VERSION     = $(shell cat ../../../version)
+VERSION     = $(shell cat version)
 
-IMAGE       = ffritz-x86-$(VERSION).tar.gz
+IMAGE       = ffritz-app-$(VERSION).tar
 
 ifeq ($(INSTDIR),)
     INSTDIR=$(STAGEDIR)
@@ -51,12 +51,12 @@ $(INSTDIRS):
 
 $(IMAGE): ffimage.bin
 	sha256sum ffimage.bin | sed -e 's/ .*//' > ffimage.sha256sum
-	tar cfz $(IMAGE) ffimage.bin ffimage.sha256sum
+	cp ../../../*.md .
+	tar cf $(IMAGE) ffimage.bin ffimage.sha256sum *.md
 
 ffimage.bin: $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_LIB)/lib*so*)
 	rm -rf $(STAGEDIR)
 	make install INSTDIR=$(STAGEDIR)
-	cp ../../../*.md output/
 	rm -f $@
 	cd output; mksquashfs ffritz ../$@ -all-root -no-progress -no-exports -no-sparse -b 65536 
 
@@ -90,7 +90,6 @@ install: $(BINFILES) $(ETCFILES) $(INSTDIRS) $(shell test -d $(BR_TGT_LIB) && ls
 	    for l in `ls | xargs file | grep ELF | sed -e 's/:.*//'`; do\
 		strip $$l;\
 	    done
-#	rm -rf $(INSTDIR)/usr
 	
 clean: 
 	rm -rf output $(IMAGE) ffimage.bin
