@@ -29,29 +29,20 @@ For this to work the following steps are performed at startup:
 
 Installation steps required by the user (once)
 ----------------------------------------------
-- Create the directory /nvram/root-ssh_x86/openvpn (permission 700) on the ARM core.
-  This data is copied to the Atom core (to /var/tmp/root-ssh) at startup and is used
-  by the OpenVPN startup script.
+- Create the directory /var/tmp/ffnvram/root-ssh/openvpn (permission 700).
   All files mentioned below must be copied into this directory.
 - Create the daemon configuration file openvpn.conf.
-  /usr/local/etc/openvpn/openvpn.conf.template (in Atom FS) can be used as template.
+  /usr/local/etc/openvpn/openvpn.conf.template can be used as template.
 - Create/install TLS keys and certificates (see easy-rsa example below):
 	- ca.crt 	- The CA authority file
 	- dh.pem 	- Diffie Hellman parameters
 	- machine.cert	- The certificate for the FritzBox
 	- machine.key	- The box private key
-- Define an UDP forwarding rule in the FritzOS GUI for port 1194 to NET.253 so that
-  the OpenVPN daemon can be reached.
-
-NOTE FOR firmware 6.83: This is no longer possible, the box will recognize that this address
-	belongs to the box (or does not exist at all) and reject the operation.
-	The workaround is to declare a forwarding rule to redirect UDP 
-	port 1194 to some existing/known node in the local network (this node should not have port 1194
-	open!).
-	The startup script for OpenVPN will then re-define this rule to point to the new
-	logical ip address (NET.253) before creating the actual virtual interface and starting the
-	OpenVPN daemon.
-
+- Make checges persistent by calling "nvsync"
+- Define an UDP forwarding rule in the FritzOS GUI for UDP port 1194 to some host 
+  in the local network (this host should not use this port).
+  This rule will be re-defined by the startup script so that it reaches port 1194
+  on the FritzBox.
 - Create keys/certificates for the clients as required.
 
 

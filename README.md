@@ -92,6 +92,11 @@ After first installation there is no login password for ssh. To assign one:
 - Consider doing this again using ssh, and change the web gui password
   afterwards if you are paranoid regarding telnet.
 
+To be able to log in to the arm core (address 169.254.1.2 from atom) you might
+want to copy the shadow file to persistent storage on arm core:
+
+	rpc sh -c "rpc_cp /etc/shadow /nvram/shadow"
+
 Features
 ========
 
@@ -104,6 +109,7 @@ encrypted.
 
 ffstore.dat is basically a tar image of everything below /var/tmp/ffnvram.
 By default this is
+
 - the password database (shadow file)
 - dropbear data (dropbear directory)
 - the roots .ssh directory (root_ssh directory), which also contains a subfolder
@@ -118,7 +124,7 @@ telnet (Atom)
 - A telnetd service is started at boot time and killed after 600 seconds.
 
 dropber/ssh/scp (Atom)
-----------------------------------
+----------------------
 - The dropbear host key (/var/tmp/dropbear/dropbear_rsa_host_key) is always
   overriden with the data derived from the web/SSL key of the box
   (/var/flash/websrv_ssl_key.pem).
@@ -128,7 +134,7 @@ dropber/ssh/scp (Atom)
   Don't forget to save the chages using nvsync.
 
 dropbear/ssh/scp (Arm)
----------------------------
+----------------------
 - There is a dropbear service running on arm core which fetches it's persistent
   data from /nvram. This might be dropped in future.
 - If no password is assigned, use the rpc command to transfer the shadow file
@@ -141,7 +147,7 @@ openssl (Atom)
 - /usr/bin/openssl is a wrapper to make sure openssl uses the correct libraries.
 
 IPv6 (Arm)
------------------------
+----------
 For firmware < 6.63 selection of native IPv6 is forced to be enabled in
 the GUI together with the general IPv6 availability.
 
@@ -186,6 +192,7 @@ The image is distributed as ffritz-app-VERSION.tar. To install it,
 - After the success message, restart the box.
 
 Steps performed by the startup script:
+
 - check if /var/media/ftp/ffritz/data/ffimage.bin exists
 - compare its SHA256 checksum against the checksum that was given at installation.
 - if it matches, ffimage.bin is mounted to /usr/local
