@@ -11,16 +11,24 @@ ifeq ($(INSTDIR),)
     INSTDIR=$(TGTDIR)
 endif
 
+SFILE	= build/src/mpc
+DFILE	= $(DESTDIR)/usr/bin/mpc
 
 URL	= $(shell cat $(PKGTOP)/url-mpc)
 FILE	= $(DLDIR)/$(shell basename $(URL))
 
 all:	build/config.status
-	@make -C build PATH=$(TOOLCHAIN):$(PATH) install DESTDIR=$(SYSROOT)
-	@make -C build PATH=$(TOOLCHAIN):$(PATH) install DESTDIR=$(TGTDIR)
+	@make -C build PATH=$(TOOLCHAIN):$(PATH)
+	@make install DESTDIR=$(SYSROOT)
+	@make install DESTDIR=$(TGTDIR)
 
-install:
-	@make -C build PATH=$(TOOLCHAIN):$(PATH) install DESTDIR=$(INSTDIR)
+install: $(DFILE)
+
+$(DFILE): $(BFILE)
+	@make -C build PATH=$(TOOLCHAIN):$(PATH) install DESTDIR=$(DESTDIR)
+
+$(BFILE): build/config.status
+	@make -C build PATH=$(TOOLCHAIN):$(PATH)
 
 $(FILE):
 	@cd $(DLDIR); wget $(URL)

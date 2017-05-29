@@ -1,10 +1,10 @@
-/* usbplayd - a simple user space audio player
+/* 
  * Copyright (C) 2016 - Felix Schmidt
  *
  * This file is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 3 of the License, or (at your option) any later version.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -184,12 +184,16 @@ void log_set (const char *logf, int consOut)
 }
 
 
-int daemon2 (char *pdfile, int nochdir, int noclose)
+int daemon2 (char *pdfile, int interval, int loops, int nochdir, int noclose)
 {
     int first = 1;
     int status;
     struct stat st;
+    int rc;
+    int loop = 0;
     
+    if (interval == 0)
+	interval = 2;
     
     if (pdfile)
     {
@@ -215,7 +219,7 @@ int daemon2 (char *pdfile, int nochdir, int noclose)
         if (worker_pid == -1)
         {
             log_put ("fork: %s", strerror(errno));
-            sleep (2);
+            sleep (interval);
             continue;
         }
 
@@ -230,13 +234,26 @@ int daemon2 (char *pdfile, int nochdir, int noclose)
             prep_pid_file (pdfile);
 
         first = 0;
-        sleep (2);
-        if (wait (&status) == -1)
-            log_put ("wait: %s", strerror(errno));
+
+	while (1)
+        {
+	    rc = waitpid (worker_pid, &status, 0);
+
+	    if (rc == worker_pid)
+		break;
+
+	    sleep (1);
+	}
 
         if (status)
             log_put ("worker process terminated with status %d (pid %d)\n", 
                     status, worker_pid);
+
+ 	loop++;
+	if ((loops > 0) && (loop >= loops))
+	    return 2;
+
+        sleep (interval);
     }
     
     return 0;

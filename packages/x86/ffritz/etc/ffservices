@@ -1,0 +1,64 @@
+#! /bin/sh
+#
+# Startup preparations for ffritz on atom.
+# Preparations should have been done in /etc/init.d/S91-...
+#
+
+. `dirname $0`/../etc/ffritz-env.sh || exit 1
+
+# Start services
+#
+(
+mkdir -p /var/run/mpd
+chown ffritz /var/run/mpd
+
+# Create/check users/paths
+#
+$FFINSTDIR/etc/mkusers
+
+# Run user mounts
+#
+if [ -f /var/media/ftp/ffritz/.mtab ]; then
+    $FFINSTDIR/etc/usrmount /var/media/ftp/ffritz/.mtab
+fi
+
+# run shairport
+#
+if [ -x $FFINSTDIR/etc/run_shairport -a ! -f /var/media/ftp/.skip_shairport ]; then
+    echo Starting shairport 
+    $FFINSTDIR/etc/run_shairport
+else
+    echo shairport skipped 
+fi
+
+# run mpd
+#
+if [ -x $FFINSTDIR/etc/runmpd -a ! -f /var/media/ftp/.skip_mpd ]; then
+    echo Starting mpd 
+    $FFINSTDIR/etc/runmpd
+else
+    echo mpd not started 
+fi
+
+# and lircd
+#
+if [ -x $FFINSTDIR/etc/run_lircd -a ! -f /var/media/ftp/.skip_lircd ]; then
+    echo Starting lircd 
+    $FFINSTDIR/etc/run_lircd
+else
+    echo lircd not started 
+fi
+
+# and openvpn.
+# XXX need some delay for network
+#
+if [ -x $FFINSTDIR/etc/run_openvpn -a -r /var/tmp/root-ssh/openvpn/openvpn.conf ]; then
+	sleep 20
+	echo starting OpenVPN
+	$FFINSTDIR/etc/run_openvpn
+else
+	echo OpenVPN not started
+fi
+
+) | tee -a $FFLOG 2>&1 &
+

@@ -8,6 +8,10 @@ DESTDIR	    = $(TOPDIR)/output
 SYSROOT	    = $(BUILDROOT)/output/host/usr/i686-buildroot-linux-uclibc/sysroot
 FFHOME	    = /var/media/ftp/ffritz
 
+BFILE = ./build/upmpdcli
+DFILE1 = $(TOPDIR)/output/usr/bin/upmpdcli
+DFILE2 = $(DESTDIR)/bin/upmpdcli
+
 URL	= $(shell cat $(PKGTOP)/url-upmpdcli)
 FILE	= $(DLDIR)/$(shell basename $(URL))
 
@@ -28,12 +32,16 @@ build/configure:    $(FILE)
 
 build/config.status:	build/configure
 	@cd build; ./configure --host=i686-buildroot-linux-uclibc --target=i686-buildroot-linux-uclibc prefix=/usr --datarootdir=$(FFHOME)/share --sysconfdir=$(FFHOME)/etc
-	@cd build; make install DESTDIR=$(TOPDIR)/output
 
-install:    all
+install:	$(DFILE2)
+
+$(DFILE2):	$(DFILE1)
 	@mkdir -p $(DESTDIR)/bin $(DESTDIR)/share/upmpdcli/cdplugins $(DESTDIR)/etc
 	@cp -f output/usr/bin/* $(DESTDIR)/bin
-	@for f in output/var/media/ftp/ffritz/share/upmpdcli/*; do test -f $$f && cp -v $$f $(DESTDIR)/share/upmpdcli; done; true
+	@for f in output/var/media/ftp/ffritz/share/upmpdcli/*; do test -f $$f && cp -f $$f $(DESTDIR)/share/upmpdcli; done; true
 
+$(DFILE1):	$(BFILE)
+	@cd build; make install DESTDIR=$(TOPDIR)/output
+	
 clean:
 	rm -rf build

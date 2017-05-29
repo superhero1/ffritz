@@ -4,10 +4,6 @@
 # to and executed from /usr/local.
 #
 # For the first, just call make
-# For the latter, call make install INSTDIR=<install-path>
-#   where install-path is the absolute path where bin, lib and etc shall
-#   reside (etc. $squashfs-root/usr/local)
-#
 #
 TOPDIR	    = $(shell pwd)
 PKGDIR	    = $(shell cd ..; pwd)
@@ -17,31 +13,32 @@ BR_TGT_LIB  = $(BR_TGT)/usr/lib
 BR_TGT_BIN  = $(BR_TGT)/usr/bin
 BR_TGT_SBIN = $(BR_TGT)/usr/sbin
 
-BINFILES    = ../mpd/build/src/mpd src/sndlist src/usbplay src/usbplayd src/su
+BINFILES    = ../mpd/build/src/mpd src/sndlist src/usbplay src/usbplayd src/ffdaemon
 BINFILES   += $(BR_TGT_BIN)/strace $(BR_TGT_BIN)/ldd $(BR_TGT_SBIN)/tcpdump 
 BINFILES   += $(BR_TGT_BIN)/tcpbridge $(BR_TGT_BIN)/tcpprep $(BR_TGT_BIN)/tcpreplay $(BR_TGT_BIN)/tcpreplay-edit $(BR_TGT_BIN)/tcprewrite
-BINFILES   += $(BR_TGT_BIN)/mpc $(BR_TGT_BIN)/rsync $(BR_TGT_BIN)/socat
+BINFILES   += $(BR_TGT_BIN)/mpc $(BR_TGT_BIN)/rsync $(BR_TGT_BIN)/socat 
 BINFILES   += $(BR_TGT)/../host/usr/i686-buildroot-linux-uclibc/sysroot/usr/bin/curl
 BINFILES   += $(BR_TGT_SBIN)/openvpn
 BINFILES   += ../shairport/build/shairport
-ETCFILES    = etc/ffritz-env.sh etc/mpd.conf etc/runmpd etc/ff_atom_startup etc/mkusers etc/run_usbplay etc/run_shairport etc/usrmount
-ETCFILES   += etc/run_lircd etc/lirc_options_dfl.conf etc/ffdaemon etc/fflogrotate etc/upmpdcli.conf-dist
-ETCFILES   += etc/run_openvpn
+ETCFILES    = etc/ffritz-env.sh etc/mpd.conf etc/runmpd etc/ff_atom_startup etc/ffservices etc/run_usbplay etc/run_shairport etc/mkusers
+ETCFILES   += etc/run_lircd etc/lirc_options_dfl.conf etc/upmpdcli.conf-dist
+ETCFILES   += etc/run_openvpn etc/usrmount
 MODFILES    = lib/modules/cdc-acm.ko
 
 STAGEDIR    = $(TOPDIR)/output/ffritz
 
-VERSION     = $(shell cat ../../../version)
+VERSION     = $(shell cat version)
 
-IMAGE       = ffritz-x86-$(VERSION).tar.gz
+IMAGE       = ffritz-app-$(VERSION).tar
 
 ifeq ($(INSTDIR),)
     INSTDIR=$(STAGEDIR)
 endif
 
-SUBDIRS	    = ../buildroot ../mpd ../libmaru ../dropbear ../shairport ../libmpdclient ../mpc ../lirc ../libupnpp ../jsoncpp ../upmpdcli src
+SUBDIRS	    = ../buildroot ../libmaru ../shairport ../libmpdclient ../mpc ../lirc ../libupnpp ../jsoncpp ../upmpdcli ../libnfs ../nfs ../mpd src
+INSTDIRS    = ../lirc/install ../libupnpp/install ../upmpdcli/install ../nfs/install
 
-.PHONY:	$(SUBDIRS)
+.PHONY:	$(SUBDIRS) $(IMAGE)
 
 all:	$(SUBDIRS) $(IMAGE)
 
@@ -49,19 +46,26 @@ $(SUBDIRS):
 	mkdir -p ../../dl
 	make -C $@
 
-$(IMAGE): $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_LIB)/lib*so*)
+$(INSTDIRS):
+	make -C `dirname $@` install DESTDIR=$(INSTDIR)
+
+$(IMAGE): ffimage.bin
+	sha256sum ffimage.bin | sed -e 's/ .*//' > ffimage.sha256sum
+	cp ../../../*.md .
+	tar cf $(IMAGE) ffimage.bin ffimage.sha256sum *.md
+
+ffimage.bin: $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_LIB)/lib*so*)
 	rm -rf $(STAGEDIR)
 	make install INSTDIR=$(STAGEDIR)
-	cp ../../../MPD.md output/
-	cp ../../../README.md output/
-	cd output; tar cfz ../$(IMAGE) --owner=8000 --group=8000 .
+	rm -f $@
+	cd output; mksquashfs ffritz ../$@ -all-root -no-progress -no-exports -no-sparse -b 65536 
 
 # Install everything to target
 # LD_LIBRARY_PATH needs to be set correctly for binaries. This is done by the ffwrap wrapper script,
 # which is linked to for each binary. This makes the package position independent, i.e.
 # it can be installed to /var/media/ftp, or integrated into the atom squashfs (to /usr/local).
 #
-install: $(SUBDIRS) $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_LIB)/lib*so*)
+install: $(BINFILES) $(ETCFILES) $(INSTDIRS) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_LIB)/lib*so*)
 	mkdir -p $(INSTDIR)/bin/exec
 	mkdir -p $(INSTDIR)/lib/modules
 	mkdir -p $(INSTDIR)/etc
@@ -71,13 +75,10 @@ install: $(SUBDIRS) $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls 
 	cp $(ETCFILES) $(INSTDIR)/etc
 	cp -ar etc/openvpn $(INSTDIR)/etc
 	sed -i -e 's@^rundir=.*@rundir=/var/media/ftp/ffritz@' $(INSTDIR)/etc/ff_atom_startup
-	chmod +x $(INSTDIR)/etc/ff_atom_startup
-	make -C ../dropbear install DESTDIR=$(INSTDIR)
 	make -C ../lirc install DESTDIR=$(INSTDIR)
 	make -C ../libupnpp install DESTDIR=$(INSTDIR)
 	make -C ../upmpdcli install DESTDIR=$(INSTDIR)
-	mv $(INSTDIR)/usr/local/bin/* $(INSTDIR)/bin
-	mv $(INSTDIR)/usr/local/sbin/* $(INSTDIR)/bin
+	make -C ../nfs install DESTDIR=$(INSTDIR)
 	cp -a bin/ffwrap $(INSTDIR)/bin/exec
 	@cd $(INSTDIR)/bin; \
 	    for f in `ls | xargs file | grep ELF | sed -e 's/:.*//'`; do\
@@ -89,12 +90,9 @@ install: $(SUBDIRS) $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls 
 	    for l in `ls | xargs file | grep ELF | sed -e 's/:.*//'`; do\
 		strip $$l;\
 	    done
-	cd $(INSTDIR)/bin; ln -s exec/ffwrap ssh
-	cd $(INSTDIR)/bin/exec; ln -s dbclient ssh
-	rm -rf $(INSTDIR)/usr
 	
 clean: 
-	rm -rf output $(IMAGE)
+	rm -rf output $(IMAGE) ffimage.bin
 
 cleanall:
 	for d in $(SUBDIRS); do make -C $${d} clean; done

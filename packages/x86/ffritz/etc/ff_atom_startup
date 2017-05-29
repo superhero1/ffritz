@@ -1,1 +1,3 @@
-../../../../arm/mod/usr/local/etc/init.d/ff_atom_startup
+#!/bin/sh
+#
+/usr/local/bin/ffdaemon -l 1 /usr/local/etc/ffservices

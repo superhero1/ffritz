@@ -7,19 +7,27 @@ TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
 SYSROOT	    = $(BUILDROOT)/output/host/usr/i686-buildroot-linux-uclibc/sysroot
 TGTDIR	    = $(BUILDROOT)/output/target
 
-ifeq ($(INSTDIR),)
-    INSTDIR=$(TGTDIR)
+ifeq ($(DESTDIR),)
+    DESTDIR=$(TGTDIR)
 endif
+
+BFILE	= build/src/.libs/libmpdclient.a
+DFILE	= $(DESTDIR)/usr/lib/libmpdclient.a
 
 URL	= $(shell cat $(PKGTOP)/url-libmpdclient)
 FILE	= $(DLDIR)/$(shell basename $(URL))
 
 all:	build/config.status
-	@make -C build PATH=$(TOOLCHAIN):$(PATH) install DESTDIR=$(SYSROOT)
-	@make -C build PATH=$(TOOLCHAIN):$(PATH) install DESTDIR=$(TGTDIR)
+	@make install DESTDIR=$(SYSROOT)
+	@make install DESTDIR=$(TGTDIR)
 
-install:
-	@make -C build PATH=$(TOOLCHAIN):$(PATH) install DESTDIR=$(INSTDIR)
+install: $(DFILE)
+
+$(DFILE): $(BFILE)
+	@make -C build PATH=$(TOOLCHAIN):$(PATH) install DESTDIR=$(DESTDIR)
+	
+$(BFILE):	build/config.status
+	@make -C build PATH=$(TOOLCHAIN):$(PATH)
 
 $(FILE):
 	@cd $(DLDIR); wget $(URL)
