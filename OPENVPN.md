@@ -59,9 +59,10 @@ Set up:
 For the Fritzbox (server):
 
 	./easyrsa build-server-full fbox nopass
-	scp ./pki/ca.crt ./pki/dh.pem root@192.168.178.1:/nvram/root-ssh_x86/openvpn
-	scp ./pki/private/fbox.key root@192.168.178.1:/nvram/root-ssh_x86/openvpn/machine.key
-	scp ./pki/issued/fbox.crt root@192.168.178.1:/nvram/root-ssh_x86/openvpn/machine.cert
+	scp ./pki/ca.crt ./pki/dh.pem root@192.168.178.1:/var/tmp/ffnvram/root-ssh/openvpn
+	scp ./pki/private/fbox.key root@192.168.178.1:/var/tmp/ffnvram/root-ssh/openvpn/machine.key
+	scp ./pki/issued/fbox.crt root@192.168.178.1:/var/tmp/ffnvram/root-ssh/openvpn/machine.cert
+	ssh root@192.168.178.1 nvsync
 
 For the clients:
 

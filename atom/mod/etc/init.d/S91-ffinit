@@ -63,8 +63,8 @@ decrypt_nvram()
 	fi
 
 ### unpack it to ramfs
-	cd $NVRAM_COPY	|| exit 1
-	tar xf $NVRAM_COPY/nv.tar || exit 1
+	cd $NVRAM_COPY	|| return 1
+	tar xf $NVRAM_COPY/nv.tar || return 1
 	rm -f $NVRAM_COPY/nv.tar
 	chmod 700 $NVRAM_COPY
 }
@@ -100,8 +100,8 @@ chmod 666 $FFLOG
 
 ## Make a RAM copy that contains the contents of the encrypted storage
 rm -rf $NVRAM_COPY
-mkdir -p $NVRAM_COPY  || exit 1
-chmod 700 $NVRAM_COPY || exit 1
+mkdir -p $NVRAM_COPY  
+chmod 700 $NVRAM_COPY
 
 touch /var/tmp/openssl.cnf
 

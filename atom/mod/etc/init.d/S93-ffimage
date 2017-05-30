@@ -24,7 +24,7 @@ verify_image()
 ## Look for a squashfs overlay for /usr/local
 	if [ ! -r $BINFILE ]; then
 		echo no ffimage found >>$FFLOG
-		exit 1
+		return 1
 	fi
 
 ### If there is a sh256 digest stored in nvram, verify image against it
