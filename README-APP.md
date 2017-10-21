@@ -26,13 +26,14 @@ nfs mounter
 The file /var/media/ftp/ffritz/.mtab exists can be created to mount specific
 nfs directories to an (existing) location below /var/media/ftp.
 
-The format of the file is:
+The format of the file is an nfs URL, options are those accepted by the
+fuse-nfs tool:
 
-    MOUNT mountpoint mount-options
+    MOUNT  nfs://server/service mount-options
 
 For example, to mount the music database from an external NAS:
 
-    MOUNT Musik/NAS -o soft nas:Multimedia/Music
+    MOUNT Musik/NAS nfs://nas/Multimedia/Music --allow_other
 
 lirc
 ----

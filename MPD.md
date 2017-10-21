@@ -92,7 +92,7 @@ If you want to mount an external database, use the .mtab feature as described in
 For example is use this entry in /var/media/ftp/ffritz/.mtab so that mpd can access
 my music database on an external NAS:
 
-    MOUNT Musik/NAS nas:Multimedia/Music
+    MOUNT Musik/NAS nfs://nas/Multimedia/Music -a
 
 Shairport
 =========

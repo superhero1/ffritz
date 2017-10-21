@@ -38,6 +38,7 @@ build/config.status:	build/configure
 	    --host=i686-buildroot-linux-uclibc \
 	    --target=i686-buildroot-linux-uclibc \
 	    --localstatedir=/var \
+	    --with-lockdir=/var/lock/lockdev \
 	    --prefix=$(PREFIX)
 
 BFILE = build/daemons/lircd
