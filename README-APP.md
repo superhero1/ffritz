@@ -21,6 +21,13 @@ ShairPort Daemon
 - Refer to MPD.txt for details
 - Startup can be inhibited by creating /var/media/ftp/.skip_shairport
 
+Bluetooth a2dp sink
+-------------------
+- Reports itself as "FritzBox"
+- Tested with Logitech BT stick (CSR chipset)
+- Output has precedence over mpd and shairport
+- Startup can be inhibited by creating /var/media/ftp/.skip_bluetooth
+
 nfs mounter
 -----------
 The file /var/media/ftp/ffritz/.mtab exists can be created to mount specific

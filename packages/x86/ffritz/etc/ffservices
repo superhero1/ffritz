@@ -49,6 +49,15 @@ else
     echo lircd not started 
 fi
 
+# bluetooth
+#
+if [ -x $FFINSTDIR/etc/run_bluetooth -a ! -f /var/media/ftp/.skip_bluetooth ]; then
+    echo Starting bluetooth s2dp sink
+    $FFINSTDIR/etc/run_bluetooth
+else
+    echo bluetooth a2dp sink not started 
+fi
+
 # and openvpn.
 # XXX need some delay for network
 #

@@ -1,6 +1,25 @@
 Change history of application package
 =====================================
 
+Release 2
+---------
+- Fix irexec (failed to execute commands due to wrong sh path)
+- Started Bluetooth support
+- Updated libusb version to 1.0.21
+	- Requires updating /var/media/ftp/ffritz/usbplayd.conf
+	  with
+
+	  USBPLAYD_ARGS=-P /var/tmp/mpd.fifo:44100 -P /var/tmp/shairport.fifo:44100 -P /var/tmp/bt.fifo:44100
+
+- TODO
+	- Bluetooth
+		- Investigate occasional playback hickups
+		- Volume control (?)
+		- Play pipe should not be opened until playback
+		  starts.
+		- Provide proper pairing (e.g. only when pressing
+		  WPS button..)
+
 Release 1
 ---------
 - Renamed from release 14 of combined core/application release
@@ -9,7 +28,7 @@ Release 1
 Change history of ffritz core integration:
 ==========================================
 
-release 15 (under construction)
+release 15 
 -------------------------------
 - Add support for Firmware 6.83
 - Arm

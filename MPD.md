@@ -12,9 +12,10 @@ will convert the sample rate.
 usbplayd is configured in /var/media/ftp/ffritz/usbplayd.conf.
 The default content is:
 
-    USBPLAYD_ARGS=-P /var/tmp/mpd.fifo:44100 -P /var/tmp/shairport.fifo:44100
+    USBPLAYD_ARGS=-P /var/tmp/mpd.fifo:44100 -P /var/tmp/shairport.fifo:44100 -P /var/tmp/bt.fifo:44100
 
-Which means that two pipes are generated, one for mpd and one for shairport
+Which means that three pipes are generated, one for mpd, one for shairport
+and one for bluetooth.
 The default sample rate is 44100 (i.e. mpd and shairport need to provide this
 sample rate).
 
@@ -185,7 +186,3 @@ Integration details
 ===================
 - mpd/shairport run as user ffritz, group usb for security reasons.
 - Likewise, upmpdcli runs as user upmpdcli.
-
-TODO
-====
-- Integrate mpd >= 0.20 to support l16/PCM streams.
