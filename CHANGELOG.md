@@ -28,6 +28,10 @@ Release 1
 Change history of ffritz core integration:
 ==========================================
 
+release 16
+-------------------------------
+- Tested Firmware 6.85
+
 release 15 
 -------------------------------
 - Add support for Firmware 6.83
