@@ -19,6 +19,9 @@ your provider).  Use this at your own risk.
 If you don't trust my binaries, everything (hopefully) that is required to
 rebuild them is located below packages.
 
+Have Fun,
+<f/e/s/c/2/0/0/0/@/g/m/a/i/l/./c/o/m>
+
 Usage
 =====
 
@@ -33,7 +36,7 @@ Creating an install/update image
 
     `git clone https://fesc2000@bitbucket.org/fesc2000/ffritz.git`
 
-- Go to ffritz directory and `make` (sudo required).
+- Go to ffritz directory and `make clean; make` (sudo required).
 
 Installing the image (when running firmware < 6.8x)
 ---------------------------------------------------
@@ -45,7 +48,7 @@ Installing the image (when running firmware < 6.8x)
 	- Monitor the output on the console (1st telnet/ssh login session).
 	  There should be a SUCCESS message at the end.
 	- The return code $? of var/install should be 1
-- After successful upgrade, execute "nohup sh var/post_install&"
+- After successful upgrade, execute "/sbin/reboot"
 
 Installing the image (when running firmware >= 6.8x)
 ----------------------------------------------------
@@ -60,7 +63,7 @@ Installing the image (when running firmware >= 6.8x)
 	- Monitor the output on the console (1st telnet/ssh login session).
 	  There should be a SUCCESS message at the end.
 	- The return code $? of var/install should be 1
-- After successful upgrade, execute "nohup sh var/post_install&"
+- After successful upgrade, execute "/sbin/reboot"
 
 Installation issues
 -------------------
@@ -233,6 +236,8 @@ Big endian squashfs tools
 
 Binaries are provided in the "hosts" directory. If they dont work, try cloning
 freetz and build them using "make squashfstools-be".
+
+There is a make rule squashfstools-be that does this.
 
 Required (debian) packages are:
 apt-get install gawk libtool realpath pkg-config zlibc gnulib libcap-dev

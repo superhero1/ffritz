@@ -4,8 +4,8 @@ Change history of application package
 Release 2
 ---------
 - Fix irexec (failed to execute commands due to wrong sh path)
-- Started Bluetooth support
 - Updated libusb version to 1.0.21
+- Started Bluetooth support
 	- Requires updating /var/media/ftp/ffritz/usbplayd.conf
 	  with
 
@@ -31,6 +31,8 @@ Change history of ffritz core integration:
 release 16
 -------------------------------
 - Tested Firmware 6.85
+	- Update might require re-enabling the OpenVPN
+  	  forwarding rule.
 
 release 15 
 -------------------------------
