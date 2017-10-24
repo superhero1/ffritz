@@ -58,9 +58,11 @@ Installing the image (with ssh/telnet access)
 - Log in to primary IP address (default 192.168.178.1), which is the ARM
   core on older firmware and Atom on Firmware 6.8 onwards.
 - Extract in the root directory:
-	
-    cd /
-    tar xf /var/media/ftp/fb6490_XXX.tar
+
+~~~
+	cd /
+	tar xf /var/media/ftp/fb6490_XXX.tar
+~~~
 
 - Call "var/install" (from the root directory!)
 	- Monitor the output on the console (1st telnet/ssh login session).
