@@ -1,6 +1,12 @@
 Change history of application package
 =====================================
 
+Release 3
+---------
+- Add 100 second startup angst delay.
+  ffritz services (USB, OpenVPN) get in conflict with fb startup,
+  especially on 6.85.
+
 Release 2
 ---------
 - Fix irexec (failed to execute commands due to wrong sh path)
@@ -13,8 +19,6 @@ Release 2
 
 - TODO
 	- Bluetooth
-		- Investigate occasional playback hickups
-		- Volume control (?)
 		- Play pipe should not be opened until playback
 		  starts.
 		- Provide proper pairing (e.g. only when pressing
