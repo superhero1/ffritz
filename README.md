@@ -59,8 +59,8 @@ Installing the image (with ssh/telnet access)
   core on older firmware and Atom on Firmware 6.8 onwards.
 - Extract in the root directory:
 	
-	cd /
-	tar xf /var/media/ftp/fb6490_XXX.tar
+    cd /
+    tar xf /var/media/ftp/fb6490_XXX.tar
 
 - Call "var/install" (from the root directory!)
 	- Monitor the output on the console (1st telnet/ssh login session).
@@ -150,7 +150,7 @@ dropbear/ssh/scp (Arm)
 - If no password is assigned, use the rpc command to transfer the shadow file
   from atom to arm
 
-	rpc sh -c "rpc_cp /etc/shadow /nvram/shadow"
+    rpc sh -c "rpc_cp /etc/shadow /nvram/shadow"
 
 openssl (Atom)
 ---------------------------

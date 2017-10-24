@@ -15,7 +15,7 @@ Release 2
 	- Requires updating /var/media/ftp/ffritz/usbplayd.conf
 	  with
 
-	  USBPLAYD_ARGS=-P /var/tmp/mpd.fifo:44100 -P /var/tmp/shairport.fifo:44100 -P /var/tmp/bt.fifo:44100
+    USBPLAYD_ARGS=-P /var/tmp/mpd.fifo:44100 -P /var/tmp/shairport.fifo:44100 -P /var/tmp/bt.fifo:44100
 
 - TODO
 	- Bluetooth
