@@ -12,6 +12,11 @@
 mkdir -p /var/run/mpd
 chown ffritz /var/run/mpd
 
+# wait for all FB services to be up ... :-(
+# Otherwise trouble with USB, OpenVPN, ...
+#
+sleep 100
+
 # Create/check users/paths
 #
 $FFINSTDIR/etc/mkusers
@@ -47,6 +52,15 @@ if [ -x $FFINSTDIR/etc/run_lircd -a ! -f /var/media/ftp/.skip_lircd ]; then
     $FFINSTDIR/etc/run_lircd
 else
     echo lircd not started 
+fi
+
+# bluetooth
+#
+if [ -x $FFINSTDIR/etc/run_bluetooth -a ! -f /var/media/ftp/.skip_bluetooth ]; then
+    echo Starting bluetooth s2dp sink
+    $FFINSTDIR/etc/run_bluetooth
+else
+    echo bluetooth a2dp sink not started 
 fi
 
 # and openvpn.

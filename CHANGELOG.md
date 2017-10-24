@@ -1,6 +1,29 @@
 Change history of application package
 =====================================
 
+Release 3
+---------
+- Add 100 second startup angst delay.
+  ffritz services (USB, OpenVPN) get in conflict with fb startup,
+  especially on 6.85.
+
+Release 2
+---------
+- Fix irexec (failed to execute commands due to wrong sh path)
+- Updated libusb version to 1.0.21
+- Started Bluetooth support
+	- Requires updating /var/media/ftp/ffritz/usbplayd.conf
+	  with
+
+	  USBPLAYD_ARGS=-P /var/tmp/mpd.fifo:44100 -P /var/tmp/shairport.fifo:44100 -P /var/tmp/bt.fifo:44100
+
+- TODO
+	- Bluetooth
+		- Play pipe should not be opened until playback
+		  starts.
+		- Provide proper pairing (e.g. only when pressing
+		  WPS button..)
+
 Release 1
 ---------
 - Renamed from release 14 of combined core/application release
@@ -9,7 +32,13 @@ Release 1
 Change history of ffritz core integration:
 ==========================================
 
-release 15 (under construction)
+release 16
+-------------------------------
+- Tested Firmware 6.85
+	- Update might require re-enabling the OpenVPN
+  	  forwarding rule.
+
+release 15 
 -------------------------------
 - Add support for Firmware 6.83
 - Arm

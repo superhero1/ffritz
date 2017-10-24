@@ -1,0 +1,14 @@
+#!/bin/sh
+#        
+# lircd startup file
+#                   
+. `dirname $0`/../etc/ffritz-env.sh || exit 1
+                                             
+if [ ! -p /var/tmp/bt.fifo ]; then
+	echo /var/tmp/bt.fifo does not exist or is not a pipe
+	exit 1
+else
+	rm -f /tmp/hci_dump.pklg
+	ln -s /dev/null /tmp/hci_dump.pklg
+	ffdaemon $FFINSTDIR/bin/a2dp_sink_demo FritzBox /var/tmp/bt.fifo 
+fi

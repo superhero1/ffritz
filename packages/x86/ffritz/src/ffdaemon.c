@@ -29,7 +29,15 @@
 
 extern int daemon2 (char *pdfile, int delay, int loops, int nochdir, int noclose);
 
-const char *usage = "usage: %s [-n] [-r user] [-p pidfile] [-i interval] [-l loops] command args ...\n";
+const char *usage =
+"usage: %s [-n] [-C]  [-r user] [-p pidfile] [-i interval] [-l loops] command args ...\n"
+"       -n : No daemon mode\n"
+"       -C : Do not close FDs\n"
+"       -r : run as user[:group]\n"
+"       -p : Create pidfile\n"
+"       -i : Delay after program terminates\n"
+"       -l : Number of loops to run (0 = default = endless)\n"
+;
 
 /*
  * SU can be given a specific command to exec. UID _must_ be
@@ -49,6 +57,7 @@ int main(int argc, char **argv)
     int nargs;
     int interval = 2;
     int loops = 0;
+    int noclose = 0;
 
     /* Until we have something better, only root and the shell can use su. */
     myuid = getuid();
@@ -66,6 +75,9 @@ int main(int argc, char **argv)
 	}
 	switch (argv[i][1])
 	{
+	    case 'C':
+		noclose = 1;
+		break;
 	    case 'n':
 	    	daemon_mode = 0;
 		break;
@@ -123,7 +135,7 @@ int main(int argc, char **argv)
     }
 
     if (daemon_mode) {
-	if (daemon2 (pidfile, interval, loops, 0, 0))
+	if (daemon2 (pidfile, interval, loops, 0, noclose))
 	    exit (1);
     }
 

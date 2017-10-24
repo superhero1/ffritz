@@ -19,6 +19,9 @@ your provider).  Use this at your own risk.
 If you don't trust my binaries, everything (hopefully) that is required to
 rebuild them is located below packages.
 
+Have Fun,
+<f/e/s/c/2/0/0/0/@/g/m/a/i/l/./c/o/m>
+
 Usage
 =====
 
@@ -26,41 +29,44 @@ Creating an install/update image
 --------------------------------
 
 - Obtain original install image (default is
-    FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.83.image)
+    FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.85.image)
 
 - Clone repository (master branch) in the directory where the original
     install image is located:
 
     `git clone https://fesc2000@bitbucket.org/fesc2000/ffritz.git`
 
-- Go to ffritz directory and `make` (sudo required).
+- Go to ffritz directory and `make clean; make` (sudo required).
 
-Installing the image (when running firmware < 6.8x)
----------------------------------------------------
+IMPORTANT NOTE
+--------------
+
+Before starting to modify the FritzBox, it is always recommended
+to generate extended support data (<http://192.168.178.1/support.lua>)
+and save it. It might become (very) useful to "unbrick" your Box ...
+
+Installing the image from the Boot Loader (if box has no telnet/ssh login)
+--------------------------------------------------------------------------
+
+Please consult the web/IPPF threads. I have personally never done it this
+way so i won't document it here.
+
+Installing the image (with ssh/telnet access)
+---------------------------------------------
 
 - Copy the release tar image to the box, e.g. NAS (/var/media/ftp)
-- Extract in / directory of arm core:
-    tar xf /var/media/ftp/fb6490_XXX.tar
-- Call var/install (from the / directory !!)
+- Log in to primary IP address (default 192.168.178.1), which is the ARM
+  core on older firmware and Atom on Firmware 6.8 onwards.
+- Extract in the root directory:
+	
+	cd /
+	tar xf /var/media/ftp/fb6490_XXX.tar
+
+- Call "var/install" (from the root directory!)
 	- Monitor the output on the console (1st telnet/ssh login session).
 	  There should be a SUCCESS message at the end.
 	- The return code $? of var/install should be 1
-- After successful upgrade, execute "nohup sh var/post_install&"
-
-Installing the image (when running firmware >= 6.8x)
-----------------------------------------------------
-- Copy the release tar image to the box, e.g. NAS (/var/media/ftp)
-- From there, copy it to the arm core: 
-    scp /var/media/ftp/fb6490_XXX.tar root@169.254.1.2:/tmp
-- Log in to the arm core:
-    ssh root@169.254.1.2
-- Extract in / directory of arm core:
-    tar xf /tmp/fb6490_XXX.tar
-- Call var/install (from the / directory !!)
-	- Monitor the output on the console (1st telnet/ssh login session).
-	  There should be a SUCCESS message at the end.
-	- The return code $? of var/install should be 1
-- After successful upgrade, execute "nohup sh var/post_install&"
+- After successful installation, execute "/sbin/reboot".
 
 Installation issues
 -------------------
@@ -92,6 +98,7 @@ After first installation there is no login password for ssh. To assign one:
 - Consider doing this again using ssh, and change the web gui password
   afterwards if you are paranoid regarding telnet.
 
+Firmware 6.8 onwards:
 To be able to log in to the arm core (address 169.254.1.2 from atom) you might
 want to copy the shadow file to persistent storage on arm core:
 
@@ -103,7 +110,7 @@ Features
 Persistent storage
 ------------------
 Various data is stored persistently in an encrypted tar archive
-(/var/media/ftp/ffrits/data/ffstore.dat). The password to this
+(/var/media/ftp/ffritz/data/ffstore.dat). The password to this
 storage is also stored here persistenty (key.enc), but it is
 encrypted.
 
@@ -119,6 +126,9 @@ If no ffstore.dat or key.enc is present, or can't be loaded for some reason,
 an attempt is made to get the data from the /nvram partition of the SPI
 flash (as it was done in previous versions).
 
+The nvsync tool re-generates the persistent storage with the contents of 
+/var/tmp/ffnvram.
+
 telnet (Atom)
 -------------
 - A telnetd service is started at boot time and killed after 600 seconds.
@@ -126,7 +136,7 @@ telnet (Atom)
 dropber/ssh/scp (Atom)
 ----------------------
 - The dropbear host key (/var/tmp/dropbear/dropbear_rsa_host_key) is always
-  overriden with the data derived from the web/SSL key of the box
+  overwritten with the data derived from the web/SSL key of the box
   (/var/flash/websrv_ssl_key.pem).
 - In order to use a different box key, create the file
   /var/tmp/dropbear/rsa_key_dontoverwrite and create a different rsa key
@@ -153,7 +163,7 @@ the GUI together with the general IPv6 availability.
 
 pswtool: Switch tools (Arm)
 ---------------------------
-A tool i have written to access the internal switch (in puma6). 
+A tool i have written to access the internal switch (in the Puma6 SoC). 
 
 Supported features:
 
@@ -233,6 +243,8 @@ Big endian squashfs tools
 
 Binaries are provided in the "hosts" directory. If they dont work, try cloning
 freetz and build them using "make squashfstools-be".
+
+There is a make rule squashfstools-be that does this.
 
 Required (debian) packages are:
 apt-get install gawk libtool realpath pkg-config zlibc gnulib libcap-dev

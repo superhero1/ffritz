@@ -31,7 +31,7 @@ echo `date` :: ffinit >>$FFLOG
 /usr/bin/telnetd -l /sbin/ar7login
 nohup sh -c "sleep 300; echo killing telnetd > /dev/console; sleep 10; killall telnetd" &
 
-## Decrypt presistent storage image to /var/tmp/ffnvram
+## Decrypt persistent storage image to /var/tmp/ffnvram
 ##
 ## Exit code: 0 on success, 1 otherwise
 ##

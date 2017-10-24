@@ -1,0 +1,118 @@
+diff --git a/example/a2dp_sink_demo.c b/example/a2dp_sink_demo.c
+index 628c41f..9f50e77 100644
+--- a/example/a2dp_sink_demo.c
++++ b/example/a2dp_sink_demo.c
+@@ -61,7 +61,7 @@
+ 
+ #ifdef HAVE_POSIX_FILE_IO
+ #include "wav_util.h"
+-#define STORE_SBC_TO_SBC_FILE 
++#undef STORE_SBC_TO_SBC_FILE 
+ #define STORE_SBC_TO_WAV_FILE 
+ #endif
+ 
+@@ -949,9 +949,15 @@ static void stdin_process(char cmd){
+ 
+ int btstack_main(int argc, const char * argv[]);
+ int btstack_main(int argc, const char * argv[]){
++    const char *sink_name = "A2DP Sink Demo 00:00:00:00:00:00";
+ 
+-    UNUSED(argc);
+-    (void)argv;
++    if (argc > 1)
++	sink_name = argv[1];
++
++    if (argc > 2)
++	wav_filename = (char*)argv[2];
++
++    printf ("name: %s  output=%s\n", sink_name, wav_filename);
+ 
+     /* Register for HCI events */
+     hci_event_callback_registration.callback = &packet_handler;
+@@ -984,7 +990,7 @@ int btstack_main(int argc, const char * argv[]){
+     avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10001, AVRCP_BROWSING_ENABLED, 1, NULL, NULL);
+     sdp_register_service(sdp_avrcp_controller_service_buffer);
+     
+-    gap_set_local_name("A2DP Sink Demo 00:00:00:00:00:00");
++    gap_set_local_name(sink_name);
+     gap_discoverable_control(1);
+     gap_set_class_of_device(0x200408);
+     printf("Starting BTstack ...\n");
+diff --git a/platform/libusb/hci_transport_h2_libusb.c b/platform/libusb/hci_transport_h2_libusb.c
+index 23c73eb..df46dbb 100644
+--- a/platform/libusb/hci_transport_h2_libusb.c
++++ b/platform/libusb/hci_transport_h2_libusb.c
+@@ -77,6 +77,14 @@
+ 
+ #define ASYNC_POLLING_INTERVAL_MS 1
+ 
++#ifndef LIBUSB_LOG_LEVEL_WARNING
++#define LIBUSB_LOG_LEVEL_WARNING 1
++#endif
++
++#ifndef LIBUSB_LOG_LEVEL_ERROR
++#define LIBUSB_LOG_LEVEL_ERROR 2
++#endif
++
+ //
+ // Bluetooth USB Transport Alternate Settings:
+ //
+diff --git a/port/libusb/Makefile b/port/libusb/Makefile
+index b1b4b74..5039ea5 100644
+--- a/port/libusb/Makefile
++++ b/port/libusb/Makefile
+@@ -1,3 +1,9 @@
++BUILDROOT   = $(shell cd ../../../../buildroot/build; pwd)
++SYSROOT     = $(BUILDROOT)/output/host/usr/i686-buildroot-linux-uclibc/sysroot
++TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
++export PATH := $(TOOLCHAIN):$(PATH)
++CC=i686-buildroot-linux-uclibc-gcc
++
+ # Makefile for libusb based examples
+ BTSTACK_ROOT = ../..
+ 
+@@ -21,12 +27,14 @@ VPATH += ${BTSTACK_ROOT}/platform/libusb
+ ifeq ($(OS),Windows_NT)
+ LDFLAGS += -lws2_32
+ # assume libusb was installed into /usr/local
+-CFLAGS  += -I/usr/local/include/libusb-1.0
+-LDFLAGS += -L/usr/local/lib -lusb-1.0
++CFLAGS  += -I$(SYSROOT)/usr/include/libusb-1.0
++LDFLAGS += -L$(SYSROOT)/usr/lib -lusb-1.0
+ else
+ # use pkg-config
+-CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
+-LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
++CFLAGS  += -I$(SYSROOT)/usr/include/libusb-1.0
++LDFLAGS += -L$(SYSROOT)/usr/lib -lusb-1.0
++#CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
++#LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
+ endif
+ 
+ # use pkg-config for portaudio
+diff --git a/port/libusb/btstack_config.h b/port/libusb/btstack_config.h
+index cfaec60..141167b 100644
+--- a/port/libusb/btstack_config.h
++++ b/port/libusb/btstack_config.h
+@@ -8,7 +8,7 @@
+ // Port related features
+ #define HAVE_MALLOC
+ #define HAVE_POSIX_FILE_IO
+-#define HAVE_BTSTACK_STDIN
++#undef HAVE_BTSTACK_STDIN
+ #define HAVE_POSIX_TIME
+ 
+ // BTstack features that can be enabled
+diff --git a/src/classic/avrcp_target.c b/src/classic/avrcp_target.c
+index f6b34ef..b16b3a9 100644
+--- a/src/classic/avrcp_target.c
++++ b/src/classic/avrcp_target.c
+@@ -541,7 +541,7 @@ static uint8_t avrcp_target_store_media_attr(avrcp_connection_t * connection, av
+     if (!value) return AVRCP_STATUS_INVALID_PARAMETER;
+     connection->now_playing_info[index].value = (uint8_t*)value;
+     connection->now_playing_info[index].len   = strlen(value);
+-    printf("store %lu bytes, %s\n",  strlen(value), value);
++    printf("store %lu bytes, %s\n",  (unsigned long)strlen(value), value);
+     return ERROR_CODE_SUCCESS;
+ }   
+ 
