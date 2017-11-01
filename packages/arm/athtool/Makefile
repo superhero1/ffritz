@@ -25,7 +25,10 @@ export PATH := $(TOOLCHAIN):$(PATH)
 
 ###############################################################################
 
-TARGETS	    = athtool mdio-release pswtool
+TARGETS	    = mdio-release pswtool
+
+## No longer supported in 6.8
+#TARGETS    += athtool
 
 all:	$(TGTLIB) $(TARGETS)
 
