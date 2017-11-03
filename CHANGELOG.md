@@ -1,6 +1,10 @@
 Change history of application package
 =====================================
 
+next
+----
+- lirc: Eliminate endless loop when disconnecting irtoy at runtime
+
 Release 4
 ---------
 - Fix tmpfs memory leak: fflogrotate got lost along the way,

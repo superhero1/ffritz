@@ -28,6 +28,7 @@ build/autogen.sh:	$(REPO)
 	rm -rf build
 	git clone $(REPO) build
 	cd build; git reset --hard $(COMMIT)
+	cd build; patch -p1 < ../ffritz.patch
 
 build/configure: build/autogen.sh
 	cd build; ./autogen.sh
