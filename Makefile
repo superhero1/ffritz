@@ -91,7 +91,6 @@ tmp/arm/filesystem.image:
 arm/squashfs-root:  tmp/arm/filesystem.image 
 	@if [ ! -d arm/squashfs-root ]; then cd arm; $(SUDO) $(HOSTTOOLS)/unsquashfs4-lzma-avm-be $(TOPDIR)/tmp/arm/filesystem.image; fi
 	@if [ $(KEEP_ORIG) -eq 1 -a ! -d arm/orig ]; then cd arm; $(SUDO) $(HOSTTOOLS)/unsquashfs4-lzma-avm-be -d orig $(TOPDIR)/tmp/arm/filesystem.image; fi
-	@$(SUDO) chmod 755 arm/squashfs-root
 
 $(ARM_PATCHST):	$(@:arm/.applied.%=%)
 	@echo APPLY $(@:arm/.applied.%=%)
@@ -112,6 +111,7 @@ arm/.applied.fs: $(ARM_MODFILES) arm/squashfs-root $(ARM_PATCHST) $(FFRITZ_ARM_P
 
 arm/filesystem.image: arm/.applied.fs
 	@rm -f arm/filesystem.image
+	@$(SUDO) chmod 755 arm/squashfs-root
 	@echo "PACK  arm/squashfs-root"
 	@cd arm; $(SUDO) $(HOSTTOOLS)/mksquashfs4-lzma-avm-be squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 >/dev/null
 
@@ -162,6 +162,7 @@ atom/.applied.fs: $(ATOM_MODFILES) atom/squashfs-root $(ATOM_PATCHST)
 
 atom/filesystem.image: atom/.applied.fs
 	@rm -f atom/filesystem.image
+	@$(SUDO) chmod 755 atom/squashfs-root
 	@echo "PACK  atom/squashfs-root"
 	@cd atom; $(SUDO) mksquashfs squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 >/dev/null
 
