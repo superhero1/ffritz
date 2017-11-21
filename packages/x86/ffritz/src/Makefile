@@ -15,10 +15,10 @@ all:	sndlist usbplay usbplayd ffdaemon
 ffdaemon:	ffdaemon.o daemon.o
 	$(CC) -o $@ $^ -std=c99 
 
-sndlist:    sndlist.o
+sndlist:    sndlist.o ../../libmaru/libmaru.a
 	$(CC) -o $@ $^ -std=c99 $(LDFLAGS)
 
-usbplay:    usbplay.o
+usbplay:    usbplay.o ../../libmaru/libmaru.a
 	$(CC) -o $@ $^ -std=c99 $(LDFLAGS)
 
 usbplayd:    usbplayd.o daemon.o ../../libmaru/libmaru.a

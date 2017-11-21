@@ -652,7 +652,7 @@ main (int argc, char **argv)
 	    exit (0);
 
 	case 'r':
-	    rate = atoi(optarg);
+	    output_rate = atoi(optarg);
 	    break;
 
 	default:
@@ -829,8 +829,11 @@ main (int argc, char **argv)
 
 	    current_input = highest_input;
 
-	    log_put ("switching to input %d(%s)\n",
-		current_input, pfiles[current_input]);
+	    log_put ("switching to input %d(%s), %dKHz, %srate convert\n",
+		current_input,
+		pfiles[current_input], 
+		input_rates[current_input],
+		do_rate_convert ? "" : "no ");
 	}
 	else if (highest_input < current_input)
 	{

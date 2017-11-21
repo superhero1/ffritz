@@ -4,6 +4,11 @@ Change history of application package
 next
 ----
 - lirc: Eliminate endless loop when disconnecting irtoy at runtime
+- usbplayd: Finally support different discrete sample rates of endpoints (somehow)
+	- sndlist lists all supported rates
+	- adding "-r 44100" to usbplayd.conf avoinds resampling (if endpoint supports it)
+	- Some (my) endpoint report an error if the rate request command is sent, but do it
+	  anyhow correctly, so error is ignored.
 
 Release 4
 ---------
@@ -47,6 +52,10 @@ TODO
 
 Change history of ffritz core integration:
 ==========================================
+
+next
+----
+- Fix permission of / directory to 755 to make dropbear happy
 
 release 16
 -------------------------------

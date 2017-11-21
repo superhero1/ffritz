@@ -33,7 +33,7 @@ main (void)
     int stream;
     unsigned num_desc;
     struct maru_stream_desc *desc;
-    int i, j;
+    int i, j, r;
 
     assert (maru_list_audio_devices (&list, &num_devices) == LIBMARU_SUCCESS);
 
@@ -81,6 +81,19 @@ main (void)
 	    {
 		printf ("  Descriptor %d:\n", j);
 		printf ("   Rate:     %u\n", desc[j].sample_rate);
+		if (desc[j].sample_rate_min || desc[j].sample_rate_max)
+		{
+		    printf ("    min:     %u\n", desc[j].sample_rate_min);
+		    printf ("    max:     %u\n", desc[j].sample_rate_max);
+		}
+		if (desc[j].n_sample_rates)
+		{
+		    for (r = 0; r < desc[j].n_sample_rates; r++)
+		    {
+			printf ("    [%d]:     %u\n", r, desc[j].sample_rates[r]);
+		    }
+		}
+	
 		printf ("   Channels: %u\n", desc[j].channels);
 		printf ("   Bits:     %u\n", desc[j].bits);
 	    }

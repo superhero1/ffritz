@@ -32,6 +32,11 @@ extern "C" {
 #include <stddef.h>
 
 /** \ingroup lib
+ * Max. amount of discrete sample rates supported.
+ */
+#define MAX_SAMPLE_RATES 16
+
+/** \ingroup lib
  * A structure describing a USB audio device connected to the system.
  */
 struct maru_audio_device
@@ -129,6 +134,14 @@ struct maru_stream_desc
    /** Might be set by maru_get_stream_desc() if the endpoint supports continous sample rates.
     * \ref sample_rate will not be set to an appropriate value if these fields are set. */
    unsigned sample_rate_max;
+
+   /** Number of discrete sample rates supported (0 if endpoint supports continous sample rates)
+    * \ref sample_rate will not be set to an appropriate value if these fields are set. */
+   unsigned n_sample_rates;
+
+   /** Array of supported discrete sample rates (n_sample_rates entries)
+    */
+   unsigned sample_rates[MAX_SAMPLE_RATES];
 };
 
 /** \ingroup lib

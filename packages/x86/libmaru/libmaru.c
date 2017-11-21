@@ -33,11 +33,15 @@
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <time.h>
+#include <sys/param.h>
 
 #define debug_print(...)
 
 int eventfd_write (int fd, eventfd_t value);
 int eventfd_read (int fd, eventfd_t * value);
+
+#define PR_ERR(err)	fprintf(stderr, "[libmaru]: %s:%d : error %d (%s)\n", __FILE__, __LINE__, err, maru_error_string(err));
+#define RETURN_ERR(err)	{PR_ERR(err);return err;}
 
 
 /** \ingroup lib
@@ -344,6 +348,7 @@ format_matches (const struct libusb_interface_descriptor *iface,
 		const struct maru_stream_desc *desc)
 {
     struct maru_stream_desc format_desc;
+    int i;
 
     if (!parse_audio_format (iface->extra, iface->extra_length, &format_desc))
 	return false;
@@ -353,13 +358,22 @@ format_matches (const struct libusb_interface_descriptor *iface,
 
     if (desc->sample_rate)
     {
-	if (format_desc.sample_rate
-	    && desc->sample_rate != format_desc.sample_rate)
-	    return false;
+	if (format_desc.n_sample_rates)
+	{
+	    for (i = 0; i < format_desc.n_sample_rates; i++)
+	    {
+		if (format_desc.sample_rates[i] == desc->sample_rate)
+		    break;
+	    }
+	    if (i >= format_desc.n_sample_rates)
+		return false;
+	}
 	else if (!format_desc.sample_rate &&
 		 (desc->sample_rate < format_desc.sample_rate_min ||
 		  desc->sample_rate > format_desc.sample_rate_max))
+	{
 	    return false;
+	}
     }
 
     if (desc->channels && desc->channels != format_desc.channels)
@@ -450,7 +464,7 @@ maru_list_audio_devices (struct maru_audio_device ** audio_list,
 {
     libusb_context *ctx;
     if (libusb_init (&ctx) < 0)
-	return LIBMARU_ERROR_GENERIC;
+	RETURN_ERR(LIBMARU_ERROR_GENERIC);
 
     libusb_device **list = NULL;
     ssize_t devices = libusb_get_device_list (ctx, &list);
@@ -469,7 +483,7 @@ maru_list_audio_devices (struct maru_audio_device ** audio_list,
 	libusb_free_device_list (list, true);
 
     libusb_exit (ctx);
-    return LIBMARU_ERROR_MEMORY;
+    RETURN_ERR(LIBMARU_ERROR_MEMORY);
 }
 
 static bool
@@ -1014,7 +1028,8 @@ transfer_control_cb (struct libusb_transfer *trans)
     case LIBUSB_TRANSFER_STALL:
 	debug_print ("LIBUSB_TRANSFER_STALL::\n");
 	{
-	    buf->error = LIBMARU_ERROR_INVALID;
+	    PR_ERR(LIBMARU_ERROR_IO);
+	    buf->error = LIBMARU_ERROR_IO;
 #if 0
 	    int ret;
 	    if ((ret =
@@ -1569,7 +1584,7 @@ maru_create_context_from_vid_pid (maru_context ** ctx,
 {
     maru_context *context = calloc (1, sizeof (*context));
     if (!context)
-	return LIBMARU_ERROR_MEMORY;
+	RETURN_ERR(LIBMARU_ERROR_MEMORY);
 
     context->quit_fd = eventfd (0, 0);
     context->epfd = epoll_create (16);
@@ -1628,7 +1643,7 @@ maru_create_context_from_vid_pid (maru_context ** ctx,
 
   error:
     maru_destroy_context (context);
-    return LIBMARU_ERROR_GENERIC;
+    RETURN_ERR(LIBMARU_ERROR_GENERIC);
 }
 
 void
@@ -1721,19 +1736,24 @@ parse_audio_format (const uint8_t * data, size_t length,
 	    desc->sample_rate_max =
 		(header->tSamFreq[3] << 0) |
 		(header->tSamFreq[4] << 8) | (header->tSamFreq[5] << 16);
+
+	    desc->n_sample_rates = 0;
 	}
 	else
 	{
-	    // FIXME: Parse all sample rates correctly as separate stream descriptions.
-	    // Use last format in list (somewhat hacky, will do for now ...)
-	    unsigned rate_start = 3 * (header->bSamFreqType - 1);
-
-	    desc->sample_rate =
-		(header->tSamFreq[rate_start + 0] << 0) |
-		(header->tSamFreq[rate_start + 1] << 8) |
-		(header->tSamFreq[rate_start + 2] << 16);
-
 	    desc->sample_rate_min = desc->sample_rate_max = 0;
+
+	    desc->n_sample_rates = MIN(MAX_SAMPLE_RATES, header->bSamFreqType);
+
+	    for (i = 0; i < desc->n_sample_rates; i++)
+	    {
+		int rate_start = 3 * i;
+		desc->sample_rates[i] = desc->sample_rate =
+		    (header->tSamFreq[rate_start + 0] << 0) |
+		    (header->tSamFreq[rate_start + 1] << 8) |
+		    (header->tSamFreq[rate_start + 2] << 16);
+	    }
+		
 	}
 
 	return true;
@@ -1761,7 +1781,7 @@ maru_get_stream_desc (maru_context * ctx,
 		      unsigned *num_desc)
 {
     if (stream >= maru_get_num_streams (ctx))
-	return LIBMARU_ERROR_INVALID;
+	RETURN_ERR(LIBMARU_ERROR_INVALID);
 
     struct maru_stream_desc *audio_desc = calloc (1, sizeof (*audio_desc));
     if (!audio_desc)
@@ -1778,14 +1798,16 @@ maru_get_stream_desc (maru_context * ctx,
     free (audio_desc);
     *desc = NULL;
     *num_desc = 0;
-    return LIBMARU_ERROR_GENERIC;
+    RETURN_ERR(LIBMARU_ERROR_GENERIC);
 }
 
 static int
 maru_is_stream_available_nolock (maru_context * ctx, maru_stream stream)
 {
-    return stream < ctx->num_streams ?
-	!ctx->streams[stream].fifo : LIBMARU_ERROR_INVALID;
+    if (stream < ctx->num_streams)
+	return !ctx->streams[stream].fifo;
+
+    RETURN_ERR(LIBMARU_ERROR_INVALID);
 }
 
 int
@@ -1804,7 +1826,7 @@ maru_find_available_stream (maru_context * ctx)
 	if (maru_is_stream_available (ctx, i))
 	    return i;
 
-    return LIBMARU_ERROR_BUSY;
+    RETURN_ERR(LIBMARU_ERROR_BUSY);
 }
 
 void
@@ -1854,6 +1876,7 @@ maru_stream_open (maru_context * ctx,
     debug_print ("%s:%d\n", __FILE__, __LINE__);
     if (stream >= ctx->num_streams)
     {
+	PR_ERR(LIBMARU_ERROR_INVALID);
 	ret = LIBMARU_ERROR_INVALID;
 	goto end;
     }
@@ -1861,6 +1884,7 @@ maru_stream_open (maru_context * ctx,
     debug_print ("%s:%d\n", __FILE__, __LINE__);
     if (maru_is_stream_available_nolock (ctx, stream) == 0)
     {
+	PR_ERR(LIBMARU_ERROR_INVALID);
 	ret = LIBMARU_ERROR_BUSY;
 	goto end;
     }
@@ -1868,6 +1892,7 @@ maru_stream_open (maru_context * ctx,
     debug_print ("%s:%d\n", __FILE__, __LINE__);
     if (!init_stream_nolock (ctx, stream, desc))
     {
+	PR_ERR(LIBMARU_ERROR_INVALID);
 	ret = LIBMARU_ERROR_GENERIC;
 	goto end;
     }
@@ -1881,7 +1906,7 @@ maru_error
 maru_stream_close (maru_context * ctx, maru_stream stream)
 {
     if (maru_is_stream_available (ctx, stream) != 0)
-	return LIBMARU_ERROR_INVALID;
+	RETURN_ERR(LIBMARU_ERROR_INVALID);
 
     // Unblock so we make sure epoll_wait() catches our notification kill.
     poll_list_unblock (ctx->epfd,
@@ -1947,10 +1972,10 @@ int
 maru_stream_notification_fd (maru_context * ctx, maru_stream stream)
 {
     if (stream >= ctx->num_streams)
-	return LIBMARU_ERROR_INVALID;
+	RETURN_ERR(LIBMARU_ERROR_INVALID);
 
     if (!ctx->streams[stream].fifo)
-	return LIBMARU_ERROR_INVALID;
+	RETURN_ERR(LIBMARU_ERROR_INVALID);
 
     return maru_fifo_write_notify_fd (ctx->streams[stream].fifo);
 }
@@ -1987,13 +2012,13 @@ perform_request (maru_context * ctx,
     };
 
     if (size > sizeof (req.data.data))
-	return LIBMARU_ERROR_INVALID;
+	RETURN_ERR(LIBMARU_ERROR_INVALID);
 
     memcpy (req.data.data, data, size);
 
     if (write (ctx->request_fd[1], &req, sizeof (req)) !=
 	(ssize_t) sizeof (req))
-	return LIBMARU_ERROR_IO;
+	RETURN_ERR(LIBMARU_ERROR_IO);
 
     if (timeout == 0 && !(request & USB_REQUEST_DIR_MASK))
 	return LIBMARU_SUCCESS;
@@ -2013,18 +2038,18 @@ perform_request (maru_context * ctx,
 	    if (errno == EINTR)
 		continue;
 
-	    return LIBMARU_ERROR_IO;
+	    RETURN_ERR(LIBMARU_ERROR_IO);
 	}
 
 	if (fds.revents & (POLLHUP | POLLERR | POLLNVAL))
-	    return LIBMARU_ERROR_IO;
+	    RETURN_ERR(LIBMARU_ERROR_IO);
 
 	if (!(fds.revents & POLLIN))
-	    return LIBMARU_ERROR_TIMEOUT;
+	    RETURN_ERR(LIBMARU_ERROR_TIMEOUT);
 
 	if (read (ctx->request_fd[1], &ret_req, sizeof (ret_req)) !=
 	    (ssize_t) sizeof (ret_req))
-	    return LIBMARU_ERROR_IO;
+	    RETURN_ERR(LIBMARU_ERROR_IO);
 
     }
     while (ret_req.count != req.count);
@@ -2051,37 +2076,58 @@ static maru_error
 perform_rate_request (maru_context * ctx,
 		      unsigned ep, unsigned rate, maru_usec timeout)
 {
-    maru_error err = perform_request (ctx,
-				      LIBUSB_REQUEST_TYPE_CLASS |
-				      LIBUSB_RECIPIENT_ENDPOINT,
-				      USB_REQUEST_UAC_SET_CUR,
-				      UAS_FREQ_CONTROL << 8,
-				      ep,
-				      (uint8_t[]){ rate >> 0, rate >> 8,
-				      rate >> 16 }, 3, timeout);
+    uint8_t rate_raw[3];
+    maru_error err;
+
+    rate_raw[0] = rate >> 0;
+    rate_raw[1] = rate >> 8;
+    rate_raw[2] = rate >> 16;
+    
+
+    err = perform_request (ctx,
+			   LIBUSB_REQUEST_TYPE_CLASS |
+			   LIBUSB_RECIPIENT_ENDPOINT,
+			   USB_REQUEST_UAC_SET_CUR,
+			   UAS_FREQ_CONTROL << 8,
+			   ep, rate_raw, sizeof (rate_raw),
+			   timeout);
 
     if (err != LIBMARU_SUCCESS)
-	return err;
+    {
+	/* FAILS sometimes due to USB stall, but still succeeds in device..
+	 * so ingore here
+	 */
+	fprintf(stderr, "[libmaru]: %d: USB_REQUEST_UAC_SET_CUR(FRE=%d): err=%d\n", ep, rate, err);
+	sleep (3);
+    }
 
-    uint8_t new_rate_raw[3];
+    rate_raw[0] = 0;
+    rate_raw[1] = 0;
+    rate_raw[2] = 0;
+
+    /* ... and this might return bogus values ... */
     err = perform_request (ctx,
 			   LIBUSB_REQUEST_TYPE_CLASS |
 			   LIBUSB_RECIPIENT_ENDPOINT, USB_REQUEST_UAC_GET_CUR,
-			   UAS_FREQ_CONTROL << 8, ep, new_rate_raw,
-			   sizeof (new_rate_raw), timeout);
+			   UAS_FREQ_CONTROL << 8,
+			   ep, rate_raw,
+			   sizeof (rate_raw), timeout);
 
     if (err != LIBMARU_SUCCESS)
-	return err;
+    {
+	fprintf(stderr, "[libmaru]: %d: USB_REQUEST_UAC_GET_CUR(FREQ): err=%d\n", ep, err);
+	sleep(1);
+    }
 
     unsigned new_rate =
-	(new_rate_raw[0] << 0) |
-	(new_rate_raw[1] << 8) | (new_rate_raw[2] << 16);
+	(rate_raw[0] << 0) |
+	(rate_raw[1] << 8) | (rate_raw[2] << 16);
 
     if (new_rate != rate)
     {
 	fprintf (stderr, "[libmaru]: Requested %u Hz, got %u Hz.\n",
 		 rate, new_rate);
-	return LIBMARU_ERROR_INVALID;
+	RETURN_ERR(LIBMARU_ERROR_INVALID);
     }
 
     return LIBMARU_SUCCESS;
@@ -2093,7 +2139,7 @@ perform_volume_request (maru_context * ctx,
 			maru_volume * vol, uint8_t request, maru_usec timeout)
 {
     if (ctrl->chans == 0)
-	return LIBMARU_ERROR_INVALID;
+	RETURN_ERR(LIBMARU_ERROR_INVALID);
 
     uint16_t swapped = libusb_cpu_to_le16 (*vol);
 
@@ -2137,7 +2183,7 @@ maru_stream_get_volume (maru_context * ctx,
     const struct volume_control *ctrl =
 	stream_to_volume_control (ctx, stream);
     if (!ctrl)
-	return LIBMARU_ERROR_INVALID;
+	RETURN_ERR(LIBMARU_ERROR_INVALID);
 
     if (current)
     {
@@ -2180,7 +2226,7 @@ maru_stream_set_volume (maru_context * ctx,
     const struct volume_control *ctrl =
 	stream_to_volume_control (ctx, stream);
     if (!ctrl)
-	return LIBMARU_ERROR_INVALID;
+	RETURN_ERR(LIBMARU_ERROR_INVALID);
 
     return perform_volume_request (ctx, ctrl, &volume,
 				   USB_REQUEST_UAC_SET_CUR, timeout);
@@ -2203,12 +2249,12 @@ maru_usec
 maru_stream_current_latency (maru_context * ctx, maru_stream stream)
 {
     if (stream >= ctx->num_streams)
-	return LIBMARU_ERROR_INVALID;
+	RETURN_ERR(LIBMARU_ERROR_INVALID);
 
     struct maru_stream_internal *str = &ctx->streams[stream];
 
     if (!str->fifo)
-	return LIBMARU_ERROR_INVALID;
+	RETURN_ERR(LIBMARU_ERROR_INVALID);
 
     if (!str->timer.started)
 	return 0;

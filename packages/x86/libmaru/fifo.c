@@ -33,6 +33,8 @@
 
 #define debug_print(...)
 
+#define END_ERROR(err)	{fprintf(stderr, "[libmaru]: %s:%d : error %d\n", __FILE__, __LINE__, err); ret = err; goto end;}
+
 int eventfd_write (int fd, eventfd_t value);
 int eventfd_read (int fd, eventfd_t * value);
 
@@ -267,8 +269,7 @@ maru_fifo_write_unlock (maru_fifo * fifo,
     {
 	fprintf (stderr, "Wrong order, %p != %p!\n",
 		 fifo->buffer + fifo->write_lock_begin, region->first);
-	ret = LIBMARU_ERROR_INVALID;
-	goto end;
+	END_ERROR(LIBMARU_ERROR_INVALID);
     }
 
     size_t new_begin =
@@ -277,8 +278,7 @@ maru_fifo_write_unlock (maru_fifo * fifo,
     if (region->second_size && new_begin != 0)
     {
 	fprintf (stderr, "New begin mismatch!\n");
-	ret = LIBMARU_ERROR_INVALID;
-	goto end;
+	END_ERROR(LIBMARU_ERROR_INVALID);
     }
 
     new_begin += region->second_size;
@@ -331,8 +331,7 @@ maru_fifo_read_unlock (maru_fifo * fifo,
     // Check if ordering of unlocks differ from order of locks.
     if (fifo->buffer + fifo->read_lock_begin != region->first)
     {
-	ret = LIBMARU_ERROR_INVALID;
-	goto end;
+	END_ERROR(LIBMARU_ERROR_INVALID);
     }
 
     size_t new_begin =
@@ -340,8 +339,7 @@ maru_fifo_read_unlock (maru_fifo * fifo,
 
     if (region->second_size && new_begin != 0)
     {
-	ret = LIBMARU_ERROR_INVALID;
-	goto end;
+	END_ERROR(LIBMARU_ERROR_INVALID);
     }
 
     new_begin += region->second_size;
@@ -551,8 +549,7 @@ maru_fifo_set_write_trigger (maru_fifo * fifo, size_t size)
 
     if (size + fifo->read_trigger >= fifo->buffer_size)
     {
-	ret = LIBMARU_ERROR_INVALID;
-	goto end;
+	END_ERROR(LIBMARU_ERROR_INVALID);
     }
 
     fifo->write_trigger = size;
@@ -573,8 +570,7 @@ maru_fifo_set_read_trigger (maru_fifo * fifo, size_t size)
 
     if (size + fifo->write_trigger >= fifo->buffer_size)
     {
-	ret = LIBMARU_ERROR_INVALID;
-	goto end;
+	END_ERROR(LIBMARU_ERROR_INVALID);
     }
 
     fifo->read_trigger = size;
