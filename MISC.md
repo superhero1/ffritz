@@ -20,7 +20,7 @@ FB6490/Puma6 block diagram, Firmware 6.8x (no claim for correctness)
 |    |                          |  |            |        +----+  +----------+        |
 |    |                          |  | +--------+ |lan bridge   |             | +------+-----+
 |    |                          |  | |guest br| |[x.x.x.1]    |             | |802.11ac    |
-|    |                          |  | |VLAN 99 | |VLAN 2       |             | |PCI:3:0.0   |
+|    |                          |  | |VLAN 99 | |             |             | |PCI:3:0.0   |
 |    |                          |  | |        | +-------------+             | |QCA986x/988x|
 |    |                          |  | +--------+ |eth0/1/2/3   |  +----------+ +------------+
 |    |                          |  |            |Ext.switch   |  |SATA Gen2 |
@@ -49,7 +49,7 @@ FB6490/Puma6 block diagram, Firmware 6.8x (no claim for correctness)
                      |                                    |       |     |
                      | +------+1000BaseT ports+-----------+       |     |
                      | |P1    |P2    +P3    +P4    |P5/6  |       |     |
-                     | |VLAN ?|VLAN ?|VLAN ?|VLAN ?|unused|       |     |
+                     | |VLAN 1|VLAN 2|VLAN 3|VLAN 4|unused|       |     |
                      | |untag |untag |untag |untag |      |       |     |
                      +-----------------------------+------+       |     |
                    (probably different in guest/LAN1 setup)       |     |
