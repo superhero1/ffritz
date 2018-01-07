@@ -1,14 +1,17 @@
 Change history of application package
 =====================================
 
-next
-----
+Release 5
+---------
 - lirc: Eliminate endless loop when disconnecting irtoy at runtime
 - usbplayd: Finally support different discrete sample rates of endpoints (somehow)
 	- sndlist lists all supported rates
 	- adding "-r 44100" to usbplayd.conf avoinds resampling (if endpoint supports it)
 	- Some (my) endpoint report an error if the rate request command is sent, but do it
 	  anyhow correctly, so error is ignored.
+- bluetooth:
+	- store session/pairing data persistently in /var/media/ftp/ffritz/bt
+- Remove 100s startup delay unless box is booting
 
 Release 4
 ---------
@@ -53,9 +56,11 @@ TODO
 Change history of ffritz core integration:
 ==========================================
 
-next
+release 17
 ----
 - Fix permission of / directory to 755 to make dropbear happy
+- Makefile: integrate arm image from build directory if it exists
+- Tested with firmware 6.87
 
 release 16
 -------------------------------
