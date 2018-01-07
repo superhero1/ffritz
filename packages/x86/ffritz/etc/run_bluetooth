@@ -3,6 +3,10 @@
 # lircd startup file
 #                   
 . `dirname $0`/../etc/ffritz-env.sh || exit 1
+
+# where to store pairing data
+#
+DBDIR=$FFRITZ_HOME/bt
                                              
 if [ ! -p /var/tmp/bt.fifo ]; then
 	echo /var/tmp/bt.fifo does not exist or is not a pipe
@@ -10,5 +14,8 @@ if [ ! -p /var/tmp/bt.fifo ]; then
 else
 	rm -f /tmp/hci_dump.pklg
 	ln -s /dev/null /tmp/hci_dump.pklg
+	mkdir -p $DBDIR
+	chmod 700 $DBDIR
+	test -d /var/run/bt || ln -s $DBDIR /var/run/bt
 	ffdaemon $FFINSTDIR/bin/a2dp_sink_demo FritzBox /var/tmp/bt.fifo 
 fi

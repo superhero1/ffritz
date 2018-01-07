@@ -57,6 +57,19 @@ index 23c73eb..df46dbb 100644
  //
  // Bluetooth USB Transport Alternate Settings:
  //
+diff --git a/platform/posix/btstack_link_key_db_fs.c b/platform/posix/btstack_link_key_db_fs.c
+index 0eaacd2..22eaba4 100644
+--- a/platform/posix/btstack_link_key_db_fs.c
++++ b/platform/posix/btstack_link_key_db_fs.c
+@@ -52,7 +52,7 @@
+ #ifdef _WIN32
+ #define LINK_KEY_PATH ""
+ #else
+-#define LINK_KEY_PATH "/tmp/"
++#define LINK_KEY_PATH "/var/run/bt/"
+ #endif
+ #endif
+ 
 diff --git a/port/libusb/Makefile b/port/libusb/Makefile
 index b1b4b74..5039ea5 100644
 --- a/port/libusb/Makefile
