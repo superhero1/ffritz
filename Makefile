@@ -17,7 +17,8 @@ SUDO	= sudo
 #ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.62.image
 #ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.63.image
 #ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.83.image
-ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.85.image
+#ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.85.image
+ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.87.image
 
 # Keep original rootfs for diff?
 # sudo dirdiff arm/orig/ arm/squashfs-root/
@@ -53,8 +54,11 @@ ifeq ($(FWVER),)
 $(error Could not determine firmware version ($(ORIG) missing?))
 endif
 
-ifeq ($(PKGMAKE),1)
-FFRITZ_ARM_PACKAGE=packages/arm/ffritz/ffritz-arm-$(ARM_VER).tar.gz
+DFL_ARM_PACKAGE=packages/arm/ffritz/ffritz-arm-$(ARM_VER).tar.gz
+ifeq ($(FFRITZ_ARM_PACKAGE),)
+ifneq ("$(wildcard $(DFL_ARM_PACKAGE))","")
+FFRITZ_ARM_PACKAGE=$(DFL_ARM_PACKAGE)
+endif
 endif
 
 BUSYBOX	= $(shell which busybox)
@@ -114,16 +118,6 @@ arm/filesystem.image: arm/.applied.fs
 	@$(SUDO) chmod 755 arm/squashfs-root
 	@echo "PACK  arm/squashfs-root"
 	@cd arm; $(SUDO) $(HOSTTOOLS)/mksquashfs4-lzma-avm-be squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 >/dev/null
-
-ifneq ($(FFRITZ_ARM_PACKAGE),)
-ifeq ($(PKGMAKE),)
-$(FFRITZ_ARM_PACKAGE):
-	@echo Please download $(FFRITZ_ARM_PACKAGE) from https://bitbucket.org/fesc2000/ffritz/downloads
-	@echo "(or try to build it with \"make arm-package\")"
-	@echo
-	endif
-endif
-endif
 
 arm-package: packages/arm/ffritz/ffritz-arm-$(ARM_VER).tar.gz
 
