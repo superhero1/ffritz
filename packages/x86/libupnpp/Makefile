@@ -4,8 +4,8 @@ DLDIR	= $(PKGTOP)/dl
 TOPDIR	    = $(shell pwd)
 BUILDROOT   = $(shell cd ../buildroot/build; pwd)
 TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
-DESTDIR	    = $(TOPDIR)/output
 SYSROOT	    = $(BUILDROOT)/output/host/usr/i686-buildroot-linux-uclibc/sysroot
+DESTDIR	    = $(SYSROOT)
 
 URL	= $(shell cat $(PKGTOP)/url-libupnpp)
 FILE	= $(DLDIR)/$(shell basename $(URL))
@@ -31,7 +31,8 @@ build/config.status:	build/configure
 	@cd build; make install DESTDIR=$(TOPDIR)/output
 
 install:
-	@cp -a output/usr/lib/lib*so* $(DESTDIR)/lib
+	@cp -a output/usr/lib/lib*so* $(SYSROOT)/usr/lib
+	@cp -ar output/usr/include/libupnpp $(SYSROOT)/usr/include
 
 clean:
 	rm -rf build
