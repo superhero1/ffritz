@@ -75,10 +75,13 @@ struct lib_ctx
 	void *client_ctx;
 };
 
+#define WRAP_MAGIC	0x600df00d
+
 /* wrapper for libdvbif context
  */
 struct wrap_ctx
 {
+	uint32_t		magic;
 	struct lib_ctx 		*lib_ctx;
 	void 			*client_ctx;
 
@@ -86,7 +89,8 @@ struct wrap_ctx
 	int			sockfd;
 	int			dest;
 
-	uint32_t 		send_cbarg;
+	uint32_t (*client_cb)(uint32_t, uint32_t, uint32_t, uint32_t);
+	uint32_t 		client_cb_arg;
 };
 
 /* Per-stream context provided by cableinfo (wrap_ctx->client_ctx)
@@ -125,7 +129,7 @@ uint32_t (*p_di_alloc_stream_param)(char * a1, uint32_t a2, uint32_t a3, uint32_
 uint32_t (*p_di_automode_supported)(void);
 uint32_t (*p_di_close_stream)(struct lib_ctx *ctx, uint32_t a2, uint32_t a3);
 uint32_t (*p_di_exit)(void);
-uint32_t (*p_di_free_stream)(struct lib_ctx *ctx, uint32_t a2, uint32_t a3, uint32_t a4);
+uint32_t (*p_di_free_stream)(struct lib_ctx *ctx);
 uint32_t (*p_di_free_stream_param)(uint32_t * a1);
 uint32_t (*p_di_get_error_rates)(struct lib_ctx *ctx, uint32_t * a2, uint32_t * a3, uint32_t * a4, uint32_t a5);
 uint32_t (*p_di_get_input_signal_power)(struct lib_ctx *ctx, float32_t * a2);
@@ -143,7 +147,6 @@ uint32_t (*p_di_spectrum_start)(uint32_t a1, uint32_t a2, int64_t a3, uint32_t a
 uint32_t (*p_di_spectrum_stop)(void);
 uint32_t (*p_di_tune_stream)(struct lib_ctx *ctx, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5, uint32_t a6, uint32_t a7, uint32_t a8);
 
-uint32_t (*p_cableinfo_callback)(uint32_t, uint32_t, uint32_t, uint32_t);
 uint32_t my_cableinfo_callback (uint32_t dvb_data, uint32_t a2, uint32_t a3, uint32_t a4);
 void udp_init (struct wrap_ctx *ctx);
 
@@ -255,6 +258,7 @@ struct wrap_ctx *di_alloc_stream(uint32_t a1)
 
 	wrap_ctx = (struct wrap_ctx*)malloc(sizeof(struct wrap_ctx));
 
+	wrap_ctx->magic = WRAP_MAGIC;
 	wrap_ctx->lib_ctx = lib_ctx;
 	wrap_ctx->client_ctx = (void*)a1;
 	wrap_ctx->count = 0;
@@ -289,16 +293,26 @@ uint32_t di_exit(void)
 	printf ("%s() -> 0x%x\n", __FUNCTION__, rc);
 	return rc;
 }
-uint32_t di_free_stream(struct wrap_ctx *ctx, uint32_t a2, uint32_t a3, uint32_t a4)
+uint32_t di_free_stream(struct wrap_ctx *ctx)
 {
-	uint32_t rc = p_di_free_stream (ctx->lib_ctx, a2, a3, a4);
-//	printf ("%s(%p 0x%x 0x%x 0x%x) -> 0x%x\n", __FUNCTION__, ctx, a2, a3, a4, rc);
+	uint32_t rc = 0;
 
-//	if (ctx->dest != -1)
-//		dest[ctx->dest].used = 0;
-//	close (ctx->sockfd);
-//	free (ctx);
+	if (!ctx)
+	{
+		/* called twice, second time with NULL
+		 */
+		rc = p_di_free_stream(NULL);
+	}
+	else
+	{
+		rc = p_di_free_stream (ctx->lib_ctx);
+		if (ctx->dest != -1)
+			dest[ctx->dest].used = 0;
+		close (ctx->sockfd);
+		free (ctx);
+	}
 
+	printf ("%s(%p) -> 0x%x\n", __FUNCTION__, ctx, rc);
 	return rc;
 }
 uint32_t di_free_stream_param(uint32_t * a1)
@@ -360,9 +374,9 @@ uint32_t di_recvpid_stream(struct wrap_ctx *ctx, uint32_t (*cableinfo_callback)(
 {
 	uint32_t rc;
 
-	p_cableinfo_callback = cableinfo_callback;
+	ctx->client_cb = cableinfo_callback;
 
-	ctx->send_cbarg = a3;
+	ctx->client_cb_arg = a3;
 
 	rc = p_di_recvpid_stream (ctx->lib_ctx, &my_cableinfo_callback, (uint32_t)ctx);
 
@@ -432,7 +446,7 @@ void udp_init (struct wrap_ctx *ctx)
 	
 	printf ("+++ Init traffic to %d.%d.%d.%d:%d\n",
 		(ci_context->dst_ipv4 >> 24) & 0xff,
-		(ci_context->dst_ipv4 >> 18) & 0xff,
+		(ci_context->dst_ipv4 >> 16) & 0xff,
 		(ci_context->dst_ipv4 >>  8) & 0xff,
 		(ci_context->dst_ipv4 >>  0) & 0xff,
 		ci_context->dst_port);
@@ -469,26 +483,16 @@ void udp_send (struct wrap_ctx *ctx, void *buffer, int len)
 
 	peer = &dest[ctx->dest].peer;
 
-#if 0
-	rc = sendto (ctx->sockfd, buffer, len, 0, (struct sockaddr *)peer,
-			(socklen_t) sizeof (*peer));
-
-	if (rc == -1)
-	{
-		perror ("sendto");
-	}
-#else
 	int i;
 	for (i = 0; i < len / 1316; i ++)
 	{
-		rc = sendto (ctx->sockfd, buffer + i*1316, 1316, 0, (struct sockaddr *) peer,
+		rc = sendto (ctx->sockfd, buffer + i*1316, 1316, MSG_DONTWAIT, (struct sockaddr *) peer,
 				   (socklen_t) sizeof (*peer));
 		if (rc == -1)
 		{
 			perror ("sendto");
 		}
 	}
-#endif
 }
 
 /* Callback provided by cableinfo.
@@ -500,9 +504,16 @@ uint32_t my_cableinfo_callback (uint32_t buffer, uint32_t buf_size, uint32_t a3,
 	struct wrap_ctx *ctx = (struct wrap_ctx*)a3;
 	uint32_t rc = 0;
 
-	rc = p_cableinfo_callback (buffer, 1300, ctx->send_cbarg, a4);
+	if (ctx->dest == -1)
+	{
+		rc = ctx->client_cb (buffer, buf_size, ctx->client_cb_arg, a4);
+	}
+	else
+	{
+		rc = ctx->client_cb (buffer, 1300, ctx->client_cb_arg, a4);
 
-	udp_send (ctx, (void*)buffer, buf_size);
+		udp_send (ctx, (void*)buffer, buf_size);
+	}
 
 	return rc;
 }

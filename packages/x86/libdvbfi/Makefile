@@ -12,12 +12,15 @@ CROSS_COMPILE=i686-buildroot-linux-uclibc-
 
 WARN = -Wall -Wformat=0 -Werror
 
+#LIBS=-L$(TGTLIB) -lsystem_utils -lismd_demux -lismd_clock_recovery -lismd_core -lismdmessage -lsven -lpal -losal -lsystem_utils -lclock_control -lplatform_config
+
+
 export PATH := $(TOOLCHAIN):$(PATH)
 
 all:	libdvbfi.so
 
-libdvbfi.so:	libdvbfi.c
-	$(CROSS_COMPILE)gcc -std=c99 $(WARN) -fPIC -shared -Wl,-init,libinit -o $@ $<
+libdvbfi.so:	libdvbfi.c Makefile
+	$(CROSS_COMPILE)gcc -O -std=c99 $(WARN) -fPIC -shared -Wl,-init,libinit -o $@ $< $(LIBS)
 
 clean:
 	rm -f libdvbfi.so
