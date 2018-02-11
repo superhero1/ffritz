@@ -133,7 +133,7 @@ uint32_t (*p_di_free_stream)(struct lib_ctx *ctx);
 uint32_t (*p_di_free_stream_param)(uint32_t * a1);
 uint32_t (*p_di_get_error_rates)(struct lib_ctx *ctx, uint32_t * a2, uint32_t * a3, uint32_t * a4, uint32_t a5);
 uint32_t (*p_di_get_input_signal_power)(struct lib_ctx *ctx, float32_t * a2);
-uint32_t (*p_di_get_lock_status)(struct lib_ctx *ctx);
+uint32_t (*p_di_get_lock_status)(struct lib_ctx *ctx, uint32_t a1);
 uint32_t (*p_di_get_number_of_tuners)(void);
 uint32_t (*p_di_get_signal_noise_ratio)(struct lib_ctx *ctx, float32_t * a2);
 uint32_t (*p_di_get_support_data)(void);
@@ -333,10 +333,10 @@ uint32_t di_get_input_signal_power(struct wrap_ctx *ctx, float32_t * a2)
 	printf ("%s(%p 0x%x) -> 0x%x\n", __FUNCTION__, ctx, a2, rc);
 	return rc;
 }
-uint32_t di_get_lock_status(struct wrap_ctx *ctx)
+uint32_t di_get_lock_status(struct wrap_ctx *ctx, uint32_t a1)
 {
-	uint32_t rc = p_di_get_lock_status (ctx->lib_ctx);
-	printf ("%s(%p) -> 0x%x\n", __FUNCTION__, ctx, rc);
+	uint32_t rc = p_di_get_lock_status (ctx->lib_ctx, a1);
+	printf ("%s(%p 0x%x) -> 0x%x\n", __FUNCTION__, ctx, a1, rc);
 	return rc;
 }
 uint32_t di_get_number_of_tuners(void)
