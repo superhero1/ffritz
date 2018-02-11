@@ -236,16 +236,16 @@ uint32_t di_add_pcr_pid(struct wrap_ctx *ctx, uint32_t a2, uint32_t a3)
 	printf ("%s(%p 0x%x 0x%x) -> 0x%x\n", __FUNCTION__, ctx, a2, a3, rc);
 	return rc;
 }
-uint32_t di_add_pid(struct wrap_ctx *ctx, int16_t a2)
+uint32_t di_add_pid(struct wrap_ctx *ctx, int16_t pid)
 {
-	uint32_t rc = p_di_add_pid (ctx->lib_ctx, a2);
-	printf ("%s(%p %d) -> 0x%x\n", __FUNCTION__, ctx, a2, rc);
+	uint32_t rc = p_di_add_pid (ctx->lib_ctx, pid);
+	printf ("%s(%p %d) -> 0x%x\n", __FUNCTION__, ctx, pid, rc);
 	return rc;
 }
-uint32_t di_add_pids(struct wrap_ctx *ctx, uint32_t * a2)
+uint32_t di_add_pids(struct wrap_ctx *ctx, uint32_t * pids)
 {
-	uint32_t rc = p_di_add_pids (ctx->lib_ctx, a2);
-	printf ("%s(%p %p) -> 0x%x\n", __FUNCTION__, ctx, a2, rc);
+	uint32_t rc = p_di_add_pids (ctx->lib_ctx, pids);
+	printf ("%s(%p %p) -> 0x%x\n", __FUNCTION__, ctx, pids, rc);
 	return rc;
 }
 struct wrap_ctx *di_alloc_stream(uint32_t a1)
@@ -388,16 +388,16 @@ uint32_t di_recvpid_stream(struct wrap_ctx *ctx, uint32_t (*cableinfo_callback)(
 	return rc;
 
 }
-uint32_t di_remove_pid(struct wrap_ctx *ctx, uint32_t a2)
+uint32_t di_remove_pid(struct wrap_ctx *ctx, uint32_t pid)
 {
-	uint32_t rc = p_di_remove_pid (ctx->lib_ctx, a2);
-	printf ("%s(%p %d) -> 0x%x\n", __FUNCTION__, ctx, a2, rc);
+	uint32_t rc = p_di_remove_pid (ctx->lib_ctx, pid);
+	printf ("%s(%p %d) -> 0x%x\n", __FUNCTION__, ctx, pid, rc);
 	return rc;
 }
-uint32_t di_remove_pids(struct wrap_ctx *ctx, uint32_t * a2)
+uint32_t di_remove_pids(struct wrap_ctx *ctx, uint32_t * pids)
 {
-	uint32_t rc = p_di_remove_pids (ctx->lib_ctx, a2);
-	printf ("%s(%p 0x%x) -> 0x%x\n", __FUNCTION__, ctx, a2, rc);
+	uint32_t rc = p_di_remove_pids (ctx->lib_ctx, pids);
+	printf ("%s(%p 0x%x) -> 0x%x\n", __FUNCTION__, ctx, pids, rc);
 	return rc;
 }
 uint32_t di_spectrum_progress(uint32_t * a1)
@@ -418,10 +418,10 @@ uint32_t di_spectrum_stop(void)
 	printf ("%s() -> 0x%x\n", __FUNCTION__, rc);
 	return rc;
 }
-uint32_t di_tune_stream(struct wrap_ctx *ctx, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5, uint32_t a6, uint32_t a7, uint32_t a8)
+uint32_t di_tune_stream(struct wrap_ctx *ctx, uint32_t freq, uint32_t symrate, uint32_t specinv, uint32_t mtype, uint32_t a6, uint32_t a7, uint32_t a8)
 {
-	uint32_t rc = p_di_tune_stream (ctx->lib_ctx, a2, a3, a4, a5, a6, a7, a8);
-	printf ("%s(%p 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x) -> 0x%x\n", __FUNCTION__, ctx, a2, a3, a4, a5, a6, a7, a8, rc);
+	uint32_t rc = p_di_tune_stream (ctx->lib_ctx, freq, symrate, a4, mtype, a6, a7, a8);
+	printf ("%s(%p 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x) -> 0x%x\n", __FUNCTION__, ctx, freq, symrate, specinv, mtype, a6, a7, a8, rc);
 	return rc;
 }
 
