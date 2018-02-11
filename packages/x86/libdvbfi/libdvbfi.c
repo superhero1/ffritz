@@ -420,7 +420,7 @@ uint32_t di_spectrum_stop(void)
 }
 uint32_t di_tune_stream(struct wrap_ctx *ctx, uint32_t freq, uint32_t symrate, uint32_t specinv, uint32_t mtype, uint32_t a6, uint32_t a7, uint32_t a8)
 {
-	uint32_t rc = p_di_tune_stream (ctx->lib_ctx, freq, symrate, a4, mtype, a6, a7, a8);
+	uint32_t rc = p_di_tune_stream (ctx->lib_ctx, freq, symrate, specinv, mtype, a6, a7, a8);
 	printf ("%s(%p 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x) -> 0x%x\n", __FUNCTION__, ctx, freq, symrate, specinv, mtype, a6, a7, a8, rc);
 	return rc;
 }
