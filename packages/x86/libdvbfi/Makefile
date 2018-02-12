@@ -17,11 +17,15 @@ WARN = -Wall -Wformat=0 -Werror
 
 export PATH := $(TOOLCHAIN):$(PATH)
 
-all:	libdvbfi.so
+all:	libdvbfi.so cableinfo_p
 
 libdvbfi.so:	libdvbfi.c Makefile
 	$(CROSS_COMPILE)gcc -O -std=c99 $(WARN) -fPIC -shared -Wl,-init,libinit -o $@ $< $(LIBS)
 
+cableinfo_p:	$(TGTLIB)/../sbin/cableinfo
+	@./spatch $< $@ libdvbif.so libdvbfi.so
+
 clean:
 	rm -f libdvbfi.so
+
 

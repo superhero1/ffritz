@@ -1,25 +1,5 @@
 /* wrapper for libdvbif.so
- * requires binary patched cableinfo where libdvbif.so is replaced with libdvbfi.so
  *
- * Usage:
- * - Define the IP:UDP destination addresses where to send the RAW UDP TS:
- *   export UDEST0=192.168.0.40:9000
- *   export UDEST1=192.168.0.40:9001
- *   export UDEST2=192.168.0.40:9002
- *   export UDEST3=192.168.0.40:9003
- *   ...
- * - Run patched cableifo with libdvbfi.so in same directory
- *   export LD_LIBRARY_PATH=`pwd`
- *   cableifo_p -f
- * - Open a DVB stream via the m3u file offered by FB GUI.
- *   This will NOT play, it's only used to start the stream
- * - 192.168.0.40:9000 will now receive the raw DVB TS UDP stream as it has
- *   been configured in the m3u / rtsp URI (the pids are lkisted there).
- *   Run some transcoder etc. there (e.g. dvblast).
- * - Subsequent streams will use other UDESTx destinations ..
- *
- * TODO
- * - Fix segfault when closing a stream
  */
 
 #include <stdint.h>
@@ -34,6 +14,11 @@
 
 #include <netdb.h>
 #include <string.h>
+#include <errno.h>
+
+#if !defined(RTLD_NEXT)
+# define RTLD_NEXT   ((void *) -1l)
+#endif
 
 /*
 A typical call sequence when opening a stream:
@@ -68,34 +53,9 @@ A typical call sequence when opening a stream:
 
 typedef float float32_t;
 
-/* libdvbif context structure
+/* Stream parameters
  */
-struct lib_ctx
-{
-	void *client_ctx;
-};
-
-#define WRAP_MAGIC	0x600df00d
-
-/* wrapper for libdvbif context
- */
-struct wrap_ctx
-{
-	uint32_t		magic;
-	struct lib_ctx 		*lib_ctx;
-	void 			*client_ctx;
-
-	uint32_t 		count;
-	int			sockfd;
-	int			dest;
-
-	uint32_t (*client_cb)(uint32_t, uint32_t, uint32_t, uint32_t);
-	uint32_t 		client_cb_arg;
-};
-
-/* Per-stream context provided by cableinfo (wrap_ctx->client_ctx)
- */
-struct ci_context
+struct stream_param
 {
 	uint32_t	u1;
 	uint32_t	u2;
@@ -109,6 +69,42 @@ struct ci_context
 	uint32_t	dst_port;
 };
 
+/* libdvbif context structure
+ */
+struct lib_ctx
+{
+	struct stream_param *stream_param;
+};
+
+#define WRAP_MAGIC	0x600df00d
+
+/* wrapper for libdvbif context
+ */
+struct wrap_ctx
+{
+	uint32_t		magic;
+	struct lib_ctx 		*lib_ctx;
+
+	uint32_t 		count;
+	int			sockfd;
+	int			udp_fwd;
+	struct sockaddr_in 	peer;
+	struct sockaddr_in 	source;
+
+	uint32_t (*client_cb)(uint32_t, uint32_t, uint32_t, uint32_t);
+	uint32_t 		client_cb_arg;
+
+	struct wrap_ctx		*next;
+};
+
+/* destinatio IP structure passed to csock_sockaddr_set_inaddr()
+ */
+struct dstip
+{
+	uint32_t a1;
+	uint32_t dstip;
+};
+
 #define MAX_DESTS 30
 
 struct udp_dest
@@ -118,6 +114,16 @@ struct udp_dest
 	struct sockaddr_in 	peer;
 } dest[MAX_DESTS];
 
+/* simple list containing all RTP ports currently used (which are supposed to be blocked)
+ */
+#define MAX_DST_PORTS 20
+int num_dstports = 0;
+int dstports[100];
+
+int have_static_portlist = 0;
+
+int udp_size = 1316;
+
 
 /* Function pointers to libdvbid.so
  */
@@ -125,7 +131,7 @@ uint32_t (*p_di_add_pcr_pid)(struct lib_ctx *ctx, uint32_t a2, uint32_t a3);
 uint32_t (*p_di_add_pid)(struct lib_ctx *ctx, int16_t a2);
 uint32_t (*p_di_add_pids)(struct lib_ctx *ctx, uint32_t * a2);
 struct lib_ctx * (*p_di_alloc_stream)(uint32_t a1);
-uint32_t (*p_di_alloc_stream_param)(char * a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5, uint32_t a6, uint32_t a7, uint32_t a8, uint32_t a9, uint32_t a10);
+struct stream_param* (*p_di_alloc_stream_param)(char * a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5, uint32_t a6, uint32_t a7, uint32_t a8, uint32_t a9, uint32_t a10);
 uint32_t (*p_di_automode_supported)(void);
 uint32_t (*p_di_close_stream)(struct lib_ctx *ctx, uint32_t a2, uint32_t a3);
 uint32_t (*p_di_exit)(void);
@@ -147,15 +153,99 @@ uint32_t (*p_di_spectrum_start)(uint32_t a1, uint32_t a2, int64_t a3, uint32_t a
 uint32_t (*p_di_spectrum_stop)(void);
 uint32_t (*p_di_tune_stream)(struct lib_ctx *ctx, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5, uint32_t a6, uint32_t a7, uint32_t a8);
 
+uint32_t (*p_csock_sockaddr_set_inaddr) (void *a1, struct dstip *dstip, int dstport, void *a4);
+
 uint32_t my_cableinfo_callback (uint32_t dvb_data, uint32_t a2, uint32_t a3, uint32_t a4);
 void udp_init (struct wrap_ctx *ctx);
+
+
+
+int is_rtp_port (int port)
+{
+	int i;
+
+	for (i = 0; i < num_dstports; i++)
+		if (dstports[i] == port)
+			return 1;
+	
+	return 0;
+}
+
+
+void add_rtp_port (int port)
+{
+	if (have_static_portlist)
+		return;
+
+	if (is_rtp_port (port))
+		return;
+
+	if (num_dstports >= MAX_DST_PORTS)
+		return;
+
+	dstports[num_dstports++] = port;
+
+	printf ("+++ Blocking packets to destination port %d\n", port);
+}
+
+void del_rtp_port (int port)
+{
+	int i, j;
+
+	if (have_static_portlist)
+		return;
+
+	for (i = j = 0; i < num_dstports; i++, j++)
+	{
+		if (dstports[i] == port)
+		{
+			j++;
+			num_dstports--;
+		}
+
+		dstports[i] = dstports[j];
+	}
+
+	printf ("+++ Resuming packets to destination port %d\n", port);
+}
+
+
+int set_peer (char *hspec, struct sockaddr_in *peer)
+{
+	struct hostent          *host;
+	char *t;
+
+	t = strtok (hspec, ":");
+	if (!t)
+	{
+		return -1;
+	}
+
+	host = (struct hostent *) gethostbyname (t);
+	if (!host)
+	{
+		return -1;
+	}
+
+	memcpy (&peer->sin_addr, host->h_addr_list[0], host->h_length);
+
+	t = strtok (NULL, ":");
+	if (!t)
+	{
+		return -1;
+	}
+
+	peer->sin_port = htons (atoi(t));
+	peer->sin_family = AF_INET;
+
+	return 0;
+}
 
 /* lib initializer
  */
 void libinit(void)
 {
 	char *s, *t;
-	int i;
 
 	void *lh = dlopen("libdvbif.so", RTLD_LAZY);
 	if (!lh)
@@ -190,41 +280,33 @@ void libinit(void)
 	p_di_spectrum_stop = dlsym (lh, "di_spectrum_stop");
 	p_di_tune_stream = dlsym (lh, "di_tune_stream");
 
-	for (i = 0; i < MAX_DESTS; i++)
+	/* get original csock_sockaddr_set_inaddr()
+ 	 */
+	p_csock_sockaddr_set_inaddr = dlsym (RTLD_NEXT, "csock_sockaddr_set_inaddr");
+
+	if (p_csock_sockaddr_set_inaddr == NULL)
+		printf ("*** Warning: failed to locate csock_sockaddr_set_inaddr()\n");
+	
+	s = getenv ("RTP_PORTLIST");
+
+	if (s)
 	{
-		char e[30];
-		struct hostent          *host;
+		t = strtok (s, ",");
+		while (t)
+		{
+			add_rtp_port (atoi(t));
 
-		dest[i].used = 1;
-		memset (&dest[i].peer, 0, sizeof(dest[i].peer));
+			t = strtok (NULL, ",");
+		}
 
-		sprintf (e, "UDEST%d", i);
+		have_static_portlist = 1;
+	}
 
-		s = getenv (e);
-		if (!s)
-			continue;
-
-		strncpy (dest[i].hspec, s, sizeof(dest[i].hspec));
-
-		t = strtok (s, ":");
-		if (!t)
-			continue;
-
-		host = (struct hostent *) gethostbyname (t);
-		if (!host)
-			continue;
-
-		t = strtok (NULL, ":");
-		if (!t)
-			continue;
-		dest[i].peer.sin_port = htons (atoi(t));
-
-		dest[i].peer.sin_family = AF_INET;
-		memcpy (&dest[i].peer.sin_addr, host->h_addr_list[0], host->h_length);
-
-		dest[i].used = 0;
-
-		printf ("destination %d is %s\n", i, dest[i].hspec);
+	s = getenv ("UDP_SIZE");
+	if (s)
+	{
+		udp_size = atoi(s);
+		printf ("+++ UDP fragment size set to %d bytes\n", udp_size);
 	}
 }
 
@@ -260,7 +342,6 @@ struct wrap_ctx *di_alloc_stream(uint32_t a1)
 
 	wrap_ctx->magic = WRAP_MAGIC;
 	wrap_ctx->lib_ctx = lib_ctx;
-	wrap_ctx->client_ctx = (void*)a1;
 	wrap_ctx->count = 0;
 
 	printf ("%s(0x%x) -> %p\n", __FUNCTION__, a1, wrap_ctx);
@@ -269,10 +350,18 @@ struct wrap_ctx *di_alloc_stream(uint32_t a1)
 
 	return wrap_ctx;
 }
-uint32_t di_alloc_stream_param(char * a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5, uint32_t a6, uint32_t a7, uint32_t a8, uint32_t a9, uint32_t a10)
+struct stream_param *di_alloc_stream_param(char * a1, uint32_t a2, uint32_t a3, uint32_t dest_ip, uint32_t src_port, uint32_t dest_port, uint32_t a7, uint32_t a8, uint32_t a9, uint32_t a10)
 {
-	uint32_t rc = p_di_alloc_stream_param (a1, a2, a3, a4, a5, a6, a7, a8, a9, a10);
-	printf ("%s(%s 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x) -> 0x%x\n", __FUNCTION__, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, rc);
+	struct stream_param *rc;
+
+//	dest_ip = inet_addr("127.0.0.1");
+//	dest_port=10000;
+
+	rc = p_di_alloc_stream_param (a1, a2, a3, dest_ip, src_port, dest_port, a7, a8, a9, a10);
+
+	printf ("%s(%s 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x) -> %p\n", __FUNCTION__, a1, a2, a3, dest_ip, src_port, dest_port, a7, a8, a9, a10, rc);
+
+	printf ("%x %x\n", dest_ip, rc->dst_ipv4);
 	return rc;
 }
 uint32_t di_automode_supported(void)
@@ -305,14 +394,16 @@ uint32_t di_free_stream(struct wrap_ctx *ctx)
 	}
 	else
 	{
+		del_rtp_port (ctx->lib_ctx->stream_param->dst_port);
+
 		rc = p_di_free_stream (ctx->lib_ctx);
-		if (ctx->dest != -1)
-			dest[ctx->dest].used = 0;
+
 		close (ctx->sockfd);
 		free (ctx);
+
+		printf ("%s(%p) -> 0x%x\n", __FUNCTION__, ctx, rc);
 	}
 
-	printf ("%s(%p) -> 0x%x\n", __FUNCTION__, ctx, rc);
 	return rc;
 }
 uint32_t di_free_stream_param(uint32_t * a1)
@@ -442,57 +533,81 @@ int get_free_dest(void)
 
 void udp_init (struct wrap_ctx *ctx)
 {
-	struct ci_context *ci_context = (struct ci_context*)ctx->lib_ctx->client_ctx;
+	struct stream_param *stream_param = ctx->lib_ctx->stream_param;
+	struct sockaddr_in source;
+	char hspec[50];
 	
 	printf ("+++ Init traffic to %d.%d.%d.%d:%d\n",
-		(ci_context->dst_ipv4 >> 24) & 0xff,
-		(ci_context->dst_ipv4 >> 16) & 0xff,
-		(ci_context->dst_ipv4 >>  8) & 0xff,
-		(ci_context->dst_ipv4 >>  0) & 0xff,
-		ci_context->dst_port);
-		
+		(stream_param->dst_ipv4 >> 24) & 0xff,
+		(stream_param->dst_ipv4 >> 16) & 0xff,
+		(stream_param->dst_ipv4 >>  8) & 0xff,
+		(stream_param->dst_ipv4 >>  0) & 0xff,
+		stream_param->dst_port);
 	
 	ctx->sockfd = socket (AF_INET, SOCK_DGRAM, 0);
-	ctx->dest = get_free_dest();
 
-	if (ctx->dest == -1)
+	memset (&source, 0, sizeof(source));
+	source.sin_family = AF_INET;
+	source.sin_addr.s_addr = htonl(INADDR_ANY);
+	source.sin_port = htons(stream_param->src_port);
+
+	if (bind(ctx->sockfd, (struct sockaddr *)&source, sizeof(source)) < 0)
 	{
-		printf ("*** could not find UDP destination\n");
+		fprintf (stderr, "bind source port to %d failed: %s\n", 
+			source.sin_port, strerror(errno));
+	}
+
+	if (have_static_portlist && !is_rtp_port(stream_param->dst_port))
+	{
+		ctx->udp_fwd = 0;
 	}
 	else
 	{
-		printf ("+++ sending UDP stream to %s\n", dest[ctx->dest].hspec); 
+		sprintf (hspec, "%d.%d.%d.%d:%d",
+			(stream_param->dst_ipv4 >> 24) & 0xff,
+			(stream_param->dst_ipv4 >> 16) & 0xff,
+			(stream_param->dst_ipv4 >>  8) & 0xff,
+			(stream_param->dst_ipv4 >>  0) & 0xff,
+			stream_param->dst_port + 2);
+
+		ctx->udp_fwd = (set_peer (hspec, &ctx->peer) == 0);
+
+		printf ("+++ sending UDP TS to RTP destination port + 2 (%d)\n",
+			stream_param->dst_port + 2);
+		
 	}
 
-#if 0
-	/* XXX route 1st packet of each frame to localhost to make cableinfo callback happy
+	/* tell libavmcsock wrapper to discard all packets to this port
  	 */
-	ci_context->dst_ipv4 = inet_addr("127.0.0.1");
-	ci_context->dst_port = ci_context->src_port;
-#endif
-	
+	add_rtp_port (stream_param->dst_port);
 }
+
+#ifndef MIN
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
+#endif
 
 void udp_send (struct wrap_ctx *ctx, void *buffer, int len)
 {
 	int rc;
-	struct sockaddr_in      *peer;
+	int offs, seg;
 
-	if (ctx->dest == -1)
-		return;
-
-	peer = &dest[ctx->dest].peer;
-
-	int i;
-	for (i = 0; i < len / 1316; i ++)
+	offs = 0;
+	do 
 	{
-		rc = sendto (ctx->sockfd, buffer + i*1316, 1316, MSG_DONTWAIT, (struct sockaddr *) peer,
-				   (socklen_t) sizeof (*peer));
+		seg = MIN(udp_size, len - offs);
+
+		if (offs > len)
+			break;
+
+		rc = sendto (ctx->sockfd, buffer + offs, seg, MSG_DONTWAIT, (struct sockaddr *) &ctx->peer,
+				   (socklen_t) sizeof (ctx->peer));
 		if (rc == -1)
 		{
 			perror ("sendto");
 		}
-	}
+
+		offs += seg;
+	} while (offs < len);
 }
 
 /* Callback provided by cableinfo.
@@ -504,17 +619,39 @@ uint32_t my_cableinfo_callback (uint32_t buffer, uint32_t buf_size, uint32_t a3,
 	struct wrap_ctx *ctx = (struct wrap_ctx*)a3;
 	uint32_t rc = 0;
 
-	if (ctx->dest == -1)
+	if (!ctx->udp_fwd)
 	{
 		rc = ctx->client_cb (buffer, buf_size, ctx->client_cb_arg, a4);
 	}
 	else
 	{
-		rc = ctx->client_cb (buffer, 1300, ctx->client_cb_arg, a4);
-
 		udp_send (ctx, (void*)buffer, buf_size);
+		rc = ctx->client_cb (buffer, 1300, ctx->client_cb_arg, a4);
 	}
 
 	return rc;
 }
 
+
+/******** Wrappers for libavmcsock.so (via LD_PRELOAD) */
+
+uint32_t csock_sockaddr_set_inaddr (void *a1, struct dstip *dstip, int dstport, void *a4)
+{
+	uint32_t rc;
+	uint32_t saved_dstip = dstip->dstip;
+
+	/* forward everything we send to remote RTP port to local discard port so that it does not
+	 * reach the original target ..
+ 	 */
+	if (is_rtp_port (dstport))
+	{
+		dstip->dstip = 0x7f000001;
+		dstport = 9;
+	}
+
+	rc = p_csock_sockaddr_set_inaddr (a1, dstip, dstport, a4);
+
+	dstip->dstip = saved_dstip;
+
+	return rc;
+}

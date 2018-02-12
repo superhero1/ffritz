@@ -1,0 +1,46 @@
+# simple binary string patch
+#
+if [ $# -ne 4 -o "$1" = "-h" ]; then
+	echo usage: $0 file destination search-string replace-string
+	exit 1
+fi
+
+file=$1
+dest=$2
+
+search=$3
+replace=$4
+
+if [ ! -r $file ]; then
+	echo $file not found
+	exit 1
+fi
+
+slen=`echo $search  |wc -c`
+rlen=`echo $replace |wc -c`
+
+if [ $rlen -gt $slen ]; then
+	echo length of replace is greater than original string
+	exit 1
+fi
+
+occurs=`strings $1 | grep $search | wc -l`
+
+if [ $occurs -eq 0 ]; then
+	echo $search not find in $file
+	exit 1
+fi
+
+if [ $occurs -gt 1 ]; then
+	echo $search occurs $occurs times, will replace 1st only
+fi
+
+loc=`strings -t d $file | grep $search | head -1 | awk '{print $1}'`
+
+echo Patching $file at $loc, writing to $dest
+
+dd if=$file of=$dest bs=1 count=$loc 2>/dev/null || exit 1
+echo -n $replace >> $dest || exit 1
+loc2=`expr $loc + $rlen - 1`
+dd if=$file bs=1 skip=$loc2 >> $dest 2>/dev/null || exit 1
+

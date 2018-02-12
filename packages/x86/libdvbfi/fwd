@@ -1,0 +1,21 @@
+#!/bin/sh
+#
+# UDP TS to RTP forwarder 
+# 
+#
+
+if [ $# -ne 3 ]; then
+	echo usage: $0 input-port output-port local-ip
+	exit 1
+fi
+
+udp_input_port=$1
+rtp_output_port=$2
+ip=$3
+
+cfgfile=/tmp/$$.cfg
+echo "$ip:$rtp_output_port 1 *" > $cfgfile
+
+./dvblast -D $ip:$udp_input_port/udp -c $cfgfile
+
+rm -f $cfgfile
