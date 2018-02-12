@@ -3,9 +3,8 @@ the FritzBox 6490.
 
 This library is a wrapper to the AVM libdvbif.so library, and also wraps around 
 some functions in libavmcsock.so.
-The purpose is to rtp packets sent to the actual stream destination. 
-It will instead send the MPEG transport stream to the desination, to a port
-number which is +2 relative to the RTP port number.
+The purpose is to stop sending rtp packets to the actual stream destination, and
+directly send the FVB transport stream to an adjacent port (rtp port + 2).
 
 The intention is to run a forwarder on the destination, which again converts the TS
 to RTP (for example dvblast).
@@ -51,7 +50,7 @@ Now tvheadend should be happy getting rtp data from the FB.
 
 Environment parameters: 
 RTP_PORTLIST - A list of UDP/RTP ports on the target to block and replace with TS
-               data (port +4). If omitted, all data is blocked this way.
+               data (port + 2). If omitted, all data is blocked this way.
                To allow "default behavior" of cableinfo, set to -1
 
 UDP_SIZE     - Size in bytes of a UDP fragment. The default is 1316.
