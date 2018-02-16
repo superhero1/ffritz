@@ -268,7 +268,7 @@ void libinit(void)
 			
 			t = strtok (NULL, ":");
 
-			redir[num_redir].redir_port = t ? atoi (t) : redir[num_redir].port;
+			redir[num_redir].redir_port = t ? atoi (t) : -1; 
 		}
 
 		printf ("+++ redir[%d]: IP=%d.%d.%d.%d PORT=%d\n",
@@ -351,7 +351,7 @@ struct wrap_ctx *di_alloc_stream(uint32_t a1)
 	if (!lib_ctx)
 		return NULL;
 
-	wrap_ctx = (struct wrap_ctx*)malloc(sizeof(struct wrap_ctx));
+	wrap_ctx = (struct wrap_ctx*)calloc(1, sizeof(struct wrap_ctx));
 
 	wrap_ctx->magic = WRAP_MAGIC;
 	wrap_ctx->lib_ctx = lib_ctx;

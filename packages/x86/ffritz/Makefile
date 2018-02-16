@@ -33,14 +33,12 @@ VERSION     = $(shell cat version)
 
 IMAGE       = ffritz-app-$(VERSION).tar
 
-CASH	    = $(shell ls -d ../cash 2>/dev/null)
-
 ifeq ($(INSTDIR),)
     INSTDIR=$(STAGEDIR)
 endif
 
-SUBDIRS	    = ../buildroot ../libmaru ../shairport ../libmpdclient ../mpc ../lirc ../libupnpp ../jsoncpp ../upmpdcli ../libnfs ../nfs ../mpd ../bt $(CASH) ../libdvbfi src
-INSTDIRS    = ../lirc/install ../libupnpp/install ../upmpdcli/install ../nfs/install ../bt/install $(CASH)/install ../libdvbfi/install
+SUBDIRS	    = ../buildroot ../libmaru ../shairport ../libmpdclient ../mpc ../lirc ../libupnpp ../jsoncpp ../upmpdcli ../libnfs ../nfs ../mpd ../bt ../libdvbfi src
+INSTDIRS    = ../lirc/install ../libupnpp/install ../upmpdcli/install ../nfs/install ../bt/install ../libdvbfi/install
 
 .PHONY:	$(SUBDIRS) $(IMAGE)
 
