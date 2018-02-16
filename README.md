@@ -216,7 +216,7 @@ Restart services without box reboot
 If you don't want to restart the box after installing a new image:
 - Stop all ffritz services:
 
-	cp /usr/local/etc/ffshutdown /tmp; /tmp/ffshutdown
+	/usr/local/etc/ffshutdown
 
 - If prompted, kill processes still using /usr/local, and re-run ffshutdown
 - Run mount script for new image: /etc/init.d/S93-ffimage
