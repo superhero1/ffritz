@@ -80,5 +80,11 @@ else
 	echo OpenVPN not started
 fi
 
+# cableinfo stream redirect
+#
+if [ -x $FFINSTDIR/etc/run_cableinfo ]; then
+	$FFINSTDIR/etc/run_cableinfo -N
+fi
+
 ) | tee -a $FFLOG 2>&1 &
 

@@ -1,0 +1,49 @@
+#!/bin/sh
+#
+rc=/var/media/ftp/ffritz/libdvb.rc
+
+if [ -r "$1" ]; then
+	plib=`readlink -f $1`
+	shift
+else
+	plib=/usr/local/lib/libdvbfi.so
+fi
+
+if [ ! -r $plib ]; then
+	plib=`pwd`/libdvbfi.so
+fi
+
+if [ ! -r $plib ]; then
+	echo libdvbfi.so not found 1>&2
+	exit 1
+fi
+
+args=$*
+
+if [ ! -r $rc -a -r /usr/local/etc/libdvb.rc ]; then
+	cp -f /usr/local/etc/libdvb.rc $rc
+fi
+
+have_entry=0
+tmp=/tmp/$$
+grep -e '^RTP_REDIR[0-9]* ' -e '^UDP_SIZE ' $rc > $tmp
+while read line; do
+	set $line
+	export $1=$2
+	have_entry=1
+done < $tmp
+rm -f $tmp
+
+if [ $have_entry -eq 0 ]; then
+	exit 0
+fi
+
+mkdir -p /tmp/ci || exit 1
+cd /tmp/ci || exit 1
+ln -sf /lib/libdvbif.so libdvbif_org.so || exit 1
+ln -sf $plib libdvbif.so || exit 1
+
+killall cableinfo
+sleep 4
+export LD_LIBRARY_PATH=`pwd`
+LD_PRELOAD=./libdvbif.so exec /sbin/cableinfo $args

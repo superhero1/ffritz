@@ -71,6 +71,15 @@ OpenVPN
 
 See OPENVPN.md
 
+DVB-C Transport Stream Forwarding
+---------------------------------
+
+To enhance DVB-C streaming performance the DVB-C transport stream can be 
+forwarded to an external service which generates the RTP packets.
+
+For this the cableinfo daemon is executed with a wrapper library. For details
+refer to packages/x86/libdvbfi/README.txt.
+
 Miscellaneous tools
 -------------------
 - ldd

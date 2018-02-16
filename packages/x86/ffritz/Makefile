@@ -39,12 +39,14 @@ ifeq ($(INSTDIR),)
     INSTDIR=$(STAGEDIR)
 endif
 
-SUBDIRS	    = ../buildroot ../libmaru ../shairport ../libmpdclient ../mpc ../lirc ../libupnpp ../jsoncpp ../upmpdcli ../libnfs ../nfs ../mpd ../bt $(CASH) src
-INSTDIRS    = ../lirc/install ../libupnpp/install ../upmpdcli/install ../nfs/install ../bt/install $(CASH)/install
+SUBDIRS	    = ../buildroot ../libmaru ../shairport ../libmpdclient ../mpc ../lirc ../libupnpp ../jsoncpp ../upmpdcli ../libnfs ../nfs ../mpd ../bt $(CASH) ../libdvbfi src
+INSTDIRS    = ../lirc/install ../libupnpp/install ../upmpdcli/install ../nfs/install ../bt/install $(CASH)/install ../libdvbfi/install
 
 .PHONY:	$(SUBDIRS) $(IMAGE)
 
 all:	$(SUBDIRS) $(IMAGE)
+
+../upmpdcli:	../libupnpp/install
 
 $(SUBDIRS):	
 	mkdir -p ../../dl

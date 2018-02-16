@@ -105,22 +105,17 @@ struct dstip
 	uint32_t dstip;
 };
 
-#define MAX_DESTS 30
-
-struct udp_dest
-{
-	int			used;
-	char			hspec[50];
-	struct sockaddr_in 	peer;
-} dest[MAX_DESTS];
-
 /* simple list containing all RTP ports currently used (which are supposed to be blocked)
  */
-#define MAX_DST_PORTS 20
-int num_dstports = 0;
-int dstports[100];
-
-int have_static_portlist = 0;
+#define MAX_REDIR 20
+struct redir
+{
+	uint32_t	ip;
+	int 		port;
+	uint32_t	redir_ip;
+	uint32_t	redir_port;
+} redir[MAX_REDIR];
+int num_redir = 0;
 
 int udp_size = 1316;
 
@@ -160,56 +155,6 @@ void udp_init (struct wrap_ctx *ctx);
 
 
 
-int is_rtp_port (int port)
-{
-	int i;
-
-	for (i = 0; i < num_dstports; i++)
-		if (dstports[i] == port)
-			return 1;
-	
-	return 0;
-}
-
-
-void add_rtp_port (int port)
-{
-	if (have_static_portlist)
-		return;
-
-	if (is_rtp_port (port))
-		return;
-
-	if (num_dstports >= MAX_DST_PORTS)
-		return;
-
-	dstports[num_dstports++] = port;
-
-	printf ("+++ Blocking packets to destination port %d\n", port);
-}
-
-void del_rtp_port (int port)
-{
-	int i, j;
-
-	if (have_static_portlist)
-		return;
-
-	for (i = j = 0; i < num_dstports; i++, j++)
-	{
-		if (dstports[i] == port)
-		{
-			j++;
-			num_dstports--;
-		}
-
-		dstports[i] = dstports[j];
-	}
-
-	printf ("+++ Resuming packets to destination port %d\n", port);
-}
-
-
 int set_peer (char *hspec, struct sockaddr_in *peer)
 {
 	struct hostent          *host;
@@ -246,11 +191,13 @@ int set_peer (char *hspec, struct sockaddr_in *peer)
 void libinit(void)
 {
 	char *s, *t;
+	char ename[30];
+	int i;
 
-	void *lh = dlopen("libdvbif.so", RTLD_LAZY);
+	void *lh = dlopen("libdvbif_org.so", RTLD_LAZY);
 	if (!lh)
 	{
-		fprintf (stderr, "*** failed to open libdvbif.so\n");
+		fprintf (stderr, "*** failed to open libdvbif_org.so\n");
 		exit (1);
 	}
 
@@ -287,19 +234,60 @@ void libinit(void)
 	if (p_csock_sockaddr_set_inaddr == NULL)
 		printf ("*** Warning: failed to locate csock_sockaddr_set_inaddr()\n");
 	
-	s = getenv ("RTP_PORTLIST");
-
-	if (s)
+	for (i = 0; i < MAX_REDIR; i++)
 	{
-		t = strtok (s, ",");
-		while (t)
-		{
-			add_rtp_port (atoi(t));
+		sprintf (ename, "RTP_REDIR%d", i);
+		s = getenv (ename);
 
-			t = strtok (NULL, ",");
+		/* mandatory: IP/port */
+		if (!s)
+			continue;
+		t = strtok (s, ":");
+
+		if (!t)
+			continue;
+
+		if (strlen(t))
+			redir[num_redir].ip = ntohl(inet_addr (t));
+		else
+			redir[num_redir].ip = 0;
+
+		t = strtok (NULL, ":");
+
+		redir[num_redir].port = t ?  atoi (t) : -1;
+
+		/* optional: redir IP/port */
+		redir[num_redir].redir_ip = redir[num_redir].ip;
+		redir[num_redir].redir_port = -1;
+		t = strtok (NULL, ":");
+
+		if (t)
+		{
+			if (strlen(t))
+				redir[num_redir].redir_ip = ntohl(inet_addr (t));
+			
+			t = strtok (NULL, ":");
+
+			redir[num_redir].redir_port = t ? atoi (t) : redir[num_redir].port;
 		}
 
-		have_static_portlist = 1;
+		printf ("+++ redir[%d]: IP=%d.%d.%d.%d PORT=%d\n",
+			num_redir,
+			(redir[num_redir].ip >> 24) & 0xff,
+			(redir[num_redir].ip >> 16) & 0xff,
+			(redir[num_redir].ip >>  8) & 0xff,
+			(redir[num_redir].ip >>  0) & 0xff,
+			redir[num_redir].port);
+		printf ("+++ redir[%d]: DST_IP=%d.%d.%d.%d DST_PORT=%d\n",
+			num_redir,
+			(redir[num_redir].redir_ip >> 24) & 0xff,
+			(redir[num_redir].redir_ip >> 16) & 0xff,
+			(redir[num_redir].redir_ip >>  8) & 0xff,
+			(redir[num_redir].redir_ip >>  0) & 0xff,
+			redir[num_redir].redir_port);
+
+
+		num_redir++;
 	}
 
 	s = getenv ("UDP_SIZE");
@@ -308,6 +296,31 @@ void libinit(void)
 		udp_size = atoi(s);
 		printf ("+++ UDP fragment size set to %d bytes\n", udp_size);
 	}
+}
+
+int match_dest (uint32_t ip, int port, uint32_t *redir_ip, int *redir_port)
+{
+	int i;
+
+	for (i = 0; i < num_redir; i++)
+	{
+		if (redir[i].ip && (redir[i].ip != ip))
+			continue;
+
+		if ((redir[i].port != -1) && (redir[i].port != port))
+			continue;
+
+		if (redir_ip)
+			*redir_ip = redir[i].redir_ip ? redir[i].redir_ip : ip;
+
+		if (redir_port)
+			*redir_port = (redir[i].redir_port != -1) ? redir[i].redir_port : port + 2;
+
+
+		return 1;
+	}
+
+	return 0;
 }
 
 /* wrappers 
@@ -354,9 +367,6 @@ struct stream_param *di_alloc_stream_param(char * a1, uint32_t a2, uint32_t a3, 
 {
 	struct stream_param *rc;
 
-//	dest_ip = inet_addr("127.0.0.1");
-//	dest_port=10000;
-
 	rc = p_di_alloc_stream_param (a1, a2, a3, dest_ip, src_port, dest_port, a7, a8, a9, a10);
 
 	printf ("%s(%s 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x) -> %p\n", __FUNCTION__, a1, a2, a3, dest_ip, src_port, dest_port, a7, a8, a9, a10, rc);
@@ -394,8 +404,6 @@ uint32_t di_free_stream(struct wrap_ctx *ctx)
 	}
 	else
 	{
-		del_rtp_port (ctx->lib_ctx->stream_param->dst_port);
-
 		rc = p_di_free_stream (ctx->lib_ctx);
 
 		close (ctx->sockfd);
@@ -516,26 +524,13 @@ uint32_t di_tune_stream(struct wrap_ctx *ctx, uint32_t freq, uint32_t symrate, u
 	return rc;
 }
 
-int get_free_dest(void)
-{
-	int i;
-
-	for (i = 0; i < MAX_DESTS; i++)
-	{
-		if (dest[i].used == 0)
-		{
-			dest[i].used = 1;
-			return i;
-		}
-	}
-	return -1;
-}
-
 void udp_init (struct wrap_ctx *ctx)
 {
 	struct stream_param *stream_param = ctx->lib_ctx->stream_param;
 	struct sockaddr_in source;
 	char hspec[50];
+	uint32_t redir_ip;
+	int redir_port;
 	
 	printf ("+++ Init traffic to %d.%d.%d.%d:%d\n",
 		(stream_param->dst_ipv4 >> 24) & 0xff,
@@ -557,29 +552,24 @@ void udp_init (struct wrap_ctx *ctx)
 			source.sin_port, strerror(errno));
 	}
 
-	if (have_static_portlist && !is_rtp_port(stream_param->dst_port))
-	{
-		ctx->udp_fwd = 0;
-	}
-	else
+
+	if (match_dest (stream_param->dst_ipv4, stream_param->dst_port, &redir_ip, &redir_port))
 	{
 		sprintf (hspec, "%d.%d.%d.%d:%d",
-			(stream_param->dst_ipv4 >> 24) & 0xff,
-			(stream_param->dst_ipv4 >> 16) & 0xff,
-			(stream_param->dst_ipv4 >>  8) & 0xff,
-			(stream_param->dst_ipv4 >>  0) & 0xff,
-			stream_param->dst_port + 2);
+			(redir_ip >> 24) & 0xff,
+			(redir_ip >> 16) & 0xff,
+			(redir_ip >>  8) & 0xff,
+			(redir_ip >>  0) & 0xff,
+			redir_port);
 
 		ctx->udp_fwd = (set_peer (hspec, &ctx->peer) == 0);
 
-		printf ("+++ sending UDP TS to RTP destination port + 2 (%d)\n",
-			stream_param->dst_port + 2);
-		
+		if (ctx->udp_fwd)
+		{
+			printf ("+++ sending UDP TS to %s:%d\n", hspec, redir_port);
+		}
 	}
 
-	/* tell libavmcsock wrapper to discard all packets to this port
- 	 */
-	add_rtp_port (stream_param->dst_port);
 }
 
 #ifndef MIN
@@ -643,7 +633,7 @@ uint32_t csock_sockaddr_set_inaddr (void *a1, struct dstip *dstip, int dstport, 
 	/* forward everything we send to remote RTP port to local discard port so that it does not
 	 * reach the original target ..
  	 */
-	if (is_rtp_port (dstport))
+	if (match_dest (dstip->dstip, dstport, NULL, NULL))
 	{
 		dstip->dstip = 0x7f000001;
 		dstport = 9;

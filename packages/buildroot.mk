@@ -14,8 +14,8 @@ FILE	= $(DLDIR)/$(shell basename $(URL))
 #GCCFLAGS=HOSTCC=gcc-4.7
 
 all:	.build.stamp arch-patches
-	@make -C build $(GCCFLAGS)
-	@make -C build $(BUILDROOT_TARGETS)
+	@make -C build $(GCCFLAGS) -j2
+	@make -C build $(BUILDROOT_TARGETS) -j2
 
 $(FILE):
 	@cd $(DLDIR); wget $(URL)
