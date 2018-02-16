@@ -58,7 +58,9 @@ $(INSTDIRS):
 $(IMAGE): ffimage.bin
 	sha256sum ffimage.bin | sed -e 's/ .*//' > ffimage.sha256sum
 	cp ../../../*.md .
-	tar cf $(IMAGE) ffimage.bin ffimage.sha256sum *.md
+	cp ../libdvbfi/README.txt README-dvb.txt 
+	cp ../libdvbfi/fwd .
+	tar cf $(IMAGE) ffimage.bin ffimage.sha256sum *.md README-dvb.txt fwd
 
 ffimage.bin: $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_LIB)/lib*so*)
 	rm -rf $(STAGEDIR)

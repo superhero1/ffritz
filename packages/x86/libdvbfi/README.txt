@@ -1,3 +1,6 @@
+libdvbfi.so / DVB-C Transport Stream forwarding
+===============================================
+
 This library has been written as an attempt to speed up streaming of HD channels from
 the FritzBox 6490.
 
@@ -11,7 +14,7 @@ The intention is to run a forwarder on the destination, which again converts the
 to RTP (for example dvblast).
 
 USAGE
-run_cableinfo [libdvbfi.so path] [arguments to cableinfo]
+/usr/local/etc/run_cableinfo [libdvbfi.so path] [arguments to cableinfo]
 
 (re-starts running cableinfo daemon using libdvbfi wrapper with configured parameters
 (see below).
