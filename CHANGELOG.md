@@ -1,6 +1,12 @@
 Change history of application package
 =====================================
 
+Release 6
+---------
+- Atom: Added gdb, gdbserver, ltrace
+- Atom: Added DVB-C transport stream forwarding to offload Atom CPU.
+	See README-dvb.txt
+
 Release 5
 ---------
 - lirc: Eliminate endless loop when disconnecting irtoy at runtime
