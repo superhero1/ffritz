@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh
 #
 # Hack to stop ffritz daemons and unmount /usr/local
 
@@ -10,7 +10,8 @@ fi
 killall ffdaemon
 killall usbplayd
 killall shairport
-killall cableinfo
+lsof -p `pidof cableinfo`|grep libdvbfi > /dev/null && killall cableinfo
+
 if [ -f /var/media/ftp/ffritz/.mtab ]; then
 	/usr/local/etc/usrmount -u /var/media/ftp/ffritz/.mtab >/dev/null 2>&1
 fi
