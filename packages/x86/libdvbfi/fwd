@@ -1,7 +1,6 @@
 #!/bin/sh
 #
-# UDP TS to RTP forwarder 
-# 
+# UDP TS to RTP forwarder for FB6490
 #
 
 if [ $# -ne 3 ]; then
@@ -16,6 +15,6 @@ ip=$3
 cfgfile=/tmp/$$.cfg
 echo "$ip:$rtp_output_port 1 *" > $cfgfile
 
-./dvblast -D $ip:$udp_input_port/udp -c $cfgfile
+dvblast -D $ip:${udp_input_port}/udp/mtu=26500 -c $cfgfile
 
-rm -f $cfgfile
+rm -f $tmp
