@@ -26,6 +26,9 @@ if [ ! -d $NVRAM_COPY ]; then
 	exit 1
 fi
 
+mkdir -p $DATADIR
+chmod 700 $DATADIR
+
 # Check if the encrypted key to the storage is present.
 # - If not, create it (using the box private key), leave the plain key for later
 # - Otherwise, decrypt it (using the box private key)
@@ -36,9 +39,6 @@ if [ ! -r $KEY_ENC ]; then
 else
 	privatekeypassword | openssl rsautl -passin stdin -decrypt -inkey $PRIVKEY -in $KEY_ENC -out $KEY_PLAIN || exit 1
 fi
-
-mkdir -p $DATADIR
-chmod 700 $DATADIR
 
 ## Pack RAM copy into tar file
 cd $NVRAM_COPY
