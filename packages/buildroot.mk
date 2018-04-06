@@ -17,6 +17,10 @@ all:	.build.stamp arch-patches
 	@make -C build $(GCCFLAGS) -j2
 	@make -C build $(BUILDROOT_TARGETS) -j2
 
+base:	.build.stamp arch-patches
+	@make -C build $(GCCFLAGS) -j2
+	@make -C build $(BASE_TARGETS) -j2
+
 $(FILE):
 	@cd $(DLDIR); wget $(URL)
 

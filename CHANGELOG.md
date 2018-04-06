@@ -1,6 +1,10 @@
 Change history of application package
 =====================================
 
+Next
+----
+- mpd 0.20.5 -> 0.20.18
+
 Release 6
 ---------
 - Atom: Added gdb, gdbserver, ltrace
@@ -62,8 +66,20 @@ TODO
 Change history of ffritz core integration:
 ==========================================
 
+release 18
+-------------------------------
+- Various fixes to build system
+- Auto-load source/binary images.
+- Update to AVM source version 6.87
+- Atom: Always rebuild kernel modules (cdc-acm)
+- Add make help
+- Add make targets for rebuilding packages and overwriting pre-built binaries.
+- Properly build and install be squashfstools from freetz
+- dropbear 2016.74 -> 2018.76
+- prepare openssh
+
 release 17
-----
+-------------------------------
 - Fix permission of / directory to 755 to make dropbear happy
 - Makefile: integrate arm image from build directory if it exists
 - Tested with firmware 6.87

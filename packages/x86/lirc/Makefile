@@ -22,7 +22,7 @@ all:	build/config.status
 	make -C build
 
 $(REPO):
-	git clone $(URL) $(REPO)
+	git clone --bare $(URL) $(REPO)
 
 build/autogen.sh:	$(REPO)
 	rm -rf build

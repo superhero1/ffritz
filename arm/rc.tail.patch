@@ -1,6 +1,6 @@
---- orig/etc/init.d/rc.tail.sh	2017-05-05 12:44:34.000000000 +0000
-+++ squashfs-root/etc/init.d/rc.tail.sh	2017-05-11 08:18:53.091167577 +0000
-@@ -46,5 +46,56 @@
+--- orig/etc/init.d/rc.tail.sh	2017-12-12 11:57:56.000000000 +0100
++++ squashfs-root/etc/init.d/rc.tail.sh	2018-04-07 00:05:42.804641000 +0200
+@@ -46,5 +46,61 @@
  set_m_sleep=$((10*60))
  nohup sh -c "echo \"\$0[\$\$]: ++++fork set_modulemen, sleep ${set_m_sleep}++++\" > /dev/console ; sleep ${set_m_sleep}; echo \"\$0[\$\$]: ++++do set_modulemen++++\" > /dev/console; /bin/set_modulemem;" &
  fi
@@ -24,7 +24,7 @@
 +#	- Create /nvram/dropbear (if it does not yet exist)
 +#	- Link /var/tmp/dropbear to /nvram/dropbear
 +#   - Same for roots .ssh directory (var/tmp/root-ssh linked to /nvram/root-ssh)
-+#   - Start the daemon. -R will create certificates on demand
++#   - Start the daemon. 
 +#   
 +#########################################################################
 +if [ -x /usr/local/sbin/dropbear ]; then
@@ -46,6 +46,11 @@
 +    rm -rf /var/tmp/dropbear
 +    ln -sf /nvram/dropbear /var/tmp/dropbear
 +
++    if [ ! -f /var/tmp/dropbear/dropbear_rsa_host_key ]; then
++	dropbearkey -t rsa -f /var/tmp/dropbear/dropbear_rsa_host_key
++	chmod 600 /var/tmp/dropbear/dropbear_rsa_host_key
++    fi
++
 +    if [ ! -d /nvram/root-ssh ]; then
 +	mkdir /nvram/root-ssh
 +	chmod 700 /nvram/root-ssh
@@ -53,7 +58,7 @@
 +    rm -rf /var/tmp/root-ssh
 +    ln -sf /nvram/root-ssh /var/tmp/root-ssh
 +
-+    /usr/local/sbin/dropbear -R
++    /usr/local/sbin/dropbear 
 +fi
 +
  exit 0

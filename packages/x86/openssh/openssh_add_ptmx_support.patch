@@ -1,0 +1,207 @@
+--- orig/sshpty.c	2018-04-02 07:38:28.000000000 +0200
++++ build/sshpty.c	2018-04-06 16:51:48.428641000 +0200
+@@ -53,6 +53,11 @@
+ # endif
+ #endif
+ 
++#if defined(USE_DEV_PTMX)
++#undef HAVE_OPENPTY
++#undef HAVE__GETPTY
++#endif
++
+ /*
+  * Allocates and opens a pty.  Returns 0 if no pty could be allocated, or
+  * nonzero if a pty was successfully allocated.  On success, open file
+@@ -60,9 +65,11 @@
+  * returned (the buffer must be able to hold at least 64 characters).
+  */
+ 
++
+ int
+ pty_allocate(int *ptyfd, int *ttyfd, char *namebuf, size_t namebuflen)
+ {
++#if defined(HAVE_OPENPTY)
+ 	/* openpty(3) exists in OSF/1 and some other os'es */
+ 	char *name;
+ 	int i;
+@@ -78,6 +85,180 @@
+ 
+ 	strlcpy(namebuf, name, namebuflen);	/* possible truncation */
+ 	return 1;
++#else /* HAVE_OPENPTY */
++#ifdef HAVE__GETPTY
++	/*
++	 * _getpty(3) exists in SGI Irix 4.x, 5.x & 6.x -- it generates more
++	 * pty's automagically when needed
++	 */
++	char *slave;
++
++	slave = _getpty(ptyfd, O_RDWR, 0622, 0);
++	if (slave == NULL) {
++		error(
++				"pty_allocate: _getpty: %.100s", strerror(errno));
++		return 0;
++	}
++	strlcpy(namebuf, slave, namebuflen);
++	/* Open the slave side. */
++	*ttyfd = open(namebuf, O_RDWR | O_NOCTTY);
++	if (*ttyfd < 0) {
++		error(
++				"pty_allocate error: ttyftd open error");
++		close(*ptyfd);
++		return 0;
++	}
++	return 1;
++#else /* HAVE__GETPTY */
++#if defined(USE_DEV_PTMX)
++	/*
++	 * This code is used e.g. on Solaris 2.x.  (Note that Solaris 2.3
++	 * also has bsd-style ptys, but they simply do not work.)
++	 *
++	 * Linux systems may have the /dev/ptmx device, but this code won't work.
++	 */
++	int ptm;
++	char *pts;
++
++	ptm = open("/dev/ptmx", O_RDWR | O_NOCTTY);
++	if (ptm < 0) {
++		error(
++				"pty_allocate: /dev/ptmx: %.100s", strerror(errno));
++		return 0;
++	}
++	if (grantpt(ptm) < 0) {
++		error(
++				"grantpt: %.100s", strerror(errno));
++		return 0;
++	}
++	if (unlockpt(ptm) < 0) {
++		error(
++				"unlockpt: %.100s", strerror(errno));
++		return 0;
++	}
++	pts = ptsname(ptm);
++	if (pts == NULL) {
++		error(
++				"Slave pty side name could not be obtained.");
++	}
++	strlcpy(namebuf, pts, namebuflen);
++	*ptyfd = ptm;
++
++	/* Open the slave side. */
++	*ttyfd = open(namebuf, O_RDWR | O_NOCTTY);
++	if (*ttyfd < 0) {
++		error(
++			"error opening pts %.100s: %.100s", namebuf, strerror(errno));
++		close(*ptyfd);
++		return 0;
++	}
++#if !defined(HAVE_CYGWIN) && defined(I_PUSH)
++	/*
++	 * Push the appropriate streams modules, as described in Solaris pts(7).
++	 * HP-UX pts(7) doesn't have ttcompat module.
++	 */
++	if (ioctl(*ttyfd, I_PUSH, "ptem") < 0) {
++		error(
++				"ioctl I_PUSH ptem: %.100s", strerror(errno));
++	}
++	if (ioctl(*ttyfd, I_PUSH, "ldterm") < 0) {
++		error(
++			"ioctl I_PUSH ldterm: %.100s", strerror(errno));
++	}
++#ifndef __hpux
++	if (ioctl(*ttyfd, I_PUSH, "ttcompat") < 0) {
++		error(
++			"ioctl I_PUSH ttcompat: %.100s", strerror(errno));
++	}
++#endif
++#endif
++	return 1;
++#else /* USE_DEV_PTMX */
++#ifdef HAVE_DEV_PTS_AND_PTC
++	/* AIX-style pty code. */
++	const char *name;
++
++	*ptyfd = open("/dev/ptc", O_RDWR | O_NOCTTY);
++	if (*ptyfd < 0) {
++		error(
++			"Could not open /dev/ptc: %.100s", strerror(errno));
++		return 0;
++	}
++	name = ttyname(*ptyfd);
++	if (!name) {
++		dropbear_exit("ttyname fails for /dev/ptc device");
++	}
++	strlcpy(namebuf, name, namebuflen);
++	*ttyfd = open(name, O_RDWR | O_NOCTTY);
++	if (*ttyfd < 0) {
++		error(
++			"Could not open pty slave side %.100s: %.100s",
++		    name, strerror(errno));
++		close(*ptyfd);
++		return 0;
++	}
++	return 1;
++#else /* HAVE_DEV_PTS_AND_PTC */
++
++	/* BSD-style pty code. */
++	char buf[64];
++	int i;
++	const char *ptymajors = "pqrstuvwxyzabcdefghijklmnoABCDEFGHIJKLMNOPQRSTUVWXYZ";
++	const char *ptyminors = "0123456789abcdef";
++	int num_minors = strlen(ptyminors);
++	int num_ptys = strlen(ptymajors) * num_minors;
++	struct termios tio;
++
++	for (i = 0; i < num_ptys; i++) {
++		snprintf(buf, sizeof buf, "/dev/pty%c%c", ptymajors[i / num_minors],
++			 ptyminors[i % num_minors]);
++		snprintf(namebuf, namebuflen, "/dev/tty%c%c",
++		    ptymajors[i / num_minors], ptyminors[i % num_minors]);
++
++		*ptyfd = open(buf, O_RDWR | O_NOCTTY);
++		if (*ptyfd < 0) {
++			/* Try SCO style naming */
++			snprintf(buf, sizeof buf, "/dev/ptyp%d", i);
++			snprintf(namebuf, namebuflen, "/dev/ttyp%d", i);
++			*ptyfd = open(buf, O_RDWR | O_NOCTTY);
++			if (*ptyfd < 0) {
++				continue;
++			}
++		}
++
++		/* Open the slave side. */
++		*ttyfd = open(namebuf, O_RDWR | O_NOCTTY);
++		if (*ttyfd < 0) {
++			error(
++				"pty_allocate: %.100s: %.100s", namebuf, strerror(errno));
++			close(*ptyfd);
++			return 0;
++		}
++		/* set tty modes to a sane state for broken clients */
++		if (tcgetattr(*ptyfd, &tio) < 0) {
++			error(
++				"ptyallocate: tty modes failed: %.100s", strerror(errno));
++		} else {
++			tio.c_lflag |= (ECHO | ISIG | ICANON);
++			tio.c_oflag |= (OPOST | ONLCR);
++			tio.c_iflag |= ICRNL;
++
++			/* Set the new modes for the terminal. */
++			if (tcsetattr(*ptyfd, TCSANOW, &tio) < 0) {
++				error(
++					"Setting tty modes for pty failed: %.100s",
++					strerror(errno));
++			}
++		}
++
++		return 1;
++	}
++	error( "Failed to open any /dev/pty?? devices");
++	return 0;
++#endif /* HAVE_DEV_PTS_AND_PTC */
++#endif /* USE_DEV_PTMX */
++#endif /* HAVE__GETPTY */
++#endif /* HAVE_OPENPTY */
+ }
+ 
+ /* Releases the tty.  Its ownership is returned to root, and permissions to 0666. */

@@ -29,7 +29,6 @@ echo `date` :: ffinit >>$FFLOG
 ## Temporarily start telnetd
 ##
 /usr/bin/telnetd -l /sbin/ar7login
-nohup sh -c "sleep 300; echo killing telnetd > /dev/console; sleep 10; killall telnetd" &
 
 ## Decrypt persistent storage image to /var/tmp/ffnvram
 ##
@@ -161,3 +160,4 @@ if [ ! -f /var/tmp/dropbear/dropbear_rsa_host_key.cvt -o ! -f /var/tmp/dropbear/
 		echo failed to convert box private key to dropbear private key >>$FFLOG
 	fi
 fi
+

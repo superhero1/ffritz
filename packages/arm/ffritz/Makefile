@@ -12,10 +12,14 @@
 TOPDIR	    = $(shell pwd)
 PKGDIR	    = $(shell cd ..; pwd)
 
-BR_TGT	    = ../avm/build/prefix_sehr_sehr_sehr_sehr_sehr_sehr_sehr_sehr_sehr_lang_buildroot-2013.05/output/target
+BR_OUTPUT   = $(PKGDIR)/avm/build/prefix_sehr_sehr_sehr_sehr_sehr_sehr_sehr_sehr_sehr_lang_buildroot-2013.05/output
+
+BR_TGT	    = $(BR_OUTPUT)/target
 BR_TGT_LIB  = $(BR_TGT)/usr/lib
 BR_TGT_BIN  = $(BR_TGT)/usr/bin
 BR_TGT_SBIN = $(BR_TGT)/usr/sbin
+BR_HOST	    =  $(BR_OUTPUT)/host
+BR_HOST_BIN =  $(BR_HOST)/usr/armeb-buildroot-linux-uclibcgnueabi/bin/
 
 BINFILES   += $(BR_TGT_BIN)/strace $(BR_TGT_BIN)/ldd $(BR_TGT_SBIN)/tcpdump 
 BINFILES   += $(BR_TGT_BIN)/tcpbridge $(BR_TGT_BIN)/tcpprep $(BR_TGT_BIN)/tcpreplay $(BR_TGT_BIN)/tcpreplay-edit $(BR_TGT_BIN)/tcprewrite
@@ -49,6 +53,10 @@ $(IMAGE): $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_L
 	cp ../../../README.md output/
 	cd output; tar cfz ../$(IMAGE) --owner=8000 --group=8000 .
 	cd output; tar cfz ../bin-$(IMAGE) --owner=8000 --group=8000 ./ffritz-arm/bin ./ffritz-arm/etc
+	@echo
+	@echo +++ DONE +++
+	@echo "ARM image file: $(TOPDIR)/$(IMAGE)"
+	@echo
 
 # Install averything to target
 # LD_LIBRARY_PATH needs to be set correctly for binaries. This is done by the ffwrap wrapper script,
@@ -66,7 +74,7 @@ install: $(SUBDIRS) $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls 
 	cp -a bin/ffwrap $(INSTDIR)/bin/exec
 	cd $(INSTDIR)/bin; \
 	    for f in `ls | xargs file | grep ELF | sed -e 's/:.*//'`; do\
-		strip $$f;\
+		$(BR_HOST_BIN)/strip $$f;\
 		mv -v $$f exec/$$f;\
 		ln -sv exec/ffwrap $$f;\
 	    done

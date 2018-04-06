@@ -26,7 +26,7 @@ build/configure: $(REPO)
 	cd build; patch -p1 < ../pipe_volfile.patch
 
 $(REPO):
-	git clone $(URL) $(REPO)
+	git clone --bare $(URL) $(REPO)
 
 build/config.h:	build/configure
 	@cd build; ./configure 

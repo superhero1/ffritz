@@ -44,6 +44,10 @@ INSTDIRS    = ../lirc/install ../libupnpp/install ../upmpdcli/install ../nfs/ins
 
 all:	$(SUBDIRS) $(IMAGE)
 
+modules:
+	mkdir -p lib/modules
+	make -C ../avm ff-modules-install DESTDIR=$(TOPDIR)/lib/modules
+
 ../upmpdcli:	../libupnpp/install
 
 $(SUBDIRS):	
@@ -59,6 +63,12 @@ $(IMAGE): ffimage.bin
 	cp ../libdvbfi/README.txt README-dvb.txt 
 	cp ../libdvbfi/fwd .
 	tar cf $(IMAGE) ffimage.bin ffimage.sha256sum *.md README-dvb.txt fwd
+	@echo
+	@echo +++ DONE +++
+	@echo "Atom image file: $(TOPDIR)/$(IMAGE)"
+	@echo "Image checksum:  `cat ffimage.sha256sum`"
+	@echo
+	
 
 ffimage.bin: $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_LIB)/lib*so*)
 	rm -rf $(STAGEDIR)
@@ -71,7 +81,7 @@ ffimage.bin: $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TG
 # which is linked to for each binary. This makes the package position independent, i.e.
 # it can be installed to /var/media/ftp, or integrated into the atom squashfs (to /usr/local).
 #
-install: $(BINFILES) $(ETCFILES) $(INSTDIRS) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_LIB)/lib*so*)
+install: $(BINFILES) $(ETCFILES) $(INSTDIRS) modules $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_LIB)/lib*so*)
 	mkdir -p $(INSTDIR)/bin/exec
 	mkdir -p $(INSTDIR)/lib/modules
 	mkdir -p $(INSTDIR)/etc
@@ -87,7 +97,7 @@ install: $(BINFILES) $(ETCFILES) $(INSTDIRS) $(shell test -d $(BR_TGT_LIB) && ls
 	make -C ../nfs install DESTDIR=$(INSTDIR)
 	cp -a bin/ffwrap $(INSTDIR)/bin/exec
 	@cd $(INSTDIR)/bin; \
-	    for f in `ls | xargs file | grep ELF | grep -v ccsh_wrap.so | sed -e 's/:.*//'`; do\
+	    for f in `ls | xargs file | grep ELF | grep -v cash_wrap.so | sed -e 's/:.*//'`; do\
 		strip $$f;\
 		mv $$f exec/$$f;\
 		ln -sv exec/ffwrap $$f;\

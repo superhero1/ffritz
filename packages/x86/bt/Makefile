@@ -15,7 +15,7 @@ $(TARGET):
 	cd build/port/libusb; make a2dp_sink_demo
 
 $(REPO):
-	git clone $(URL) $(REPO)
+	git clone --bare $(URL) $(REPO)
 
 build:	$(REPO)
 	rm -rf build

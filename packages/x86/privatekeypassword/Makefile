@@ -18,15 +18,14 @@ REPO	= $(DLDIR)/privatekeypassword
 .PHONY:	build
 
 all:	build/Makefile
-	make -C build
+	make -C build CC=$(CROSS_COMPILE)gcc
 
 build/Makefile: $(REPO)
 	rm -rf build
 	git clone $(REPO) build
-	sed -i -e 's/CC = gcc/CC = $(CROSS_COMPILE)gcc/' build/Makefile
 
 $(REPO):
-	git clone $(URL) $(REPO)
+	git clone --bare $(URL) $(REPO)
 	
 BFILE = build/privatekeypassword
 DFILE = $(DESTDIR)/bin/privatekeypassword

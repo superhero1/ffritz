@@ -61,8 +61,6 @@ lirc can be used to operate an IR transceiver connected to the fritzbox
 	killall lircd
 
 - For irdroid/irtoy the cdc-acm kernel module is packaged and installed.
-  It is pre-built, but can be generated in packages/x86/avm
-  (make kernel-config kernel-modules)
 
 - lircd execution can be prevented by creating /var/media/ftp/.skip_lircd
 

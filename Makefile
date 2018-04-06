@@ -12,13 +12,11 @@ SUDO	= sudo
 #
 # The original firmware tarball
 #
-#ORIG=$(TOPDIR)/../original_141.06.50.tar
-#ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.61.image
-#ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.62.image
-#ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.63.image
-#ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.83.image
-#ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.85.image
 ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.87.image
+
+# Works only for a specific release
+#
+URL=http://download.avm.de/firmware/6490/78434061/$(shell basename $(ORIG))
 
 # Keep original rootfs for diff?
 # sudo dirdiff arm/orig/ arm/squashfs-root/
@@ -47,7 +45,7 @@ ATOM_MODFILES = $(shell find atom/mod/ -type f -o -type d)
 
 ###############################################################################################
 ###############################################################################################
-FWVER=$(shell strings $(ORIG) | grep -i ^newFWver=|sed -e 's/.*=//')
+FWVER=$(shell echo $(ORIG) | sed -e 's/.*\(..\...\)\.image/\1/')
 FWNUM=$(subst .,,$(FWVER))
 
 ifeq ($(FWVER),)
@@ -77,6 +75,9 @@ endif
 
 all: release
 
+$(ORIG):
+	wget $(URL) -O $(ORIG)
+
 ###############################################################################################
 ## Unpack, patch and repack ARM FS
 #
@@ -88,13 +89,13 @@ ARM_PATCHES += $(shell test $(FWNUM) -lt 663 && echo ipv6_enable.patch)
 
 ARM_PATCHST=$(ARM_PATCHES:%=arm/.applied.%)
 
-tmp/arm/filesystem.image:
+tmp/arm/filesystem.image: $(ORIG)
 	@mkdir -p tmp/arm
 	@cd tmp/arm; tar xf $(ORIG) ./var/remote/var/tmp/filesystem.image --strip-components=5
 
 arm/squashfs-root:  tmp/arm/filesystem.image 
-	@if [ ! -d arm/squashfs-root ]; then cd arm; $(SUDO) $(HOSTTOOLS)/unsquashfs4-lzma-avm-be $(TOPDIR)/tmp/arm/filesystem.image; fi
-	@if [ $(KEEP_ORIG) -eq 1 -a ! -d arm/orig ]; then cd arm; $(SUDO) $(HOSTTOOLS)/unsquashfs4-lzma-avm-be -d orig $(TOPDIR)/tmp/arm/filesystem.image; fi
+	@if [ ! -d arm/squashfs-root ]; then cd arm; $(SUDO) $(HOSTTOOLS)/unsquashfs4-avm-be $(TOPDIR)/tmp/arm/filesystem.image; fi
+	@if [ $(KEEP_ORIG) -eq 1 -a ! -d arm/orig ]; then cd arm; $(SUDO) $(HOSTTOOLS)/unsquashfs4-avm-be -d orig $(TOPDIR)/tmp/arm/filesystem.image; fi
 
 $(ARM_PATCHST):	$(@:arm/.applied.%=%)
 	@echo APPLY $(@:arm/.applied.%=%)
@@ -110,14 +111,14 @@ arm/.applied.fs: $(ARM_MODFILES) arm/squashfs-root $(ARM_PATCHST) $(FFRITZ_ARM_P
 	    $(SUDO) mkdir -p arm/squashfs-root/usr/local; \
 	    $(SUDO) tar xfk $(FFRITZ_ARM_PACKAGE) --strip-components=2 -C arm/squashfs-root/usr/local ./ffritz-arm; \
 	fi
-	$(TOPDIR)/mklinks arm/squashfs-root/usr/bin ../local/bin $(SUDO); 
+	$(TOPDIR)/mklinks -f arm/squashfs-root/usr/bin ../local/bin $(SUDO); 
 	@touch $@
 
 arm/filesystem.image: arm/.applied.fs
 	@rm -f arm/filesystem.image
 	@$(SUDO) chmod 755 arm/squashfs-root
 	@echo "PACK  arm/squashfs-root"
-	@cd arm; $(SUDO) $(HOSTTOOLS)/mksquashfs4-lzma-avm-be squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 >/dev/null
+	@cd arm; $(SUDO) $(HOSTTOOLS)/mksquashfs4-avm-be squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 >/dev/null
 
 arm-package: packages/arm/ffritz/ffritz-arm-$(ARM_VER).tar.gz
 
@@ -131,11 +132,11 @@ packages/arm/ffritz/ffritz-arm-$(ARM_VER).tar.gz:
 #
 atomfs:	atom/filesystem.image
 
-ATOM_PATCHES = 50-udev-default.patch profile.patch
+ATOM_PATCHES = 50-udev-default.patch profile.patch rc.tail.patch
 
 ATOM_PATCHST=$(ATOM_PATCHES:%=atom/.applied.%)
 
-tmp/atom/filesystem.image:
+tmp/atom/filesystem.image: $(ORIG)
 	@mkdir -p tmp/atom
 	@cd tmp/atom; tar xf $(ORIG) ./var/remote/var/tmp/x86/filesystem.image --strip-components=6
 
@@ -174,6 +175,10 @@ $(RELDIR)/fb6490_$(FWVER)-$(VERSION).tar: armfs atomfs $(RELDIR)
 	@cp atom/filesystem.image $(RELDIR)/var/remote/var/tmp/x86/filesystem.image
 	@cd $(RELDIR); $(TAR) cf fb6490_$(FWVER)-$(VERSION).tar var
 	@rm -rf $(RELDIR)/var
+	@echo
+	@echo +++ Done +++
+	@echo Image is: $@
+	@echo
 
 $(RELDIR):
 	@echo "PREP   $(RELDIR)"
@@ -188,7 +193,33 @@ freetz:
 	git clone https://github.com/Freetz/freetz.git
 
 squashfstools-be:	freetz
-	make -C freetz tools/mksquashfs4-lzma-avm-be tools/unsquashfs4-lzma-avm-be
+	make -C freetz squashfs4-host-be
+	cp freetz/tools/unsquashfs4-avm-be freetz/tools/mksquashfs4-avm-be $(HOSTTOOLS)
+
+#
+#
+#
+package:
+	make -C packages
+
+package-arm:
+	make -C packages/arm
+
+package-atom:
+	make -C packages/x86
+
+rebuild:
+	make -C packages base-install
+
+help:
+	@echo 'Make targets:'
+	@echo '------------'
+	@echo 'all              : Rebuild modified file system with pre-built binaries (or those from the "rebuild" target)'
+	@echo 'rebuild          : Rebuild binaries for modified filesystem images'
+	@echo 'package          : Rebuild optional packages'
+	@echo 'package-arm      : Rebuild optional package for arm'
+	@echo 'package-atom     : Rebuild optional package for atom'
+	@echo 'squashfstools-be : Download freetz and build big endian squashfs tools for host'
 
 
 ###############################################################################################

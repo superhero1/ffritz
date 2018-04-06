@@ -10,8 +10,8 @@ It _might_ work on the FritzBox 6590, but i have never tested it.
 There are some known methods how to perform an initial firmware update
 from a box that runs an original image.
 The one known to work on current firmware versions is to directly write 
-kernel and filesystem images via the boot loader (eva). Search IPPF threads
-for information on how to accomplish this.
+kernel and filesystem images via the boot loader (eva). 
+See 'Installing the image from the Boot Loader' below for information.
 
 I take no responsibility for broken devices or other problems (e.g. with
 your provider).  Use this at your own risk.
@@ -28,9 +28,6 @@ Usage
 Creating an install/update image
 --------------------------------
 
-- Obtain original install image (default is
-    FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.85.image)
-
 - Clone repository (master branch) in the directory where the original
     install image is located:
 
@@ -38,18 +35,27 @@ Creating an install/update image
 
 - Go to ffritz directory and `make clean; make` (sudo required).
 
+Note that this will use pre-built binaries checked into the git repository.
+To rebuild these binaries:
+
+	make rebuild
+
+If you want to build an image base on a different original firmware, edit
+the ORIG definition in the Makefile.
+
 IMPORTANT NOTE
 --------------
 
-Before starting to modify the FritzBox, it is always recommended
+Before starting to modify the Box it is always recommended
 to generate extended support data (<http://192.168.178.1/support.lua>)
 and save it. It might become (very) useful to "unbrick" your Box ...
 
 Installing the image from the Boot Loader (if box has no telnet/ssh login)
 --------------------------------------------------------------------------
 
-Please consult the web/IPPF threads. I have personally never done it this
-way so i won't document it here.
+Please consult the web/IPPF threads. A very good HOWTO is:
+
+https://www.ip-forum.eu/howto-aendern-des-branding-und-installieren-der-retail-firmware-bei-fritz-box-cable-160
 
 Installing the image (with ssh/telnet access)
 ---------------------------------------------
@@ -188,6 +194,11 @@ Software Packages
 In addition to the core features it is possible to install an application image
 to the Atom core (see README-APP.md).
 
+You can either use the pre-built image from the download section or build it
+by yourself:
+
+	make package-atom
+
 The image is distributed as ffritz-app-VERSION.tar. To install it,
 
 - Copy it to the box NAS directory 
@@ -228,6 +239,10 @@ Optional Arm package
 The file ffritz-arm-VERSION.tar.gz contains some optional tools for the arm core.
 It can be integrated into the install image by editing Makefile and defining its
 location via the FFRITZ_ARM_PACKAGE variable.
+
+To build this package by yourself:
+
+	make package-arm
 
 Notes
 =====
