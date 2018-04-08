@@ -199,13 +199,12 @@ squashfstools-be:	freetz
 #
 #
 #
-package:
-	make -C packages
+package: package-atom package-arm
 
 package-arm:
 	make -C packages/arm
 
-package-atom:
+package-atom:	atom/squashfs-root
 	make -C packages/x86
 
 rebuild:

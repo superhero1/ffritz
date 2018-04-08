@@ -33,7 +33,7 @@ Creating an install/update image
 
     `git clone https://fesc2000@bitbucket.org/fesc2000/ffritz.git`
 
-- Go to ffritz directory and `make clean; make` (sudo required).
+- Go to ffritz directory and run make (sudo required).
 
 Note that this will use pre-built binaries checked into the git repository.
 To rebuild these binaries:

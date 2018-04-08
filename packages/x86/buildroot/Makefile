@@ -14,6 +14,7 @@ arch-patches:	.gcc.patch.applied
 	@diff -qN mod/uClibc-0.9.33.config build/toolchain/uClibc/uClibc-0.9.33.config || cp mod/uClibc-0.9.33.config build/toolchain/uClibc/uClibc-0.9.33.config
 	@diff -qN mod/libusb.mk build/package/libusb/libusb.mk || cp mod/libusb.mk build/package/libusb/libusb.mk
 	@diff -qN mod/busybox-config build/package/busybox/busybox-1.21.x.config || cp mod/busybox-config build/package/busybox/busybox-1.21.x.config
+	@diff -qN mod/gmp.mk build/package/gmp/gmp.mk || cp mod/gmp.mk build/package/gmp/gmp.mk
 	
 .gcc.patch.applied:
 	tar xf gcc-4.9.3.tar

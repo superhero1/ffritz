@@ -57,7 +57,7 @@ fi
 # A log rotator
 #
 if [ -x $FFINSTDIR/etc/fflogrotate ]; then
-	$FFINSTDIR/bin/ffdaemon -i 1200 $FFINSTDIR/etc/fflogrotate 
+	$FFINSTDIR/bin/ffdaemon -i 60 $FFINSTDIR/etc/fflogrotate 
 fi
 
 

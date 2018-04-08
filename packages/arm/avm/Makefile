@@ -22,6 +22,7 @@ avm-build.stamp:	avm-prep.stamp $(CURL)
 	touch avm-build.stamp
 
 $(CURL):
+	mkdir -p `dirname $(CURL)`
 	wget --no-check-certificate http://curl.haxx.se/download/curl-7.28.1.tar.bz2 -O $(CURL)
 
 install:

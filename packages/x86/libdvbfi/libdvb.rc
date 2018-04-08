@@ -1,0 +1,16 @@
+
+# RTP traffic to these host:port entries is replaced with 
+# the transport stream data to the port number requested by this host + 2.
+# 0.0.0.0 is a wildcard for all hosts, -1 for all ports.
+#
+#RTP_REDIR0 192.168.0.40:9000
+#RTP_REDIR1 192.168.0.40:-1
+#RTP_REDIR2 0.0.0.0:9004
+#RTP_REDIR3 0.0.0.0:-1
+#...
+
+# By default, RTP packets of size 1316 are sent.
+# If the receiver supports larger mss, a multiple of 1316 can be given here
+# (up to 1316*20=26320).
+#
+#UDP_SIZE 26320
