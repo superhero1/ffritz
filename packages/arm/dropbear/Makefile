@@ -29,7 +29,7 @@ install:
 	@make -C build PROGRAMS="dropbear dropbearkey dropbearconvert dbclient scp" SCPPROGRESS=1 install DESTDIR=$(DESTDIR)
 
 $(FILE):
-	@wget $(URL)
+	@wget -N $(URL) -O $(FILE)
 
 build/configure:    $(FILE)
 	@mkdir -p build
