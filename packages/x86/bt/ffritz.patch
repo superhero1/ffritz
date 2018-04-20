@@ -1,8 +1,8 @@
 diff --git a/example/a2dp_sink_demo.c b/example/a2dp_sink_demo.c
-index 628c41f..9f50e77 100644
+index 7d4cb21..eace88c 100644
 --- a/example/a2dp_sink_demo.c
 +++ b/example/a2dp_sink_demo.c
-@@ -61,7 +61,7 @@
+@@ -86,7 +86,7 @@
  
  #ifdef HAVE_POSIX_FILE_IO
  #include "wav_util.h"
@@ -11,14 +11,28 @@ index 628c41f..9f50e77 100644
  #define STORE_SBC_TO_WAV_FILE 
  #endif
  
-@@ -949,9 +949,15 @@ static void stdin_process(char cmd){
+@@ -151,6 +151,8 @@ static FILE * sbc_file;
+ static char * sbc_filename = "avdtp_sink.sbc";
+ #endif
  
- int btstack_main(int argc, const char * argv[]);
- int btstack_main(int argc, const char * argv[]){
-+    const char *sink_name = "A2DP Sink Demo 00:00:00:00:00:00";
++const char *sink_name = "A2DP Sink Demo 00:00:00:00:00:00";
++
+ typedef struct {
+     // bitmaps
+     uint8_t sampling_frequency_bitmap;
+@@ -290,7 +292,7 @@ static int a2dp_sink_and_avrcp_services_init(void){
+     // Set local name with a template Bluetooth address, that will be automatically
+     // replaced with a actual address once it is available, i.e. when BTstack boots
+     // up and starts talking to a Bluetooth module.
+-    gap_set_local_name("A2DP Sink Demo 00:00:00:00:00:00");
++    gap_set_local_name(sink_name);
+     gap_discoverable_control(1);
+     gap_set_class_of_device(0x200408);
  
--    UNUSED(argc);
--    (void)argv;
+@@ -1131,6 +1133,17 @@ int btstack_main(int argc, const char * argv[]){
+     (void)argc;
+     (void)argv;
+ 
 +    if (argc > 1)
 +	sink_name = argv[1];
 +
@@ -26,18 +40,13 @@ index 628c41f..9f50e77 100644
 +	wav_filename = (char*)argv[2];
 +
 +    printf ("name: %s  output=%s\n", sink_name, wav_filename);
- 
-     /* Register for HCI events */
-     hci_event_callback_registration.callback = &packet_handler;
-@@ -984,7 +990,7 @@ int btstack_main(int argc, const char * argv[]){
-     avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10001, AVRCP_BROWSING_ENABLED, 1, NULL, NULL);
-     sdp_register_service(sdp_avrcp_controller_service_buffer);
-     
--    gap_set_local_name("A2DP Sink Demo 00:00:00:00:00:00");
-+    gap_set_local_name(sink_name);
-     gap_discoverable_control(1);
-     gap_set_class_of_device(0x200408);
-     printf("Starting BTstack ...\n");
++ 
++	
++
++
+     int err = a2dp_sink_and_avrcp_services_init();
+     if (err) return err;
+     // turn on!
 diff --git a/platform/libusb/hci_transport_h2_libusb.c b/platform/libusb/hci_transport_h2_libusb.c
 index 23c73eb..df46dbb 100644
 --- a/platform/libusb/hci_transport_h2_libusb.c
@@ -58,10 +67,10 @@ index 23c73eb..df46dbb 100644
  // Bluetooth USB Transport Alternate Settings:
  //
 diff --git a/platform/posix/btstack_link_key_db_fs.c b/platform/posix/btstack_link_key_db_fs.c
-index 0eaacd2..22eaba4 100644
+index ade3c52..96a0ab5 100644
 --- a/platform/posix/btstack_link_key_db_fs.c
 +++ b/platform/posix/btstack_link_key_db_fs.c
-@@ -52,7 +52,7 @@
+@@ -54,7 +54,7 @@
  #ifdef _WIN32
  #define LINK_KEY_PATH ""
  #else
@@ -71,7 +80,7 @@ index 0eaacd2..22eaba4 100644
  #endif
  
 diff --git a/port/libusb/Makefile b/port/libusb/Makefile
-index b1b4b74..5039ea5 100644
+index 67c28fb..e9411c7 100644
 --- a/port/libusb/Makefile
 +++ b/port/libusb/Makefile
 @@ -1,3 +1,9 @@
@@ -84,27 +93,21 @@ index b1b4b74..5039ea5 100644
  # Makefile for libusb based examples
  BTSTACK_ROOT = ../..
  
-@@ -21,12 +27,14 @@ VPATH += ${BTSTACK_ROOT}/platform/libusb
- ifeq ($(OS),Windows_NT)
- LDFLAGS += -lws2_32
- # assume libusb was installed into /usr/local
--CFLAGS  += -I/usr/local/include/libusb-1.0
--LDFLAGS += -L/usr/local/lib -lusb-1.0
-+CFLAGS  += -I$(SYSROOT)/usr/include/libusb-1.0
-+LDFLAGS += -L$(SYSROOT)/usr/lib -lusb-1.0
- else
+@@ -20,8 +26,10 @@ VPATH += ${BTSTACK_ROOT}/platform/libusb
+ VPATH += ${BTSTACK_ROOT}/chipset/csr
+ 
  # use pkg-config
 -CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
 -LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
-+CFLAGS  += -I$(SYSROOT)/usr/include/libusb-1.0
-+LDFLAGS += -L$(SYSROOT)/usr/lib -lusb-1.0
 +#CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
 +#LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
- endif
++CFLAGS  += -I$(SYSROOT)/usr/include/libusb-1.0
++LDFLAGS += -L$(SYSROOT)/usr/lib -lusb-1.0
  
- # use pkg-config for portaudio
+ EXAMPLES += csr_set_bd_addr
+ 
 diff --git a/port/libusb/btstack_config.h b/port/libusb/btstack_config.h
-index cfaec60..141167b 100644
+index 7056a82..fd09945 100644
 --- a/port/libusb/btstack_config.h
 +++ b/port/libusb/btstack_config.h
 @@ -8,7 +8,7 @@
@@ -116,16 +119,3 @@ index cfaec60..141167b 100644
  #define HAVE_POSIX_TIME
  
  // BTstack features that can be enabled
-diff --git a/src/classic/avrcp_target.c b/src/classic/avrcp_target.c
-index f6b34ef..b16b3a9 100644
---- a/src/classic/avrcp_target.c
-+++ b/src/classic/avrcp_target.c
-@@ -541,7 +541,7 @@ static uint8_t avrcp_target_store_media_attr(avrcp_connection_t * connection, av
-     if (!value) return AVRCP_STATUS_INVALID_PARAMETER;
-     connection->now_playing_info[index].value = (uint8_t*)value;
-     connection->now_playing_info[index].len   = strlen(value);
--    printf("store %lu bytes, %s\n",  strlen(value), value);
-+    printf("store %lu bytes, %s\n",  (unsigned long)strlen(value), value);
-     return ERROR_CODE_SUCCESS;
- }   
- 

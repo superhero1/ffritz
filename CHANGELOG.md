@@ -4,12 +4,17 @@ Change history of application package
 Next
 ----
 - mpd 0.20.5 -> 0.20.18
+- mpdclient 2.9 -> 2.11
+- Bluetooth btstack Apr 10 2018 [0a42fd2391f2ec0205a46de679e23220490c6da8]
+- lirc Feb 23 2018 [0a42fd2391f2ec0205a46de679e23220490c6da8]
+- libupnp 1.15 -> 1.16
+- upmpdcli 1.12 -> 1.16
 
 Release 6
 ---------
-- Atom: Added gdb, gdbserver, ltrace
-- Atom: Added DVB-C transport stream forwarding to offload Atom CPU.
-	See README-dvb.txt
+- Added gdb, gdbserver, ltrace
+- Added DVB-C transport stream forwarding to offload Atom CPU.
+  See README-dvb.txt
 
 Release 5
 ---------
