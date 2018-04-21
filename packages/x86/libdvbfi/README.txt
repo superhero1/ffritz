@@ -13,6 +13,9 @@ at the same time.
 The intention is to run a forwarder on the destination, which again converts the TS
 to RTP (for example dvblast).
 
+An experimental mode also allows to replace the RTP packet encoding from the original
+library (which seems to work and is also faster ..).
+
 USAGE
 /usr/local/etc/run_cableinfo [libdvbfi.so path] [arguments to cableinfo]
 
@@ -30,8 +33,13 @@ RTP_REDIR<index>=<ip>:<port>[:<redir-ip>:<redir-port>]
 	an RTP stream:
 	<ip> is an IPv4 address, or 0:0:0:0 as a wildcard for all addresses (TS is sent
 	to RTP destination host).
-	<port> is the RTP port number, or -1 for all ports.
+	<port> is
+		- the RTP destination port number, 
+		- or -1 for all ports.
+		- or -2 to activate the experimental mode to encode the stream into RTP 
+		  packets to the requesting host/port.
 
+	UDP/TS mode:
 	If a stream destination matches ip:port the transport stream is by default sent
 	to <ip>:<port>+2. The actual RTP data is no longer sent to <ip>:<port>.
 
@@ -47,6 +55,7 @@ UDP_SIZE
 	(up to n=20, which equals 26320 bytes).
   
 USE CASE: tvheadend and dvblast
+-------------------------------
 - Configure tvheadend to work with 6490 as docuemnted in:
   https://ole-hellmers.de/2017/10/tvheadend-mit-der-fritzbox-6490/
 
@@ -74,6 +83,11 @@ USE CASE: tvheadend and dvblast
 	./fwd 9014 9012 192.168.0.213&
 
 Now tvheadend should be happy getting rtp data from the FB via dvblast.
+
+USE CASE: Experimental RTP encoding for all requesting hosts
+------------------------------------------------------------
+
+	RTP_REDIR0 0.0.0.0
 
 TODO:
 - There is definitely a more elegent solution to directly feed tvheadend with the DVB TS

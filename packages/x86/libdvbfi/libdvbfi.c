@@ -1,6 +1,27 @@
-/* wrapper for libdvbif.so
+/*****************************************************************************
+ * libdvbfi.c DVB-C library wrapper and TS/RTP forwareder
+ *****************************************************************************
+ * Copyright (C) 2018 Felix Schmidt
  *
- */
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject
+ * to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *****************************************************************************/
 
 #include <stdint.h>
 #include <dlfcn.h>
@@ -12,9 +33,14 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include <sys/uio.h>
+#include <sys/time.h>
+
 #include <netdb.h>
 #include <string.h>
 #include <errno.h>
+
+#include "rtp.h"
 
 #if !defined(RTLD_NEXT)
 # define RTLD_NEXT   ((void *) -1l)
@@ -78,6 +104,15 @@ struct lib_ctx
 
 #define WRAP_MAGIC	0x600df00d
 
+#define FWD_NONE	0
+#define FWD_TS		1
+#define FWD_RTP		2
+
+#define TS_SIZE 	1316
+#define PID_SIZE	188
+#define MAX_BLOCKS	20
+#define MAX_PID_PER_TS	(1316/188)
+
 /* wrapper for libdvbif context
  */
 struct wrap_ctx
@@ -90,6 +125,8 @@ struct wrap_ctx
 	int			udp_fwd;
 	struct sockaddr_in 	peer;
 	struct sockaddr_in 	source;
+	uint32_t		seq;
+	uint8_t			ssrc[4];
 
 	uint32_t (*client_cb)(uint32_t, uint32_t, uint32_t, uint32_t);
 	uint32_t 		client_cb_arg;
@@ -254,7 +291,7 @@ void libinit(void)
 
 		t = strtok (NULL, ":");
 
-		redir[num_redir].port = t ?  atoi (t) : -1;
+		redir[num_redir].port = t ?  atoi (t) : -2;
 
 		/* optional: redir IP/port */
 		redir[num_redir].redir_ip = redir[num_redir].ip;
@@ -307,6 +344,17 @@ int match_dest (uint32_t ip, int port, uint32_t *redir_ip, int *redir_port)
 		if (redir[i].ip && (redir[i].ip != ip))
 			continue;
 
+		if (redir[i].port == -2)
+		{
+			if (redir_ip)
+				*redir_ip = ip;
+
+			if (redir_port)
+				*redir_port = port;
+
+			return FWD_RTP;
+		}
+
 		if ((redir[i].port != -1) && (redir[i].port != port))
 			continue;
 
@@ -314,13 +362,15 @@ int match_dest (uint32_t ip, int port, uint32_t *redir_ip, int *redir_port)
 			*redir_ip = redir[i].redir_ip ? redir[i].redir_ip : ip;
 
 		if (redir_port)
+		{
 			*redir_port = (redir[i].redir_port != -1) ? redir[i].redir_port : port + 2;
+		}
 
 
-		return 1;
+		return FWD_TS;
 	}
 
-	return 0;
+	return FWD_NONE;
 }
 
 /* wrappers 
@@ -539,7 +589,7 @@ void udp_init (struct wrap_ctx *ctx)
 		(stream_param->dst_ipv4 >>  0) & 0xff,
 		stream_param->dst_port);
 	
-	ctx->sockfd = socket (AF_INET, SOCK_DGRAM, 0);
+	ctx->sockfd = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
 	memset (&source, 0, sizeof(source));
 	source.sin_family = AF_INET;
@@ -552,8 +602,8 @@ void udp_init (struct wrap_ctx *ctx)
 			source.sin_port, strerror(errno));
 	}
 
-
-	if (match_dest (stream_param->dst_ipv4, stream_param->dst_port, &redir_ip, &redir_port))
+	ctx->udp_fwd = match_dest (stream_param->dst_ipv4, stream_param->dst_port, &redir_ip, &redir_port);
+	if (ctx->udp_fwd)
 	{
 		sprintf (hspec, "%d.%d.%d.%d:%d",
 			(redir_ip >> 24) & 0xff,
@@ -562,14 +612,22 @@ void udp_init (struct wrap_ctx *ctx)
 			(redir_ip >>  0) & 0xff,
 			redir_port);
 
-		ctx->udp_fwd = (set_peer (hspec, &ctx->peer) == 0);
-
-		if (ctx->udp_fwd)
+		if (set_peer (hspec, &ctx->peer))
+		{
+			ctx->udp_fwd = FWD_NONE;
+		}
+		else
 		{
 			printf ("+++ sending UDP TS to %s:%d\n", hspec, redir_port);
+
+			if (connect(ctx->sockfd, (struct sockaddr *) &ctx->peer,
+				(socklen_t) sizeof (ctx->peer)) == -1)
+			{
+				perror ("connect");
+				ctx->udp_fwd = FWD_NONE;
+			}
 		}
 	}
-
 }
 
 #ifndef MIN
@@ -586,9 +644,6 @@ void udp_send (struct wrap_ctx *ctx, void *buffer, int len)
 	{
 		seg = MIN(udp_size, len - offs);
 
-		if (offs > len)
-			break;
-
 		rc = sendto (ctx->sockfd, buffer + offs, seg, MSG_DONTWAIT, (struct sockaddr *) &ctx->peer,
 				   (socklen_t) sizeof (ctx->peer));
 		if (rc == -1)
@@ -600,6 +655,49 @@ void udp_send (struct wrap_ctx *ctx, void *buffer, int len)
 	} while (offs < len);
 }
 
+void rtp_send (struct wrap_ctx *ctx, void *buffer, int len)
+{
+	int		rc;
+	int 		blocks = (len + TS_SIZE - 1) / TS_SIZE;
+	uint8_t		rtp_header[RTP_HEADER_SIZE];
+	struct 		iovec p_iov[2];
+	uint8_t 	*payload = buffer;
+	int 		i, l;
+	struct 		timeval tv;
+	uint64_t 	t;
+
+	l = len;
+
+	rtp_set_hdr (rtp_header);
+	rtp_set_type (rtp_header, RTP_TYPE_TS );
+	rtp_set_ssrc (rtp_header, ctx->ssrc);
+
+	p_iov[0].iov_base = rtp_header;
+	p_iov[0].iov_len = RTP_HEADER_SIZE;
+
+	gettimeofday(&tv, NULL);
+	t = (uint64_t)tv.tv_sec*1000000 + tv.tv_usec;
+
+	for (i = 0; i < blocks; i++)
+	{
+		rtp_set_seqnum (rtp_header, ctx->seq++);
+		rtp_set_timestamp (rtp_header, t * 9 / 100);
+		t += 12;
+
+		p_iov[1].iov_base = payload;
+		p_iov[1].iov_len = MIN(l, TS_SIZE);
+
+		l -= TS_SIZE;
+		payload += TS_SIZE;
+
+		rc = writev (ctx->sockfd, p_iov, 2);
+		if (rc == -1)
+		{
+			perror ("writev");
+		}
+	}
+}
+
 /* Callback provided by cableinfo.
  * Sends out buffer  of size buf_size as up to 20 individual rtp packets.
  * a3 seems to be context data, a4 unknown
@@ -609,14 +707,19 @@ uint32_t my_cableinfo_callback (uint32_t buffer, uint32_t buf_size, uint32_t a3,
 	struct wrap_ctx *ctx = (struct wrap_ctx*)a3;
 	uint32_t rc = 0;
 
-	if (!ctx->udp_fwd)
+	switch (ctx->udp_fwd)
 	{
-		rc = ctx->client_cb (buffer, buf_size, ctx->client_cb_arg, a4);
-	}
-	else
-	{
-		udp_send (ctx, (void*)buffer, buf_size);
-		rc = ctx->client_cb (buffer, 1300, ctx->client_cb_arg, a4);
+		case FWD_NONE:
+			rc = ctx->client_cb (buffer, buf_size, ctx->client_cb_arg, a4);
+			break;
+		case FWD_TS:
+			udp_send (ctx, (void*)buffer, buf_size);
+			rc = ctx->client_cb (buffer, 1300, ctx->client_cb_arg, a4);
+			break;
+		case FWD_RTP:
+			rtp_send (ctx, (void*)buffer, buf_size);
+			rc = ctx->client_cb (buffer, 1300, ctx->client_cb_arg, a4);
+			break;
 	}
 
 	return rc;
