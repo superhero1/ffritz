@@ -6,7 +6,6 @@ Next
 - mpd 0.20.5 -> 0.20.18
 - mpdclient 2.9 -> 2.11
 - Bluetooth btstack Apr 10 2018 [0a42fd2391f2ec0205a46de679e23220490c6da8]
-- lirc Feb 23 2018 [0a42fd2391f2ec0205a46de679e23220490c6da8]
 - libupnp 1.15 -> 1.16
 - upmpdcli 1.12 -> 1.16
 - Option for DVB-C to speed up rtp packet transimission. Make it multi-threaded.
