@@ -40,6 +40,9 @@
 #include <string.h>
 #include <errno.h>
 
+#include <pthread.h>
+
+
 #include "rtp.h"
 
 #if !defined(RTLD_NEXT)
@@ -104,7 +107,7 @@ struct lib_ctx
 
 #define WRAP_MAGIC	0x600df00d
 
-#define FWD_NONE	0
+#define FWD_CABLEINFO	0
 #define FWD_TS		1
 #define FWD_RTP		2
 
@@ -129,7 +132,14 @@ struct wrap_ctx
 	uint8_t			ssrc[4];
 
 	uint32_t (*client_cb)(uint32_t, uint32_t, uint32_t, uint32_t);
-	uint32_t 		client_cb_arg;
+	uint32_t 		client_cb_arg, client_cb_arg4;
+
+	int			write_triggered;
+	pthread_mutex_t		mutex;
+	pthread_cond_t		cv;
+	pthread_t 		ptid;
+	uint8_t 		buffer[0xffff];
+	int			wrlen;
 
 	struct wrap_ctx		*next;
 };
@@ -189,6 +199,9 @@ uint32_t (*p_csock_sockaddr_set_inaddr) (void *a1, struct dstip *dstip, int dstp
 
 uint32_t my_cableinfo_callback (uint32_t dvb_data, uint32_t a2, uint32_t a3, uint32_t a4);
 void udp_init (struct wrap_ctx *ctx);
+void *send_thread(void *arg);
+int wr_trigger(struct wrap_ctx *ctx, uint8_t *buffer, int len);
+int wr_wait(struct wrap_ctx *ctx);
 
 
 
@@ -370,7 +383,7 @@ int match_dest (uint32_t ip, int port, uint32_t *redir_ip, int *redir_port)
 		return FWD_TS;
 	}
 
-	return FWD_NONE;
+	return FWD_CABLEINFO;
 }
 
 /* wrappers 
@@ -410,6 +423,28 @@ struct wrap_ctx *di_alloc_stream(uint32_t a1)
 	printf ("%s(0x%x) -> %p\n", __FUNCTION__, a1, wrap_ctx);
 
 	udp_init (wrap_ctx);
+
+	if (pthread_cond_init (&wrap_ctx->cv, NULL))
+	{
+		perror ("pthread_cond_init");
+		free (wrap_ctx);
+		return NULL;
+	}
+
+	if (pthread_mutex_init (&wrap_ctx->mutex, NULL))
+	{
+		perror ("pthread_cond_init");
+		free (wrap_ctx);
+		return NULL;
+	}
+
+
+	if (pthread_create (&wrap_ctx->ptid, NULL, send_thread, (void*)wrap_ctx))
+	{
+		perror ("pthread_create");
+		free (wrap_ctx);
+		return NULL;
+	}
 
 	return wrap_ctx;
 }
@@ -455,6 +490,8 @@ uint32_t di_free_stream(struct wrap_ctx *ctx)
 	else
 	{
 		rc = p_di_free_stream (ctx->lib_ctx);
+
+		pthread_cancel (ctx->ptid);
 
 		close (ctx->sockfd);
 		free (ctx);
@@ -614,7 +651,7 @@ void udp_init (struct wrap_ctx *ctx)
 
 		if (set_peer (hspec, &ctx->peer))
 		{
-			ctx->udp_fwd = FWD_NONE;
+			ctx->udp_fwd = FWD_CABLEINFO;
 		}
 		else
 		{
@@ -624,7 +661,7 @@ void udp_init (struct wrap_ctx *ctx)
 				(socklen_t) sizeof (ctx->peer)) == -1)
 			{
 				perror ("connect");
-				ctx->udp_fwd = FWD_NONE;
+				ctx->udp_fwd = FWD_CABLEINFO;
 			}
 		}
 	}
@@ -634,6 +671,7 @@ void udp_init (struct wrap_ctx *ctx)
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 #endif
 
+/* send TS as UDP frame */
 void udp_send (struct wrap_ctx *ctx, void *buffer, int len)
 {
 	int rc;
@@ -655,18 +693,15 @@ void udp_send (struct wrap_ctx *ctx, void *buffer, int len)
 	} while (offs < len);
 }
 
+/* Encode TS as RTP (somewhat) and send */
 void rtp_send (struct wrap_ctx *ctx, void *buffer, int len)
 {
 	int		rc;
-	int 		blocks = (len + TS_SIZE - 1) / TS_SIZE;
+	int		offs, seg;
 	uint8_t		rtp_header[RTP_HEADER_SIZE];
 	struct 		iovec p_iov[2];
-	uint8_t 	*payload = buffer;
-	int 		i, l;
 	struct 		timeval tv;
 	uint64_t 	t;
-
-	l = len;
 
 	rtp_set_hdr (rtp_header);
 	rtp_set_type (rtp_header, RTP_TYPE_TS );
@@ -678,23 +713,69 @@ void rtp_send (struct wrap_ctx *ctx, void *buffer, int len)
 	gettimeofday(&tv, NULL);
 	t = (uint64_t)tv.tv_sec*1000000 + tv.tv_usec;
 
-	for (i = 0; i < blocks; i++)
+	offs = 0;
+	do
 	{
+		seg = MIN(udp_size, len - offs);
+
 		rtp_set_seqnum (rtp_header, ctx->seq++);
 		rtp_set_timestamp (rtp_header, t * 9 / 100);
 		t += 12;
 
-		p_iov[1].iov_base = payload;
-		p_iov[1].iov_len = MIN(l, TS_SIZE);
-
-		l -= TS_SIZE;
-		payload += TS_SIZE;
+		p_iov[1].iov_base = buffer + offs;
+		p_iov[1].iov_len = seg;
 
 		rc = writev (ctx->sockfd, p_iov, 2);
 		if (rc == -1)
 		{
 			perror ("writev");
 		}
+		offs += seg;
+	} while (offs < len);
+}
+
+/* experimental */
+void rtp_send2 (struct wrap_ctx *ctx, void *buffer, int len)
+{
+	int		rc;
+	int		offs, seg;
+	uint8_t		rtp_headers[RTP_HEADER_SIZE*20];
+	uint8_t		*rtp_header = rtp_headers;
+	struct 		iovec p_iov[40];
+	uint8_t 	*payload = buffer;
+	struct 		timeval tv;
+	uint64_t 	t;
+	int i = 0;
+
+	gettimeofday(&tv, NULL);
+	t = (uint64_t)tv.tv_sec*1000000 + tv.tv_usec;
+
+	offs = 0;
+	do
+	{
+		seg = MIN(udp_size, len - offs);
+
+		rtp_set_hdr (rtp_header);
+		rtp_set_type (rtp_header, RTP_TYPE_TS );
+		rtp_set_ssrc (rtp_header, ctx->ssrc);
+		rtp_set_seqnum (rtp_header, ctx->seq++);
+		rtp_set_timestamp (rtp_header, t * 9 / 100);
+		p_iov[i].iov_base = rtp_header;
+		p_iov[i++].iov_len = RTP_HEADER_SIZE;
+
+		t += 12;
+		rtp_header += RTP_HEADER_SIZE;
+
+		p_iov[i].iov_base = payload + offs;
+		p_iov[i++].iov_len = seg;
+
+		offs += seg;
+	} while (offs < len);
+
+	rc = writev (ctx->sockfd, p_iov, i);
+	if (rc == -1)
+	{
+		perror ("writev");
 	}
 }
 
@@ -707,19 +788,21 @@ uint32_t my_cableinfo_callback (uint32_t buffer, uint32_t buf_size, uint32_t a3,
 	struct wrap_ctx *ctx = (struct wrap_ctx*)a3;
 	uint32_t rc = 0;
 
-	switch (ctx->udp_fwd)
+	ctx->client_cb_arg4 = a4;
+
+	/* Let all send methods be handled in a dedicated thread, including the original
+	 * callback back to the cableinfo thread.
+	 * This seems to work, although we have to fake the return code.
+	 */
+#if 0
+	if (ctx->udp_fwd == FWD_CABLEINFO)
 	{
-		case FWD_NONE:
-			rc = ctx->client_cb (buffer, buf_size, ctx->client_cb_arg, a4);
-			break;
-		case FWD_TS:
-			udp_send (ctx, (void*)buffer, buf_size);
-			rc = ctx->client_cb (buffer, 1300, ctx->client_cb_arg, a4);
-			break;
-		case FWD_RTP:
-			rtp_send (ctx, (void*)buffer, buf_size);
-			rc = ctx->client_cb (buffer, 1300, ctx->client_cb_arg, a4);
-			break;
+		rc = ctx->client_cb (buffer, buf_size, ctx->client_cb_arg, a4);
+	}
+	else
+#endif
+	{
+		wr_trigger (ctx, (void*)buffer, buf_size);
 	}
 
 	return rc;
@@ -747,4 +830,80 @@ uint32_t csock_sockaddr_set_inaddr (void *a1, struct dstip *dstip, int dstport, 
 	dstip->dstip = saved_dstip;
 
 	return rc;
+}
+
+int wr_wait(struct wrap_ctx *ctx)
+{
+	int rc = 0;
+
+	pthread_mutex_lock (&ctx->mutex);
+
+	while (!ctx->write_triggered)
+	{
+		if (pthread_cond_wait (&ctx->cv, &ctx->mutex))
+		{
+			perror ("pthread_cond_wait");
+			ctx->write_triggered = 1;
+			rc = -1;
+		}
+	}
+
+	pthread_mutex_unlock (&ctx->mutex);
+
+	return rc;
+}
+
+int wr_trigger(struct wrap_ctx *ctx, uint8_t *buffer, int len)
+{
+	/* If send_thread isn't complete yet, just drop the whole frame for now
+	 */
+	if (ctx->write_triggered)
+		return -1;
+
+	pthread_mutex_lock (&ctx->mutex);
+
+	memcpy (ctx->buffer, buffer, len);
+	ctx->wrlen = len;
+	ctx->write_triggered = 1;
+
+	pthread_cond_signal (&ctx->cv);
+
+	pthread_mutex_unlock (&ctx->mutex);
+
+	return 0;
+}
+
+void *send_thread(void *arg)
+{
+	struct wrap_ctx *ctx = arg;
+
+	while (1)
+	{
+		if (wr_wait (ctx))
+			return NULL;
+
+		switch (ctx->udp_fwd)
+		{
+			case FWD_CABLEINFO:
+				ctx->client_cb ((uint32_t)ctx->buffer, ctx->wrlen,
+					ctx->client_cb_arg, ctx->client_cb_arg4);
+				break;
+				
+			case FWD_TS:
+				udp_send (ctx, (void*)ctx->buffer, ctx->wrlen);
+				ctx->client_cb ((uint32_t)ctx->buffer, 1300,
+					ctx->client_cb_arg, ctx->client_cb_arg4);
+				break;
+
+			case FWD_RTP:
+				rtp_send (ctx, (void*)ctx->buffer, ctx->wrlen);
+				ctx->client_cb ((uint32_t)ctx->buffer, 1300,
+					ctx->client_cb_arg, ctx->client_cb_arg4);
+				break;
+		}
+
+		ctx->write_triggered = 0;
+	}
+
+	return NULL;
 }

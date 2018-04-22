@@ -5,16 +5,24 @@ This library has been written as an attempt to speed up streaming of HD channels
 the FritzBox 6490.
 
 It provides a wrapper to the AVM libdvbif.so library used by the cableinfo daemon.
-The purpose is to stop sending RTP packets to the actual stream destination, and
-directly send the DVB-C transport stream (TS) to an application which can deal with it.
-For the FrtizBox this greatly reduces the CPU load and allows sending more HD streams
-at the same time.
+There are three ways to increase speed, from fastest to slowest:
 
+1. Instead of sending RTP data, directly send the TS as UDP fragment
+2. Use a rudimentary but faster method to generate RTP packets
+3. Use original "cableinfo code" (but multithreaded, which is still faster).
+
+Methods 1 and 2 support large UDP frames (up to 26320 bytes). It depends on the
+receiver whether this works. For example
+
+- dvblast supports large UDP TS fragments
+- VLC supports large RTP fragments
+- tvheadend only supports the default RTP frame size (1516)
+	
+The purpose of method 1 is to stop sending RTP packets to the actual stream destination,
+and directly send the DVB-C transport stream (TS) to an application which can deal with
+it.
 The intention is to run a forwarder on the destination, which again converts the TS
-to RTP (for example dvblast).
-
-An experimental mode also allows to replace the RTP packet encoding from the original
-library (which seems to work and is also faster ..).
+to RTP (for example dvblast) and sends it to the original destination/port.
 
 USAGE
 /usr/local/etc/run_cableinfo [libdvbfi.so path] [arguments to cableinfo]
@@ -54,8 +62,8 @@ UDP_SIZE
 	If the receiver supports it, this can be increased by factor n
 	(up to n=20, which equals 26320 bytes).
   
-USE CASE: tvheadend and dvblast
--------------------------------
+USE CASE: UDP TS forwarding with tvheadend and dvblast
+------------------------------------------------------
 - Configure tvheadend to work with 6490 as docuemnted in:
   https://ole-hellmers.de/2017/10/tvheadend-mit-der-fritzbox-6490/
 
@@ -69,9 +77,9 @@ USE CASE: tvheadend and dvblast
   RTP port number + 2:
 
 	RTP_REDIR0 192.168.0.210:-1
-	RTP_REDIR0 192.168.0.211:-1
-	RTP_REDIR0 192.168.0.212:-1
-	RTP_REDIR0 192.168.0.213:-1
+	RTP_REDIR1 192.168.0.211:-1
+	RTP_REDIR2 192.168.0.212:-1
+	RTP_REDIR3 192.168.0.213:-1
 	UDP_SIZE 26320
 
 - Run the provided fwd script on the host running tvheadend for all of those ports,
@@ -84,11 +92,25 @@ USE CASE: tvheadend and dvblast
 
 Now tvheadend should be happy getting rtp data from the FB via dvblast.
 
-USE CASE: Experimental RTP encoding for all requesting hosts
+USE CASE: Faster RTP encoding for all requesting hosts
 ------------------------------------------------------------
 
 	RTP_REDIR0 0.0.0.0
 
+optionally:
+
+	UDP_SIZE 26320
+
+if the receiver (e.g. VLC) supports it.
+
+USE CASE: Just run the patched cablieinfo to make it multi-threaded
+-------------------------------------------------------------------
+
+	RTP_REDIR0 1.1.1.1
+
+This is a dummy entry to have the modified cableinfo started at all.
+
+
 TODO:
-- There is definitely a more elegent solution to directly feed tvheadend with the DVB TS
-- FB still stutters when there is more than one service used on one tuner (e.g. 2 HD channels)
+- The RTP packet generation is quite rudimentary. I can't guarantee it will work with
+  all clients (tested VLC and tvheadend).
