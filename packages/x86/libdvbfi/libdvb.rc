@@ -9,7 +9,11 @@
 #RTP_REDIR3 0.0.0.0:-1
 #...
 
-# By default, RTP packets of size 1316 are sent.
+# OR: Use our own method to send out RTP packets to all hosts:
+#
+#RTP_REDIR0 0.0.0.0
+
+# By default, RTP/UDP packets of size 1316 are sent.
 # If the receiver supports larger mss, a multiple of 1316 can be given here
 # (up to 1316*20=26320).
 #
