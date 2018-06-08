@@ -12,7 +12,8 @@ SUDO	= sudo
 #
 # The original firmware tarball
 #
-ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.87.image
+ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.83.image
+ORIG=$(TOPDIR)/../FRITZ.Box_6590_Cable_LabBETA.de-en-es-it-fr-pl.148.06.110-56615.image
 
 # Works only for a specific release
 #
@@ -45,7 +46,9 @@ ATOM_MODFILES = $(shell find atom/mod/ -type f -o -type d)
 
 ###############################################################################################
 ###############################################################################################
-FWVER=$(shell echo $(ORIG) | sed -e 's/.*\(..\...\)\.image/\1/')
+FWVER=$(shell echo $(ORIG) | sed -e 's/.*\([0-9]*.\.[0-9]*\).*\.image/\1/')
+#FWVER=07.00
+
 FWNUM=$(subst .,,$(FWVER))
 
 ifeq ($(FWVER),)
@@ -173,6 +176,7 @@ $(RELDIR)/fb6490_$(FWVER)-$(VERSION).tar: armfs atomfs $(RELDIR)
 	@cp arm/filesystem.image $(RELDIR)/var/remote/var/tmp/filesystem.image
 	@cp arm/mod/usr/local/etc/switch_bootbank $(RELDIR)/var
 	@cp atom/filesystem.image $(RELDIR)/var/remote/var/tmp/x86/filesystem.image
+	@cd $(RELDIR); patch -p0 < ../install.p
 	@cd $(RELDIR); $(TAR) cf fb6490_$(FWVER)-$(VERSION).tar var
 	@rm -rf $(RELDIR)/var
 	@echo

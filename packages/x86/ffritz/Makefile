@@ -106,6 +106,7 @@ install: $(BINFILES) $(ETCFILES) $(INSTDIRS) modules $(shell test -d $(BR_TGT_LI
 	    for l in `ls | xargs file | grep ELF | sed -e 's/:.*//'`; do\
 		strip $$l;\
 	    done
+	cp -ar $(BR_TGT)/usr/share/terminfo $(INSTDIR)/share
 	
 clean: 
 	rm -rf output $(IMAGE) ffimage.bin

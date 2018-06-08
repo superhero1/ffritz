@@ -1,8 +1,12 @@
 Change history of application package
 =====================================
 
-Next
+NEXT
 ----
+- NO application package for FritzOS7 yet
+
+Release 7b(eta)
+---------------
 - mpd 0.20.5 -> 0.20.18
 - mpdclient 2.9 -> 2.11
 - Bluetooth btstack Apr 10 2018 [0a42fd2391f2ec0205a46de679e23220490c6da8]
@@ -70,6 +74,16 @@ TODO
 
 Change history of ffritz core integration:
 ==========================================
+
+NEXT
+------------------------------
+- Draft support for Fritz!OS 7
+	- New buildroot toolchain -> new uClibc etc. ->
+		all binaries incompatible to previous versions!
+	- no application package yet
+	- patch var/install to allow 6590 image installation on 6490
+
+
 
 release 18
 -------------------------------

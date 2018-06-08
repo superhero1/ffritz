@@ -16,7 +16,7 @@ base:	$(BASE_PACKAGES)
 
 base-install:
 	rm -rf $(STAGEDIR)
-	make -e -C buildroot/build/output/build/openssl-1.0.1e install INSTALL_PREFIX=$(STAGEDIR)
+	make -e -C buildroot/build/output/build/openssl-1.0.2h install INSTALL_PREFIX=$(STAGEDIR)
 	mkdir -p $(STAGEDIR)/usr/lib/openssl/exec
 	mkdir -p $(STAGEDIR)/usr/lib/openssl/lib
 	mv $(STAGEDIR)/usr/lib/*so*  $(STAGEDIR)/usr/lib/openssl/lib
@@ -26,7 +26,7 @@ base-install:
 #	make -C openssh install DESTDIR=$(STAGEDIR)
 #	mv $(STAGEDIR)/etc/openssh $(STAGEDIR)/etc/openssh.dfl
 #	mkdir -p $(STAGEDIR)/var/empty
-	cp buildroot/build/output/build/busybox-1.21.0/busybox $(STAGEDIR)/usr/bin/busybox-i686
+	cp buildroot/build/output/build/busybox-1.24.2/busybox $(STAGEDIR)/usr/bin/busybox-i686
 	mv $(STAGEDIR)/usr/local/bin/* $(STAGEDIR)/usr/local/sbin/* $(STAGEDIR)/usr/bin
 	rm -rf $(STAGEDIR)/usr/local $(STAGEDIR)/usr/share $(STAGEDIR)/usr/include $(STAGEDIR)/usr/lib/pkgconfig  $(STAGEDIR)/usr/lib/*.a
 	strip $(STAGEDIR)/usr/bin/*

@@ -20,6 +20,7 @@ TOPDIR=$(shell pwd)
 TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
 DESTDIR	    = $(TOPDIR)/output
 TGTLIB	    = ../../../arm/squashfs-root/lib
+TGTLIB	    = ../../../tmp/squashfs-root/lib/
 
 export PATH := $(TOOLCHAIN):$(PATH)
 
@@ -28,7 +29,7 @@ export PATH := $(TOOLCHAIN):$(PATH)
 TARGETS	    = mdio-release pswtool
 
 ## No longer supported in 6.8
-#TARGETS    += athtool
+TARGETS    += athtool
 
 all:	$(TGTLIB) $(TARGETS)
 
