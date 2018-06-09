@@ -63,7 +63,7 @@ $(IMAGE): ffimage.bin
 	cp ../../../*.md .
 	cp ../libdvbfi/README.txt README-dvb.txt 
 	cp ../libdvbfi/fwd .
-	tar cf $(IMAGE) ffimage.bin ffimage.sha256sum *.md README-dvb.txt fwd
+	tar cf $(IMAGE) ffimage.bin ffimage.sha256sum *.md README-dvb.txt fwd uclib-version
 	@echo
 	@echo +++ DONE +++
 	@echo "Atom image file: $(TOPDIR)/$(IMAGE)"
@@ -108,6 +108,7 @@ install: $(BINFILES) $(ETCFILES) $(INSTDIRS) modules $(shell test -d $(BR_TGT_LI
 		strip $$l;\
 	    done
 	cp -ar $(BR_TGT)/usr/share/terminfo $(INSTDIR)/share
+	ls ${BR_TGT}/lib/libuClibc-* | sed -e 's/.*-\([0-9]\).*/\1/' > uclib-version || exit 1
 	
 clean: 
 	rm -rf output $(IMAGE) ffimage.bin

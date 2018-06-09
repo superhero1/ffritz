@@ -7,13 +7,21 @@ export FFINSTDIR=/usr/local
 export FFRITZ_HOME=/var/media/ftp/ffritz
 export FFLOG=/var/log/ffritz.log
 
+UCLIB_VERSION=`ls /lib/libuClibc-* | sed -e 's/.*-\([0-9]\).*/\1/'`
+
+if [ $UCLIB_VERSION -gt 0 ]; then
+	REL=-${UCLIB_VERSION}
+fi
+
 DATADIR=$FFRITZ_HOME/data
 
 NVRAM_FILE=$DATADIR/ffstore.dat
-BINFILE=$DATADIR/ffimage.bin
+BINFILE=$DATADIR/ffimage${REL}.bin
 PRIVKEY=/var/flash/websrv_ssl_key.pem
 
 NVRAM_COPY=/var/tmp/ffnvram
+
+CSUMFILE=${NVRAM_COPY}/ffimage${REL}.sha256
 
 ## Check for presence of squashfs overlay, verify sha256sum 
 ##
@@ -28,8 +36,8 @@ verify_image()
 	fi
 
 ### If there is a sh256 digest stored in nvram, verify image against it
-	if [ -r $NVRAM_COPY/ffimage.sha256 ]; then
-		FSIG=`cat $NVRAM_COPY/ffimage.sha256`
+	if [ -r ${CSUMFILE} ]; then
+		FSIG=`cat ${CSUMFILE}`
 		VSIG=`openssl dgst -sha256 $BINFILE | sed -e 's/.* //'`
 
 		if [ "$FSIG" != "$VSIG" ]; then
