@@ -12,12 +12,11 @@ SUDO	= sudo
 #
 # The original firmware tarball
 #
-ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.83.image
-ORIG=$(TOPDIR)/../FRITZ.Box_6590_Cable_LabBETA.de-en-es-it-fr-pl.148.06.110-56615.image
+ORIG=$(TOPDIR)/../FRITZ.Box_6590_Cable.de-en-es-it-fr-pl.148.07.00.image
 
 # Works only for a specific release
 #
-URL=http://download.avm.de/firmware/6490/78434061/$(shell basename $(ORIG))
+URL=http://download.avm.de/firmware/6590/96980342/$(shell basename $(ORIG))
 
 # Keep original rootfs for diff?
 # sudo dirdiff arm/orig/ arm/squashfs-root/

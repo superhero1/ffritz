@@ -22,6 +22,7 @@ BINFILES   += $(BR_TGT)/../host/usr/i686-buildroot-linux-uclibc/sysroot/usr/bin/
 BINFILES   += $(BR_TGT_SBIN)/openvpn
 #BINFILES   += $(BR_TGT_BIN)/gdb 
 BINFILES   += $(BR_TGT_BIN)/gdbserver
+BINFILES   += $(BR_TGT_BIN)/setpci $(BR_TGT_BIN)/lspci
 BINFILES   += ../shairport/build/shairport
 ETCFILES    = etc/ffritz-env.sh etc/mpd.conf etc/runmpd etc/ff_atom_startup etc/ffservices etc/run_usbplay etc/run_shairport etc/mkusers
 ETCFILES   += etc/run_lircd etc/lirc_options_dfl.conf etc/upmpdcli.conf-dist etc/run_bluetooth
@@ -38,8 +39,10 @@ ifeq ($(INSTDIR),)
     INSTDIR=$(STAGEDIR)
 endif
 
-SUBDIRS	    = ../buildroot ../libmaru ../shairport ../libmpdclient ../mpc ../lirc ../libupnpp ../jsoncpp ../upmpdcli ../libnfs ../nfs ../mpd ../bt ../libdvbfi src
+SUBDIRS	    = ../buildroot ../libmaru ../shairport ../libmpdclient ../mpc ../lirc ../libupnpp ../jsoncpp ../upmpdcli ../libnfs ../nfs ../mpd ../bt src
 INSTDIRS    = ../lirc/install ../libupnpp/install ../upmpdcli/install ../nfs/install ../bt/install ../libdvbfi/install
+#SUBDIRS    += ../libdvbfi
+#INSTDIRS   += ../libdvbfi/install
 
 .PHONY:	$(SUBDIRS) $(IMAGE)
 
@@ -61,8 +64,8 @@ $(INSTDIRS):
 $(IMAGE): ffimage.bin
 	sha256sum ffimage.bin | sed -e 's/ .*//' > ffimage.sha256sum
 	cp ../../../*.md .
-	cp ../libdvbfi/README.txt README-dvb.txt 
-	cp ../libdvbfi/fwd .
+#	cp ../libdvbfi/README.txt README-dvb.txt 
+#	cp ../libdvbfi/fwd .
 	tar cf $(IMAGE) ffimage.bin ffimage.sha256sum *.md README-dvb.txt fwd uclib-version
 	@echo
 	@echo +++ DONE +++

@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Buildroot 2016.05-g18c64c1 Configuration
+# Buildroot 2016.05-g7683b20 Configuration
 #
 BR2_HAVE_DOT_CONFIG=y
 BR2_HOST_GCC_AT_LEAST_4_6=y
@@ -878,7 +878,7 @@ BR2_PACKAGE_DBUS=y
 # BR2_PACKAGE_OPENOCD is not set
 # BR2_PACKAGE_OPENPOWERLINK is not set
 # BR2_PACKAGE_PARTED is not set
-# BR2_PACKAGE_PCIUTILS is not set
+BR2_PACKAGE_PCIUTILS=y
 # BR2_PACKAGE_PICOCOM is not set
 # BR2_PACKAGE_POWERTOP is not set
 # BR2_PACKAGE_PPS_TOOLS is not set
