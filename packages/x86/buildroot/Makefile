@@ -13,7 +13,7 @@ arch-patches:	.gcc.patch.applied
 	@diff -qN mod/config build/.config || cp mod/config build/.config
 #	@diff -qN mod/uClibc-0.9.33.config build/toolchain/uClibc/uClibc-0.9.33.config || cp mod/uClibc-0.9.33.config build/toolchain/uClibc/uClibc-0.9.33.config
 #	@diff -qN mod/libusb.mk build/package/libusb/libusb.mk || cp mod/libusb.mk build/package/libusb/libusb.mk
-#	@diff -qN mod/busybox-config build/package/busybox/busybox-1.21.x.config || cp mod/busybox-config build/package/busybox/busybox-1.21.x.config
+	@diff -qN mod/busybox-config build/package/busybox/busybox.config || cp mod/busybox-config build/package/busybox/busybox.config
 #	@diff -qN mod/gmp.mk build/package/gmp/gmp.mk || cp mod/gmp.mk build/package/gmp/gmp.mk
 #	@diff -qN mod/ltrace.mk build/package/ltrace/ltrace.mk || cp mod/ltrace.mk build/package/ltrace/ltrace.mk
 	
