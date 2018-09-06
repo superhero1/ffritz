@@ -20,7 +20,7 @@ FILE	= $(DLDIR)/$(shell basename $(URL))
 all:	build/config.status
 	@make -C build PROGRAMS="dropbear dropbearkey dropbearconvert dbclient scp" SCPPROGRESS=1 CPPFLAGS=-DUSE_DEV_PTMX
 
-install:
+install: all
 	@make -C build PROGRAMS="dropbear dropbearkey dropbearconvert dbclient scp" SCPPROGRESS=1 install DESTDIR=$(DESTDIR)
 
 $(FILE):

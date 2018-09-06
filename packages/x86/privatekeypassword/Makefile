@@ -18,7 +18,7 @@ REPO	= $(DLDIR)/privatekeypassword
 .PHONY:	build
 
 all:	build/Makefile
-	make -C build CC=$(CROSS_COMPILE)gcc
+	make -C build/src CC=$(CROSS_COMPILE)gcc
 
 build/Makefile: $(REPO)
 	rm -rf build
@@ -35,11 +35,11 @@ install: $(DFILE)
 $(DFILE):	$(BFILE)
 	mkdir -p $(DESTDIR)/bin
 	mkdir -p $(DESTDIR)/lib
-	cp -a build/privatekeypassword $(DESTDIR)/bin
-	cp -a build/libprivatekeypassword.so $(DESTDIR)/lib
+	cp -a build/src/privatekeypassword $(DESTDIR)/bin
+	cp -a build/src/libprivatekeypassword.so $(DESTDIR)/lib
 
 $(BFILE):	build/Makefile
-	make -C build
+	make -C build/src CC=$(CROSS_COMPILE)gcc
 
 clean:
 	rm -rf build output
