@@ -2,7 +2,7 @@
 # Use AVM toolchain by default
 #
 ifeq ($(BUILDROOT),)
-BUILDROOT   = $(shell cd ../avm/build/prefix_sehr_sehr_sehr_sehr_sehr_sehr_sehr_sehr_sehr_lang_buildroot-2013.05/; pwd)
+BUILDROOT   = $(shell cd ../buildroot/build; pwd)
 endif
 
 ifeq ($(BUILDROOT),)

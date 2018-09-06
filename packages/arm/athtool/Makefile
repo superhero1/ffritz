@@ -2,7 +2,7 @@
 # Use AVM toolchain by default
 #
 ifeq ($(BUILDROOT),)
-BUILDROOT   = $(shell cd ../avm/build/prefix_sehr_sehr_sehr_sehr_sehr_sehr_sehr_sehr_sehr_lang_buildroot-2013.05/; pwd)
+BUILDROOT   = $(shell cd ../buildroot/build; pwd)
 endif
 
 ifeq ($(BUILDROOT),)
@@ -20,7 +20,7 @@ TOPDIR=$(shell pwd)
 TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
 DESTDIR	    = $(TOPDIR)/output
 TGTLIB	    = ../../../arm/squashfs-root/lib
-TGTLIB	    = ../../../tmp/squashfs-root/lib/
+#TGTLIB	    = ../../../tmp/squashfs-root/lib/
 
 export PATH := $(TOOLCHAIN):$(PATH)
 

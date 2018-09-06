@@ -12,7 +12,7 @@
 TOPDIR	    = $(shell pwd)
 PKGDIR	    = $(shell cd ..; pwd)
 
-BR_OUTPUT   = $(PKGDIR)/avm/build/prefix_sehr_sehr_sehr_sehr_sehr_sehr_sehr_sehr_sehr_lang_buildroot-2013.05/output
+BR_OUTPUT   = $(PKGDIR)/buildroot/build/output
 
 BR_TGT	    = $(BR_OUTPUT)/target
 BR_TGT_LIB  = $(BR_TGT)/usr/lib
@@ -37,7 +37,8 @@ ifeq ($(INSTDIR),)
     INSTDIR=$(STAGEDIR)
 endif
 
-SUBDIRS	    = ../avm ../athtool
+SUBDIRS	    = ../buildroot
+#SUBDIRS	   += ../athtool
 
 .PHONY:	$(SUBDIRS)
 
@@ -70,7 +71,7 @@ install: $(SUBDIRS) $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls 
 	cp -a $(BINFILES) $(INSTDIR)/bin
 	cp -a  $(shell ls  $(BR_TGT_LIB)/lib*so*) $(INSTDIR)/lib
 	cp $(ETCFILES) $(INSTDIR)/etc
-	make -C ../athtool install INSTDIR=$(INSTDIR)
+#	make -C ../athtool install INSTDIR=$(INSTDIR)
 	cp -a bin/ffwrap $(INSTDIR)/bin/exec
 	cd $(INSTDIR)/bin; \
 	    for f in `ls | xargs file | grep ELF | sed -e 's/:.*//'`; do\

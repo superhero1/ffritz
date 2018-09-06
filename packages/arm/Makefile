@@ -6,9 +6,9 @@
 #
 MODDIR=$(shell cd ../../arm/mod; pwd)
 
-SUBDIRS = avm dropbear ffritz
+SUBDIRS = buildroot dropbear ffritz
 
-BASE_SUBDIRS = avm dropbear
+BASE_SUBDIRS = buildroot dropbear
 
 .PHONY:	$(SUBDIRS)
 
