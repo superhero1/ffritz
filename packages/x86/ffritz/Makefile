@@ -66,7 +66,8 @@ $(IMAGE): ffimage.bin
 	cp ../../../*.md .
 #	cp ../libdvbfi/README.txt README-dvb.txt 
 #	cp ../libdvbfi/fwd .
-	tar cf $(IMAGE) ffimage.bin ffimage.sha256sum *.md README-dvb.txt fwd uclib-version
+#	tar cf $(IMAGE) ffimage.bin ffimage.sha256sum *.md README-dvb.txt fwd uclib-version
+	tar cf $(IMAGE) ffimage.bin ffimage.sha256sum *.md uclib-version
 	@echo
 	@echo +++ DONE +++
 	@echo "Atom image file: $(TOPDIR)/$(IMAGE)"
