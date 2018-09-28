@@ -6,7 +6,7 @@ NEXT (fritzos7 branch)
 - Application package version 8b (untested)
  - TODO
   - gdb (does not compile)
-  - cableinfo wrapper (crashes)
+  - lircd
 
 Release 7b(eta)
 ---------------
@@ -83,11 +83,8 @@ NEXT
 - Draft support for Fritz!OS 7
 	- New buildroot toolchain -> new uClibc etc. ->
 		all binaries incompatible to previous versions
-	- patch var/install to allow 6590 image installation on 6490
-	  - No WLAN
+	- patch var/install to allow 6590 image installation on 6490 (WLAN wont work!)
 	- Distinct installed application package for uclibc 0.x and 1.x
-
-
 
 release 18
 -------------------------------

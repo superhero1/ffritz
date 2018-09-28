@@ -40,9 +40,9 @@ ifeq ($(INSTDIR),)
 endif
 
 SUBDIRS	    = ../buildroot ../libmaru ../shairport ../libmpdclient ../mpc ../lirc ../libupnpp ../jsoncpp ../upmpdcli ../libnfs ../nfs ../mpd ../bt src
-INSTDIRS    = ../lirc/install ../libupnpp/install ../upmpdcli/install ../nfs/install ../bt/install ../libdvbfi/install
-#SUBDIRS    += ../libdvbfi
-#INSTDIRS   += ../libdvbfi/install
+INSTDIRS    = ../lirc/install ../libupnpp/install ../upmpdcli/install ../nfs/install ../bt/install
+SUBDIRS    += ../libdvbfi
+INSTDIRS   += ../libdvbfi/install
 
 .PHONY:	$(SUBDIRS) $(IMAGE)
 
@@ -64,10 +64,10 @@ $(INSTDIRS):
 $(IMAGE): ffimage.bin
 	sha256sum ffimage.bin | sed -e 's/ .*//' > ffimage.sha256sum
 	cp ../../../*.md .
-#	cp ../libdvbfi/README.txt README-dvb.txt 
-#	cp ../libdvbfi/fwd .
-#	tar cf $(IMAGE) ffimage.bin ffimage.sha256sum *.md README-dvb.txt fwd uclib-version
-	tar cf $(IMAGE) ffimage.bin ffimage.sha256sum *.md uclib-version
+	cp ../libdvbfi/README.txt README-dvb.txt 
+	cp ../libdvbfi/fwd .
+	tar cf $(IMAGE) ffimage.bin ffimage.sha256sum *.md README-dvb.txt fwd uclib-version
+#	tar cf $(IMAGE) ffimage.bin ffimage.sha256sum *.md uclib-version
 	@echo
 	@echo +++ DONE +++
 	@echo "Atom image file: $(TOPDIR)/$(IMAGE)"

@@ -5,7 +5,7 @@ You still need the original image to build a modified install image, and you
 need a way to upgrade.  I'm assuming you already have telnet/ssh access to
 the box by either already running a modified image or having gained access.
 
-It _might_ work on the FritzBox 6590, but i have never tested it.
+It is known to work on 6590 as well, although i do not test it.
 
 There are some known methods how to perform an initial firmware update
 from a box that runs an original image.
@@ -21,6 +21,8 @@ rebuild them is located below packages.
 
 Have Fun,
 <f/e/s/c/2/0/0/0/@/g/m/a/i/l/./c/o/m>
+
+NOTE: This is the FrizOS 7 branch, which is still beta.
 
 Usage
 =====
@@ -42,6 +44,8 @@ To rebuild these binaries:
 
 If you want to build an image base on a different original firmware, edit
 the ORIG definition in the Makefile.
+
+The same applies for building an image for FritzBox 6590, edit the Makefile.
 
 IMPORTANT NOTE
 --------------
