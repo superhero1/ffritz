@@ -117,13 +117,6 @@ struct lib_ctx
 #define MAX_BLOCKS	20
 #define MAX_PID_PER_TS	(1316/188)
 
-/* max. size of TS segment provided in one iteration */
-#define PID_FRAME_SIZE	(MAX_BLOCKS*TS_SIZE)
-#define NUM_BUFFERS	4
-
-/* cache aligned size of PID_FRAME_SIZE */
-#define PID_BUFFER_SIZE	((PID_FRAME_SIZE + 0x3f) & ~0x3f)
-
 /* wrapper for libdvbif context
  */
 struct wrap_ctx
@@ -142,12 +135,14 @@ struct wrap_ctx
 	uint32_t (*client_cb)(uint32_t, uint32_t, uint32_t, uint32_t);
 	uint32_t 		client_cb_arg, client_cb_arg4;
 
-	uint32_t		head, tail;
+	int			write_triggered;
 	pthread_mutex_t		mutex;
 	pthread_cond_t		cv;
 	pthread_t 		ptid;
-	uint8_t 		*buffer;
-	int			wrlen[NUM_BUFFERS];
+	uint8_t 		buffer[0xffff];
+	int			wrlen;
+
+	struct wrap_ctx		*next;
 };
 
 /* destinatio IP structure passed to csock_sockaddr_set_inaddr()
@@ -158,7 +153,7 @@ struct dstip
 	uint32_t dstip;
 };
 
-/* simple list containing forwarding rules
+/* simple list containing all RTP ports currently used (which are supposed to be blocked)
  */
 #define MAX_REDIR 20
 struct redir
@@ -200,6 +195,7 @@ uint32_t (*p_di_spectrum_progress)(uint32_t * a1);
 uint32_t (*p_di_spectrum_start)(uint32_t a1, uint32_t a2, int64_t a3, uint32_t a4);
 uint32_t (*p_di_spectrum_stop)(void);
 uint32_t (*p_di_tune_stream)(struct lib_ctx *ctx, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5, uint32_t a6, uint32_t a7, uint32_t a8);
+uint32_t (*p_di_reset)(struct lib_ctx *ctx);
 
 uint32_t (*p_csock_sockaddr_set_inaddr) (void *a1, struct dstip *dstip, int dstport, void *a4);
 
@@ -282,6 +278,7 @@ void libinit(void)
 	p_di_spectrum_start = dlsym (lh, "di_spectrum_start");
 	p_di_spectrum_stop = dlsym (lh, "di_spectrum_stop");
 	p_di_tune_stream = dlsym (lh, "di_tune_stream");
+	p_di_reset = dlsym (lh, "di_reset");
 
 	/* get original csock_sockaddr_set_inaddr()
  	 */
@@ -426,8 +423,6 @@ struct wrap_ctx *di_alloc_stream(uint32_t a1)
 	wrap_ctx->lib_ctx = lib_ctx;
 	wrap_ctx->count = 0;
 
-	wrap_ctx->buffer = memalign(0x1000, PID_BUFFER_SIZE * NUM_BUFFERS);
-
 	printf ("%s(0x%x) -> %p\n", __FUNCTION__, a1, wrap_ctx);
 
 	udp_init (wrap_ctx);
@@ -435,7 +430,6 @@ struct wrap_ctx *di_alloc_stream(uint32_t a1)
 	if (pthread_cond_init (&wrap_ctx->cv, NULL))
 	{
 		perror ("pthread_cond_init");
-		free (wrap_ctx->buffer);
 		free (wrap_ctx);
 		return NULL;
 	}
@@ -443,7 +437,6 @@ struct wrap_ctx *di_alloc_stream(uint32_t a1)
 	if (pthread_mutex_init (&wrap_ctx->mutex, NULL))
 	{
 		perror ("pthread_cond_init");
-		free (wrap_ctx->buffer);
 		free (wrap_ctx);
 		return NULL;
 	}
@@ -452,7 +445,6 @@ struct wrap_ctx *di_alloc_stream(uint32_t a1)
 	if (pthread_create (&wrap_ctx->ptid, NULL, send_thread, (void*)wrap_ctx))
 	{
 		perror ("pthread_create");
-		free (wrap_ctx->buffer);
 		free (wrap_ctx);
 		return NULL;
 	}
@@ -492,24 +484,34 @@ uint32_t di_free_stream(struct wrap_ctx *ctx)
 {
 	uint32_t rc = 0;
 
+	printf ("%s(%p) -> ", __FUNCTION__, ctx);
+	fflush(stdout);
+
 	if (!ctx)
 	{
 		/* called twice, second time with NULL
 		 */
 		rc = p_di_free_stream(NULL);
 	}
+	else if (ctx->magic != WRAP_MAGIC)
+	{
+		printf ("di_free_stream: bad magic: 0x%08x\n", ctx->magic);
+		fflush(stdout);
+		return rc;
+	}
 	else
 	{
-		rc = p_di_free_stream (ctx->lib_ctx);
+		printf (" [%p] ", ctx->lib_ctx);
+		fflush(stdout);
 
 		pthread_cancel (ctx->ptid);
 
-		close (ctx->sockfd);
-		free (ctx->buffer);
-		free (ctx);
+		rc = p_di_free_stream (ctx->lib_ctx);
 
-		printf ("%s(%p) -> 0x%x\n", __FUNCTION__, ctx, rc);
+		close (ctx->sockfd);
+		free (ctx);
 	}
+	printf ("0x%x\n", rc);
 
 	return rc;
 }
@@ -620,6 +622,27 @@ uint32_t di_tune_stream(struct wrap_ctx *ctx, uint32_t freq, uint32_t symrate, u
 {
 	uint32_t rc = p_di_tune_stream (ctx->lib_ctx, freq, symrate, specinv, mtype, a6, a7, a8);
 	printf ("%s(%p 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x) -> 0x%x\n", __FUNCTION__, ctx, freq, symrate, specinv, mtype, a6, a7, a8, rc);
+	return rc;
+}
+uint32_t di_reset(struct wrap_ctx *ctx)
+{
+	uint32_t rc = 0;
+
+	printf ("%s(%p) -> \n", __FUNCTION__, ctx);
+	fflush(stdout);
+
+	if (p_di_reset)
+	{
+		if (ctx && (ctx->magic == WRAP_MAGIC) && ctx->lib_ctx)
+		{
+			rc = p_di_reset(ctx->lib_ctx);
+		}
+		else
+		{
+			rc = p_di_reset((void*)ctx);
+		}
+	}
+	printf ("0x%x\n", rc);
 	return rc;
 }
 
@@ -850,11 +873,12 @@ int wr_wait(struct wrap_ctx *ctx)
 
 	pthread_mutex_lock (&ctx->mutex);
 
-	while (ctx->head == ctx->tail)
+	while (!ctx->write_triggered)
 	{
 		if (pthread_cond_wait (&ctx->cv, &ctx->mutex))
 		{
 			perror ("pthread_cond_wait");
+			ctx->write_triggered = 1;
 			rc = -1;
 		}
 	}
@@ -866,26 +890,20 @@ int wr_wait(struct wrap_ctx *ctx)
 
 int wr_trigger(struct wrap_ctx *ctx, uint8_t *buffer, int len)
 {
-	do
-	{
-		/* If send_thread isn't complete yet, just drop the whole (sub)frame 
-		 */
-		if (((ctx->head + 1) % NUM_BUFFERS) == ctx->tail )
-			return -1;
+	/* If send_thread isn't complete yet, just drop the whole frame for now
+	 */
+	if (ctx->write_triggered)
+		return -1;
 
-		pthread_mutex_lock (&ctx->mutex);
+	pthread_mutex_lock (&ctx->mutex);
 
-		memcpy (&ctx->buffer[ctx->head * PID_BUFFER_SIZE], buffer, len);
-		ctx->wrlen[ctx->head] = MIN(len, PID_FRAME_SIZE);
+	memcpy (ctx->buffer, buffer, len);
+	ctx->wrlen = len;
+	ctx->write_triggered = 1;
 
-		len -= ctx->wrlen[ctx->head];
-		ctx->head = (ctx->head + 1) % NUM_BUFFERS;
+	pthread_cond_signal (&ctx->cv);
 
-		pthread_cond_signal (&ctx->cv);
-
-		pthread_mutex_unlock (&ctx->mutex);
-
-	} while (len > 0);
+	pthread_mutex_unlock (&ctx->mutex);
 
 	return 0;
 }
@@ -902,24 +920,24 @@ void *send_thread(void *arg)
 		switch (ctx->udp_fwd)
 		{
 			case FWD_CABLEINFO:
-				ctx->client_cb ((uint32_t)&ctx->buffer[ctx->tail * PID_BUFFER_SIZE], ctx->wrlen[ctx->tail],
+				ctx->client_cb ((uint32_t)ctx->buffer, ctx->wrlen,
 					ctx->client_cb_arg, ctx->client_cb_arg4);
 				break;
 				
 			case FWD_TS:
-				udp_send (ctx, (void*)&ctx->buffer[ctx->tail * PID_BUFFER_SIZE], ctx->wrlen[ctx->tail]);
+				udp_send (ctx, (void*)ctx->buffer, ctx->wrlen);
 				ctx->client_cb ((uint32_t)ctx->buffer, 1300,
 					ctx->client_cb_arg, ctx->client_cb_arg4);
 				break;
 
 			case FWD_RTP:
-				rtp_send (ctx, (void*)&ctx->buffer[ctx->tail * PID_BUFFER_SIZE], ctx->wrlen[ctx->tail]);
+				rtp_send (ctx, (void*)ctx->buffer, ctx->wrlen);
 				ctx->client_cb ((uint32_t)ctx->buffer, 1300,
 					ctx->client_cb_arg, ctx->client_cb_arg4);
 				break;
 		}
 
-		ctx->tail = (ctx->tail + 1) % NUM_BUFFERS;
+		ctx->write_triggered = 0;
 	}
 
 	return NULL;

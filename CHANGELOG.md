@@ -5,8 +5,8 @@ NEXT (fritzos7 branch)
 ----------------------
 - Application package version 8b (untested)
  - TODO
-  - gdb (does not compile)
-  - lircd
+  - libdvbfi: sometimes stops working after closing stream
+  - openvpn: check forwarding rule
 
 Release 7b(eta)
 ---------------

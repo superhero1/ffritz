@@ -1,9 +1,8 @@
-# This makefile either generates a tarball which is supposed to
-# ccontain binaries run in /var/media/ftp/ffritz, or
-# copies files into a root fs image where they are installed
-# to and executed from /usr/local.
+# Generates application image for atom
 #
-# For the first, just call make
+# Options: 
+#	CASH    relative path to cash tool
+#       NOSTRIP Set to 1 to not strip binaries (for debugging)
 #
 TOPDIR	    = $(shell pwd)
 PKGDIR	    = $(shell cd ..; pwd)
@@ -20,7 +19,6 @@ BINFILES   += $(BR_TGT_BIN)/tcpbridge $(BR_TGT_BIN)/tcpprep $(BR_TGT_BIN)/tcprep
 BINFILES   += $(BR_TGT_BIN)/mpc $(BR_TGT_BIN)/rsync $(BR_TGT_BIN)/socat 
 BINFILES   += $(BR_TGT)/../host/usr/i686-buildroot-linux-uclibc/sysroot/usr/bin/curl
 BINFILES   += $(BR_TGT_SBIN)/openvpn
-#BINFILES   += $(BR_TGT_BIN)/gdb 
 BINFILES   += $(BR_TGT_BIN)/gdbserver
 BINFILES   += $(BR_TGT_BIN)/setpci $(BR_TGT_BIN)/lspci
 BINFILES   += ../shairport/build/shairport
@@ -43,6 +41,15 @@ SUBDIRS	    = ../buildroot ../libmaru ../shairport ../libmpdclient ../mpc ../lir
 INSTDIRS    = ../lirc/install ../libupnpp/install ../upmpdcli/install ../nfs/install ../bt/install
 SUBDIRS    += ../libdvbfi
 INSTDIRS   += ../libdvbfi/install
+
+ifneq ($(CASH),)
+SUBDIRS    += $(CASH)
+INSTDIRS   += $(CASH)/install
+endif
+
+ifeq ($(NOSTRIP),)
+NOSTRIP	    = 0
+endif
 
 .PHONY:	$(SUBDIRS) $(IMAGE)
 
@@ -103,14 +110,15 @@ install: $(BINFILES) $(ETCFILES) $(INSTDIRS) modules $(shell test -d $(BR_TGT_LI
 	cp -a bin/ffwrap $(INSTDIR)/bin/exec
 	@cd $(INSTDIR)/bin; \
 	    for f in `ls | xargs file | grep ELF | grep -v cash_wrap.so | sed -e 's/:.*//'`; do\
-		strip $$f;\
+		test `basename $$f` != cash -a $(NOSTRIP) -eq 0 && strip $$f;\
 		mv $$f exec/$$f;\
 		ln -sv exec/ffwrap $$f;\
 	    done
-	@cd $(INSTDIR)/lib; \
+	@if [ $(NOSTRIP) -eq 0 ]; then \
+	    cd $(INSTDIR)/lib; \
 	    for l in `ls | xargs file | grep ELF | sed -e 's/:.*//'`; do\
 		strip $$l;\
-	    done
+	    done; fi
 	cp -ar $(BR_TGT)/usr/share/terminfo $(INSTDIR)/share
 	ls ${BR_TGT}/lib/libuClibc-* | sed -e 's/.*-\([0-9]\).*/\1/' > uclib-version || exit 1
 	
