@@ -14,6 +14,8 @@ CROSS_COMPILE=armeb-buildroot-linux-uclibcgnueabi-
 endif
 
 
+
+
 ###############################################################################
 
 TOPDIR=$(shell pwd)
@@ -29,7 +31,7 @@ export PATH := $(TOOLCHAIN):$(PATH)
 TARGETS	    = mdio-release pswtool
 
 ## No longer supported in 6.8
-TARGETS    += athtool
+#TARGETS    += athtool
 
 all:	$(TGTLIB) $(TARGETS)
 

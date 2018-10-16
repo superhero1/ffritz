@@ -54,7 +54,7 @@ BUFFER_FILL=220
 #RUN_ONSTOP=
 #####################################################################################
 
-DAEMON_ARGS="--daemon --pidfile $PIDFILE --log $LOGFILE"
+#DAEMON_ARGS="--daemon --pidfile $PIDFILE --log $LOGFILE"
 
 [ -z "$ERRFILE" ]     || DAEMON_ARGS="$DAEMON_ARGS --error $ERRFILE"
 [ -z "$AP_NAME" ]     || DAEMON_ARGS="$DAEMON_ARGS --name $AP_NAME"
@@ -73,4 +73,4 @@ ip route add 224.0.0.251/32 dev lan
 #
 touch $PIDFILE                                                     
 chown ffritz $PIDFILE                                              
-$FFINSTDIR/bin/ffdaemon -n -r ffritz $FFINSTDIR/bin/shairport $DAEMON_ARGS
+$FFINSTDIR/bin/ffdaemon -r ffritz $FFINSTDIR/bin/shairport $DAEMON_ARGS

@@ -29,6 +29,9 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <signal.h>
+
 
 #include "usbplayd.h"
 
@@ -43,15 +46,82 @@
 /*================================== LOCALS =================================*/
 static int worker_pid = 0;
 static char *pidfile = NULL;
+static char *client_pidfile = NULL;
 static FILE *dflConsOut = NULL;
 static FILE *logFile = NULL;
 
 /*================================== IMPLEMENTATION =========================*/
 
+static int purge_service (char *service_name, char *pidfile)
+{
+    int fd;
+    char tmpstr[100];
+    int pid = 0;
+    int rc = 0;
+
+    /* check existing pidfile */
+    fd = open (pidfile, O_RDONLY);
+
+    if (fd == -1)
+	return 0;
+
+    /* check process */
+    if (read(fd, tmpstr, sizeof(tmpstr)) > 0)
+    {
+	pid = atoi(tmpstr);
+
+	if (pid)
+	{
+	    struct stat st;
+
+	    sprintf (tmpstr, "/proc/%d", pid);
+
+	    if (stat (tmpstr, &st) == 0)
+	    {
+		rc = 1;
+
+		log_put ("service %s already running\n", service_name);
+	    }
+	}
+    }
+
+    close (fd);
+
+    if (rc == 0)
+    {
+	log_put ("Removing stale PID file for service %s\n", service_name);
+
+	if (unlink (pidfile))
+	{
+	    perror (pidfile);
+	    return 1;
+	}
+
+	if (client_pidfile)
+	    unlink (client_pidfile);
+    }
+
+    /* remove pidfile if no longer running */
+
+    return rc;
+
+}
+
+static void stop_worker (void)
+{
+    if (worker_pid > 0)
+    {
+	kill (worker_pid, SIGTERM);
+	sleep (2);
+	kill (worker_pid, SIGKILL);
+    }
+}
+
 /*! \brief Called via atexit()
 */
 static void exit_fcn (void)
 {
+
     if (worker_pid > 0)
     {
 	kill (worker_pid, SIGTERM);
@@ -64,6 +134,13 @@ static void exit_fcn (void)
 	unlink (pidfile);
 
     pidfile = NULL;
+
+    if (client_pidfile)
+    {
+	unlink (client_pidfile);
+	free (client_pidfile);
+	client_pidfile = NULL;
+    }
 }
 
 static void cleanup()
@@ -77,6 +154,7 @@ static void cleanup()
 static void prep_pid_file (char *pdfile)
 {
     FILE *pf;
+    char *s1, *s2;
 
     atexit (exit_fcn);
     signal (SIGINT, cleanup);
@@ -101,6 +179,38 @@ static void prep_pid_file (char *pdfile)
 	{
 	    log_put ("Failed to write PID file %s\n", pidfile);    
 	}
+
+	if ((s1 = strstr (pidfile, "ffd_")) != NULL)
+	{
+	    client_pidfile = malloc(strlen(pidfile) + 1);
+	    strcpy (client_pidfile, pidfile);
+
+	    s2 = strstr(client_pidfile, "ffd_");
+
+	    sprintf (s2, ".%s", s1);
+	}
+    }
+}
+
+static void client_pid_file (int pid)
+{
+    FILE *pf;
+
+    if (!client_pidfile)
+	return;
+
+    unlink (client_pidfile);
+
+    pf = fopen (client_pidfile, "w");
+
+    if (pf)
+    {
+	fprintf (pf, "%d", pid);
+	fclose (pf);
+    }
+    else
+    {
+	log_put ("Failed to write client PID file %s\n", pidfile);    
     }
 }
 
@@ -198,37 +308,32 @@ void log_set (const char *logf, int consOut)
 }
 
 
-int daemon2 (char *pdfile, int interval, int loops, int nochdir, int noclose)
+int daemon2 (char *pdfile, int interval, int loops, int nochdir, int noclose, char *service_name)
 {
-    int first = 1;
     int status;
-    struct stat st;
     int rc;
     int loop = 0;
     
     if (interval == 0)
 	interval = 2;
     
-    if (pdfile)
-    {
-	if (stat (pdfile, &st) == 0)
-	{
-	    log_put ("daemon already running, %s exists\n", pdfile);
-	    return 1;
-	}
-    }
-    
+    if (purge_service (service_name, pdfile))
+	return 1;
+
     if (daemon (nochdir, noclose))
     {
         log_put ("daemon: %s", strerror(errno));
         return 1;
     }
 
+    prep_pid_file (pdfile);
+
     /* master process loop
      */
     while (1)
     {
         worker_pid = fork();
+
 
         if (worker_pid == -1)
         {
@@ -240,14 +345,12 @@ int daemon2 (char *pdfile, int interval, int loops, int nochdir, int noclose)
         /* resume with worker process?
          */
         if (worker_pid == 0)
+	{
+	    client_pid_file (getpid());
             break;
+	}
 
-        /* atexit/pid file is only done in the master process
-         */
-        if (first)
-            prep_pid_file (pdfile);
-
-        first = 0;
+	signal (SIGUSR1, stop_worker);
 
 	while (1)
         {

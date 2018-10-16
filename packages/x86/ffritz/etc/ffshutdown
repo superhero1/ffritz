@@ -7,9 +7,7 @@ if [ `readlink -f $0` != /var/tmp/ffshutdown ]; then
 	exec /var/tmp/ffshutdown
 fi
 
-killall ffdaemon
-killall usbplayd
-killall shairport
+ffdaemon -K %all
 busybox lsof -p `pidof cableinfo`|grep libdvbfi > /dev/null && killall cableinfo
 
 if [ -f /var/media/ftp/ffritz/.mtab ]; then

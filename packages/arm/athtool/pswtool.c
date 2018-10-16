@@ -260,3 +260,13 @@ int main (int argc, char **argv)
     return 0;
 }
 /*! @} */
+
+/* linker issues with libubacktrace.so .. but we dont need those ..
+ */
+void backtrace(void)
+{
+}
+
+void backtrace_symbols_fd(void)
+{
+}

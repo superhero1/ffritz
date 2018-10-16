@@ -38,7 +38,7 @@ ifeq ($(INSTDIR),)
 endif
 
 SUBDIRS	    = ../buildroot
-#SUBDIRS	   += ../athtool
+SUBDIRS	   += ../athtool
 
 .PHONY:	$(SUBDIRS)
 
@@ -71,7 +71,7 @@ install: $(SUBDIRS) $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls 
 	cp -a $(BINFILES) $(INSTDIR)/bin
 	cp -a  $(shell ls  $(BR_TGT_LIB)/lib*so*) $(INSTDIR)/lib
 	cp $(ETCFILES) $(INSTDIR)/etc
-#	make -C ../athtool install INSTDIR=$(INSTDIR)
+	make -C ../athtool install INSTDIR=$(INSTDIR)
 	cp -a bin/ffwrap $(INSTDIR)/bin/exec
 	cd $(INSTDIR)/bin; \
 	    for f in `ls | xargs file | grep ELF | sed -e 's/:.*//'`; do\
