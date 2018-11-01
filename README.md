@@ -237,6 +237,10 @@ If you don't want to restart the box after installing a new image:
 - Run mount script for new image: /etc/init.d/S93-ffimage
 - Start services: /etc/init.d/S94-ffstart
 
+Current core image supports -r switch as first parameter, which does all this:
+
+	ffinstall -r ffritz-app-VERSION.tar CHECKSUM
+
 Optional Arm package
 --------------------
 

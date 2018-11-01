@@ -30,31 +30,25 @@
 
 
 #include "athtool.h"
+#include "counters.h"
 #include "libticc.h"
 
 /*! \ingroup pswtool */
 /*! \subsection counters */
 /*! @{ */
 
-static inline uint64_t ullTime(void)
-{
-    struct timeval tv;
-    gettimeofday (&tv, NULL);
-    return ((uint64_t)tv.tv_sec * 1000000ULL + (uint64_t)tv.tv_usec);
-}
-
 /*! TODO Find out counter use ..
  */
 static struct ath_counter_desc cnt_list_tpl[] =
 {
-	{.name="Counter1", .off=0x00, .sz=4 },
-	{.name="Counter2", .off=0x04, .sz=4 },
+	{.name="RX_packets1", .off=0x00, .sz=4 },
+	{.name="RX_packets2", .off=0x04, .sz=4 },
 	{.name="Counter3", .off=0x08, .sz=4},
 	{.name="Counter4", .off=0x0c, .sz=4},
-	{.name="Counter5", .off=0x10, .sz=4},
-	{.name="Counter6", .off=0x14, .sz=4},
-	{.name="Counter7", .off=0x18, .sz=4},
-	{.name="Counter8", .off=0x1C, .sz=4},
+	{.name="RX_octets", .off=0x10, .sz=4},
+	{.name="TX_packets1", .off=0x14, .sz=4},
+	{.name="TX_packets2", .off=0x18, .sz=4},
+	{.name="TX_octets", .off=0x1C, .sz=4},
 	{.name="Counter9", .off=0x20, .sz=4},
 	{.name="Counter10", .off=0x24, .sz=4},
 	{.name="Counter11", .off=0x28, .sz=4},
@@ -74,76 +68,6 @@ static struct ath_counter_state *cnt_state;
 #define SETERR(...)	{fprintf (stderr, __VA_ARGS__); fprintf (stderr, "\n");}
 
 
-/* sprintf value into string and insert , separators 
- * (like the ' printf format character).
- */
-static char *fmt1000 (uint64_t val, char *str, size_t slen)
-{
-    int c;
-    char buf[64];
-    char *p; 
-    char *nstr = str;
-
-    snprintf(buf, sizeof(buf), "%lld", val); 
-    c = 2 - strlen(buf) % 3;
-
-    for (p = buf; *p != 0; p++)
-    {
-        slen--;
-        if (slen == 0)
-            return "NA";
-        
-        *nstr++ = *p;
-    
-        if (c == 1)
-            *nstr++ = ',';
-
-        c = (c + 1) % 3; 
-    }  
-    *--nstr = 0;
-    
-    return str;
-}
-
-/*! show a counter
- */
-static void cntShow (int port, uint64_t val, uint64_t *psum, const char *name, 
-                     int cor, int dtime, int showAll)
-{
-    uint64_t sum;
-    char v1[200];
-    
-    sum = *psum;
-    
-    if (!cor)
-    {
-	if (val < sum)
-	    sum = val;
-
-        val -= sum;
-    }
-    
-    if ((val == 0) && !showAll)
-        return;
-
-    
-    sum += val;
-    
-    *psum = sum;
- 
-    printf ("%2d: %-23s : +%-16s ", 
-        port, 
-        name, fmt1000(val, v1, sizeof(v1)));
-    printf ("%17s ", fmt1000(sum, v1, sizeof(v1)));
-    if (dtime)
-    {
-        printf ("%s/sec", 
-            fmt1000 ((uint64_t)(val * 1000000) / dtime, v1, sizeof(v1))
-            );
-    }
-    printf ("\n");
-}
-
 /*! Print some/all per-port counters
  *
  * The function stores counter data in a shared memory segment, so that it is
@@ -157,80 +81,34 @@ static void cntShow (int port, uint64_t val, uint64_t *psum, const char *name,
  *
  * \returns 0 on success, 1 on error
  */
-int psw_counters (int port, const char *filter, int all)
+int psw_counters (int port, const char *filter, int all, int slot, int reset)
 {
     uint32_t v32;
     uint64_t v64;
     uint64_t rtime, dtime;
     struct ath_counter_desc *desc;
     struct ath_counter_state *state;
-    int shmid;
     int i;
     uint32_t	cnt[14];
+    char port_id[5];
 
+    if (slot >= CNT_SLOTS)
+	return 1;
 
     if (cnt_state == NULL)
     {
-	/* data is kept in IPC shared memory so that we can determine
-	 * per-second information
-	 */
-	shmid = shmget(0xfefed003, STATE_MEM_SZ, 0);
-
-	if (shmid == -1)
-	{
-	    shmid = shmget(0xfefed003, STATE_MEM_SZ, IPC_CREAT);
-	    cnt_initialized = 0;
-	}
-	else
-	{
-	    cnt_initialized = 1;
-	}
-
-	if (shmid == -1)
-	{
-	    perror ("shmget(IPC_CREAT)");
-	    SETERR("shmget");
-	    return 1;
-	}
-
-	if (all == 2)
-	{
-	    if (shmctl (shmid, IPC_RMID, NULL))
-	    {
-		perror ("shmctl(IPC_RMID)");
-	    }
-	    else
-	    {
-		printf ("destroyed\n");
-		return 1;
-	    }
-	}
-
-	cnt_state = shmat (shmid, NULL, 0);
-
-	if (cnt_state == ((void *) -1))
-	{
-	    perror ("shmat");
-	    SETERR("shmat");
-	    return 1;
-	}
-
-	if (cnt_initialized == 0)
-	{
-	    memset (cnt_state, 0, STATE_MEM_SZ);
-
-	    cnt_initialized = 0;
-	}
-	else
-	{
-	    cnt_initialized = 1;
-	}
+	cnt_state = get_shm(0xfefed004, STATE_MEM_SZ, &cnt_initialized);
+    }
+    if (cnt_state == NULL)
+    {
+	SETERR("get_shm");
+	return 1;
     }
 
     if (port == -1)
     {
 	for (port = 0; port < num_ports; port++)
-	    if (psw_counters (port, filter, all))
+	    if (psw_counters (port, filter, all, slot, reset))
 		return 1;
 	return 0;
     }
@@ -247,6 +125,13 @@ int psw_counters (int port, const char *filter, int all)
 	return 1;
     }
 
+    rtime = ullTime();
+
+    sprintf (port_id, "%2d", port);
+
+    if (prtg_mode())
+	strcat (port_id, "_");
+
     for (i = 0; i < NUM_COUNTERS; i++)
     {
 	desc = &cnt_list_tpl[i];
@@ -258,20 +143,23 @@ int psw_counters (int port, const char *filter, int all)
 	v32 = cnt[i];
 	v64 = v32;
 
-	if (state->lastReadTime == 0)
+	if (state->lastReadTime[slot] == 0)
 	{
 	    dtime = 0;
-	    state->sum = 0;
+	    state->max_rate_per_sec = 0;
 	}
 	else
 	{
-	    rtime = ullTime();
-	    dtime = rtime - state->lastReadTime;
+	    dtime = rtime - state->lastReadTime[slot];
 	}
 
-	state->lastReadTime = ullTime();
+	state->lastReadTime[slot] = rtime;
 
-	cntShow (port, v64, &state->sum, desc->name, 0, dtime, all);
+	cntShow (port_id, v64, &state->sum[slot], desc->name, 0, dtime, all, &state->max_rate_per_sec);
+
+	if (reset)
+	    state->max_rate_per_sec = 0;
+
     }
 
     cnt_initialized = 1;

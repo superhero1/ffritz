@@ -159,6 +159,7 @@ atom/.applied.fs: $(ATOM_MODFILES) atom/squashfs-root $(ATOM_PATCHST)
 	@echo "PATCH  atom/squashfs-root"
 	@$(SUDO) $(RSYNC) -a atom/mod/ atom/squashfs-root/
 	@mkdir -p atom/squashfs-root/usr/local
+#	@packages/x86/ffritz/mkbblinks packages/x86/ffritz/bb-apps busybox-i686 atom/squashfs-root/usr/bin atom/squashfs-root/sbin atom/squashfs-root/bin atom/squashfs-root/usr/sbin atom/squashfs-root/usr/bin atom/squashfs-root/usr/local/bin
 	@touch $@
 
 atom/filesystem.image: atom/.applied.fs

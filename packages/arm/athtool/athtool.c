@@ -27,6 +27,7 @@
 
 #include "athtool.h"
 #include "libticc.h"
+#include "counters.h"
 
 /* ========================================================================= */
 

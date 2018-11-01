@@ -37,7 +37,7 @@
 
 #define SNAME "ffd_service_name"
 
-int service_status (char *service_name, int *cpid);
+int service_status (char *service_name, int *cpid, int *cruns);
 
 //extern int daemon2 (char *pdfile, int delay, int loops, int nochdir, int noclose);
 
@@ -50,8 +50,8 @@ const char *usage =
 "       -l : Number of loops to run (0 = default = endless)\n"
 "       -N : Name service rather than using the executable name\n"
 "       -L : List all services\n"
-"       -K : Kill named service (%all for all)\n"
-"       -R : Restart named service (%all for all)\n"
+"       -K : Kill named service (%%all for all)\n"
+"       -R : Restart named service (%%all for all)\n"
 ;
 
 static char *basename (char *path)
@@ -152,7 +152,7 @@ char *get_service_name (int pid)
     return rc;
 }
 
-int service_status (char *service_name, int *cpid)
+int service_status (char *service_name, int *cpid, int *cruns)
 {
     int fd;
     char tmpstr[100];
@@ -192,7 +192,7 @@ int service_status (char *service_name, int *cpid)
     free (buf);
 
     /* check existing client pidfile */
-    if (cpid)
+    if (cpid && cruns)
     {
 	*cpid = 0;
 
@@ -205,7 +205,7 @@ int service_status (char *service_name, int *cpid)
 	    {
 		tmpstr[len] = '\0';
 
-		*cpid = atoi(tmpstr);
+		sscanf (tmpstr, "%d %d", cpid, cruns);
 	    }
 	    close (fd);
 	}
@@ -220,7 +220,7 @@ static void list_services(void)
     struct dirent *de = NULL;
     char service_name[256];
     int status;
-    int cpid;
+    int cpid, cruns;
 
     if (!dir)
     {
@@ -238,7 +238,7 @@ static void list_services(void)
 
 	*strstr(service_name, ".pid") = '\0';
 
-	status = service_status (service_name, &cpid);
+	status = service_status (service_name, &cpid, &cruns);
 
 	if (status == 0)
 	    continue;
@@ -251,10 +251,9 @@ static void list_services(void)
 	}
 	else
 	{
-	    printf ("PID %d", status);
+	    printf ("PID=%-6d", status);
 
-	    if (cpid)
-		printf (" CPID %d", cpid);
+	    printf (" cpid=%d restarts=%d", cpid, cruns);
 
 	    printf ("\n");
 	}
@@ -286,7 +285,7 @@ static void iterate_services(int (*cb)(char *service_name, int arg), int arg)
 
 	*strstr(service_name, ".pid") = '\0';
 
-	status = service_status (service_name, NULL);
+	status = service_status (service_name, NULL, NULL);
 
 	if (status > 0)
 	    (void)cb (service_name, arg);
@@ -299,7 +298,7 @@ static int purge_service (char *service_name)
 {
     int pid = 0;
 
-    pid = service_status (service_name, NULL);
+    pid = service_status (service_name, NULL, NULL);
 
     if (pid > 0)
     {
@@ -336,7 +335,7 @@ static int kill_service (char *service_name, int sig)
 	return 0;
     }
 
-    pid = service_status (service_name, NULL);
+    pid = service_status (service_name, NULL, NULL);
 
     if (pid <= 0)
     {

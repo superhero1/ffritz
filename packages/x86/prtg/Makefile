@@ -10,11 +10,8 @@ $(error BUILDROOT (buildroot top directory) not defined)
 endif
 
 ifeq ($(CROSS_COMPILE),)
-CROSS_COMPILE=armeb-buildroot-linux-uclibcgnueabi-
+CROSS_COMPILE=i686-buildroot-linux-uclibc-
 endif
-
-
-
 
 ###############################################################################
 
@@ -26,9 +23,13 @@ TGTLIB	    = ../../../arm/squashfs-root/lib
 
 export PATH := $(TOOLCHAIN):$(PATH)
 
+vpath %.c ../../arm/athtool
+
+CFLAGS += -DATOM_BUILD
+
 ###############################################################################
 
-TARGETS	    = mdio-release pswtool pptool netdev pcount
+TARGETS	    = pcount
 
 ## No longer supported in 6.8
 #TARGETS    += athtool
@@ -36,23 +37,13 @@ TARGETS	    = mdio-release pswtool pptool netdev pcount
 all:	$(TGTLIB) $(TARGETS)
 
 
-athtool:	athtool.o athtool_vlan.o athtool_counters.o athtool_atu.o counters.o
-athtool:	LDFLAGS=-L$(TGTLIB) -lticc
-mdio-release:	mdio-release.o
-pswtool:	pswtool.o pswtool_counters.o counters.o
-pswtool:	LDFLAGS=-L$(TGTLIB) -lticc
-pptool:		pptool.o pp_counters.o counters.o 
-pptool:		LDFLAGS=-L$(TGTLIB)
-netdev:		netdev.o counters.o netdev_counters.o
-netdev:		LDFLAGS=-L$(TGTLIB)
-pcount:		pcount.o pp_counters.o netdev_counters.o pswtool_counters.o counters.o 
-pcount:		LDFLAGS=-L$(TGTLIB) -lticc
-
-$(TGTLIB):
-	make -C ../../.. arm/squashfs-root
+pcount:		pcount.o netdev_counters.o counters.o
 
 install:    all
-	cp $(TARGETS) $(INSTDIR)/bin
+	cp $(TARGETS) $(DESTDIR)/bin
+	mkdir -p $(DESTDIR)/etc/prtg
+	cp -ar scriptsxml $(DESTDIR)/etc/prtg
+	cp run_prtg $(DESTDIR)/etc
 
 clean:
 	rm -f $(TARGETS) *.o *.d
@@ -64,3 +55,7 @@ html/index.html:    $(wildcard *.c *.h) Doxyfile
 
 include ../../rules.mk
 -include $(wildcard *.d)
+ifeq ($(DESTDIR),)
+DESTDIR=.
+endif
+

@@ -26,12 +26,12 @@
 #include <errno.h>
 #include <ctype.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <sys/wait.h>
 #include <time.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <signal.h>
-
 
 #include "usbplayd.h"
 
@@ -49,6 +49,9 @@ static char *pidfile = NULL;
 static char *client_pidfile = NULL;
 static FILE *dflConsOut = NULL;
 static FILE *logFile = NULL;
+static int client_restarts = 0;
+static struct timeval client_starttime = {0};
+static uint64_t client_total_runtime = 0;
 
 /*================================== IMPLEMENTATION =========================*/
 
@@ -195,17 +198,31 @@ static void prep_pid_file (char *pdfile)
 static void client_pid_file (int pid)
 {
     FILE *pf;
+    struct timeval tv;
+    time_t client_runtime = 0;
+
+    if (pid)
+    {
+	client_restarts++;
+	gettimeofday (&client_starttime, NULL);
+	worker_pid = pid;
+    }
+    else if (worker_pid)
+    {
+	gettimeofday (&tv, NULL);
+	client_runtime = tv.tv_sec - client_starttime.tv_sec;
+	client_total_runtime += client_runtime;
+	worker_pid = 0;
+    }
 
     if (!client_pidfile)
 	return;
-
-    unlink (client_pidfile);
 
     pf = fopen (client_pidfile, "w");
 
     if (pf)
     {
-	fprintf (pf, "%d", pid);
+	fprintf (pf, "%d %d %d\n", pid, client_restarts, client_restarts ? (int)(client_total_runtime / client_restarts) : 0);
 	fclose (pf);
     }
     else
@@ -313,6 +330,7 @@ int daemon2 (char *pdfile, int interval, int loops, int nochdir, int noclose, ch
     int status;
     int rc;
     int loop = 0;
+    int pid;
     
     if (interval == 0)
 	interval = 2;
@@ -332,10 +350,9 @@ int daemon2 (char *pdfile, int interval, int loops, int nochdir, int noclose, ch
      */
     while (1)
     {
-        worker_pid = fork();
+        pid = fork();
 
-
-        if (worker_pid == -1)
+        if (pid == -1)
         {
             log_put ("fork: %s", strerror(errno));
             sleep (interval);
@@ -344,19 +361,19 @@ int daemon2 (char *pdfile, int interval, int loops, int nochdir, int noclose, ch
 
         /* resume with worker process?
          */
-        if (worker_pid == 0)
+        if (pid == 0)
 	{
-	    client_pid_file (getpid());
             break;
 	}
+	client_pid_file (pid);
 
 	signal (SIGUSR1, stop_worker);
 
 	while (1)
         {
-	    rc = waitpid (worker_pid, &status, 0);
+	    rc = waitpid (pid, &status, 0);
 
-	    if (rc == worker_pid)
+	    if (rc == pid)
 		break;
 
 	    sleep (1);
@@ -364,9 +381,9 @@ int daemon2 (char *pdfile, int interval, int loops, int nochdir, int noclose, ch
 
         if (status)
             log_put ("worker process terminated with status %d (pid %d)\n", 
-                    status, worker_pid);
+                    status, pid);
 
-	worker_pid = 0;
+	client_pid_file (0);
 
  	loop++;
 	if ((loops > 0) && (loop >= loops))

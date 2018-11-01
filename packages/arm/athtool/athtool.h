@@ -55,29 +55,6 @@ struct ath_arl_entry {
         uint8_t mac[6];
 };
 
-/*! MIB/Counter descriptor */
-struct ath_counter_desc
-{
-    /*! Counter name */
-    const char	name[64];
-
-    /*! Offset from counter base address */
-    unsigned	off;
-
-    /*! Counter size in bytes (4 or 8) */
-    unsigned	sz;
-};
-
-/*! Counter history */
-struct ath_counter_state
-{
-    /*! Last known total counter */
-    uint64_t	sum;
-
-    /*! Last read time in usec since epoch (0: has not yet been read) */
-    uint64_t	lastReadTime;
-};
-
 
 /*! Atheros switch device handle */
 struct ath_dev
@@ -136,6 +113,7 @@ extern void ath_arl_dump (struct ath_dev *dev);
 extern int ath_arl_flags_parse (struct ath_dev *dev, struct ath_arl_entry *entry, char *entry_spec);
 extern int ath_arl_add (struct ath_dev *dev, struct ath_arl_entry *entry);
 extern int ath_arl_rm (struct ath_dev *dev, struct ath_arl_entry *entry);
+
 #endif
 
 

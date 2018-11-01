@@ -1,0 +1,1 @@
+rpc /usr/local/bin/pcount -s0 -i-1,1,octets -l5,1,octets -l7,1,octets -x3

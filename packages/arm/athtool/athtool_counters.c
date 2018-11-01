@@ -28,19 +28,12 @@
 #include <sys/types.h>
 #include <sys/shm.h>
 
-
 #include "athtool.h"
+#include "counters.h"
 
 /*! \ingroup athtool */
 /*! \subsection counters */
 /*! @{ */
-
-static inline uint64_t ullTime(void)
-{
-    struct timeval tv;
-    gettimeofday (&tv, NULL);
-    return ((uint64_t)tv.tv_sec * 1000000ULL + (uint64_t)tv.tv_usec);
-}
 
 static struct ath_counter_desc cnt_list_tpl[] =
 {
@@ -88,75 +81,7 @@ static struct ath_counter_desc cnt_list_tpl[] =
 #define NUM_COUNTERS	(sizeof(cnt_list_tpl) / sizeof(cnt_list_tpl[0]))
 #define STATE_MEM_SZ	(sizeof(struct ath_counter_state) * NUM_COUNTERS * dev->num_ports)
 
-/* sprintf value into string and insert , separators 
- * (like the ' printf format character).
- */
-static char *fmt1000 (uint64_t val, char *str, size_t slen)
-{
-    int c;
-    char buf[64];
-    char *p; 
-    char *nstr = str;
 
-    snprintf(buf, sizeof(buf), "%lld", val); 
-    c = 2 - strlen(buf) % 3;
-
-    for (p = buf; *p != 0; p++)
-    {
-        slen--;
-        if (slen == 0)
-            return "NA";
-        
-        *nstr++ = *p;
-    
-        if (c == 1)
-            *nstr++ = ',';
-
-        c = (c + 1) % 3; 
-    }  
-    *--nstr = 0;
-    
-    return str;
-}
-
-/*! show a counter
- */
-static void cntShow (int port, uint64_t val, uint64_t *psum, const char *name, 
-                     int cor, int dtime, int showAll)
-{
-    uint64_t sum;
-    char v1[200];
-    
-    sum = *psum;
-    
-    if (!cor)
-    {
-	if (val < sum)
-	    sum = val;
-
-        val -= sum;
-    }
-    
-    if ((val == 0) && !showAll)
-        return;
-
-    
-    sum += val;
-    
-    *psum = sum;
- 
-    printf ("%2d: %-23s : +%-16s ", 
-        port, 
-        name, fmt1000(val, v1, sizeof(v1)));
-    printf ("%17s ", fmt1000(sum, v1, sizeof(v1)));
-    if (dtime)
-    {
-        printf ("%s/sec", 
-            fmt1000 ((uint64_t)(val * 1000000) / dtime, v1, sizeof(v1))
-            );
-    }
-    printf ("\n");
-}
 
 /*! Print some/all per-port counters
  *

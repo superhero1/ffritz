@@ -86,5 +86,11 @@ if [ -x $FFINSTDIR/etc/run_cableinfo ]; then
 	$FFINSTDIR/etc/run_cableinfo -N
 fi
 
+# Install prtg scripts
+#
+if [ -x $FFINSTDIR/etc/run_prtg ]; then
+	$FFINSTDIR/etc/run_prtg
+fi
+
 ) | tee -a $FFLOG 2>&1 &
 

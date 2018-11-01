@@ -1,11 +1,85 @@
---- orig/etc/profile	2017-05-05 12:43:16.000000000 +0000
-+++ squashfs-root/etc/profile	2017-05-29 07:18:00.412855248 +0000
+--- orig/etc/profile	2018-09-20 12:46:36.000000000 +0200
++++ squashfs-root/etc/profile	2018-10-28 22:31:14.617271000 +0100
 @@ -6,6 +6,8 @@
  ## Set max-Stacksize to 512kB for all new sub-shell
  ulimit -s 512
  
-+PATH=$PATH:/usr/local/bin
++PATH=$PATH:/sbin:/usr/sbin:/usr/local/bin
 +
  ####################################################################
  if [ "$CONFIG_PRODUKT" = "Fritz_Box_Profi" ] ; then
      if [ -e $CONFIG_ENVIRONMENT_PATH/environment ] ; then
+@@ -17,7 +19,7 @@
+ fi
+ 
+ ####################################################################
+-echo "ermittle die aktuelle TTY"                                                
++echo "ermittle die aktuelle TTY" > /var/log/login.log                                                
+ tty=`ls -l /proc/$$/fd/0`                                                       
+ tty=${tty##*-> }                                                                 
+ 
+@@ -26,53 +28,53 @@
+ #  Terminal init
+ #
+ #########################################################################
+-echo "tty is \"$tty\""
++echo "tty is \"$tty\"" >> /var/log/login.log
+ case $tty in
+     /dev/pts/0)
+         stty erase ^H                                                                   
+         if [ -z "`pidof avmlogd`" ] ; then
+-		   setconsole $tty
+-           echo "Console Ausgaben auf dieses Terminal umgelenkt"
++		   /sbin/setconsole $tty
++           echo "Console Ausgaben auf dieses Terminal umgelenkt" >> /var/log/login.log
+ 		fi
+         ;;
+     /dev/pts/*)
+         stty erase ^H                                                                   
+         if [ -z "`pidof avmlogd`" ] ; then
+-           echo "weitere telnet Verbindung aufgebaut"
++           echo "weitere telnet Verbindung aufgebaut" >> /var/log/login.log
+ 		fi
+         ;;
+     /dev/tts/*)
+         stty -F /dev/tts/0  rows 50 cols 132 
+         echo -e "\033[50;132q\c"    # Steuersequenz für CapiTerm: 50 Zeile, 132 Spalten
+-        echo "Serielles Terminal"
++        echo "Serielles Terminal" >> /var/log/login.log
+         ;;
+     /dev/ttyS0)
+         stty -F /dev/ttyS0  rows 50 cols 132 
+         echo -e "\033[50;132q\c"    # Steuersequenz für CapiTerm: 50 Zeile, 132 Spalten
+-        echo "Serielles Terminal"
++        echo "Serielles Terminal" >> /var/log/login.log
+         ;;
+     /dev/ttyS1)
+         stty -F /dev/ttyS1  rows 50 cols 132 
+         echo -e "\033[50;132q\c"    # Steuersequenz für CapiTerm: 50 Zeile, 132 Spalten
+-        echo "Serielles Terminal"
++        echo "Serielles Terminal" >> /var/log/login.log
+         ;;
+     /dev/ttyLTQ0)
+         stty -F /dev/ttyLTQ0  rows 50 cols 132 
+         echo -e "\033[50;132q\c"    # Steuersequenz für CapiTerm: 50 Zeile, 132 Spalten
+-        echo "Serielles Terminal"
++        echo "Serielles Terminal" >> /var/log/login.log
+         ;;
+     /dev/console)
+         #stty -F /dev/console  rows 50 cols 132 
+         #echo -e "\033[50;132q\c"    # Steuersequenz für CapiTerm: 50 Zeile, 132 Spalten
+-        echo "Serielles Terminal"
++        echo "Serielles Terminal" >> /var/log/login.log
+         ;;
+     *)
+-        echo "unbekanntes Terminal"
++        echo "unbekanntes Terminal" >> /var/log/login.log
+         ;;
+ esac
+ 
+ ####################################################################
+-echo "disable start/stop characters and flowcontrol"
++echo "disable start/stop characters and flowcontrol" >> /var/log/login.log
+ stty -ixon -ixoff
+                  
+ if [ "`pidof avmlogd`" ] ; then

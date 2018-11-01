@@ -3,10 +3,16 @@ Change history of application package
 
 NEXT (fritzos7 branch)
 ----------------------
-- Application package version 8b (untested)
+- Application package version 8b
+	- Added support for PRTG Network Monitor (see README-APP.md)
+	- Provide all busybox apps as links in /usr/local/bin
+	- Some enhancements to ffdaemon for service management
+	- Added netsnmp (for manual start)
  - TODO
-  - libdvbfi: sometimes stops working after closing stream
-  - openvpn: check forwarding rule
+ 	- libdvbfi: sometimes stops working after closing stream
+   		- MIGHT CRASH THE BOX!
+	- start/configure snmpd, get if-mib working
+	- Enhance PRTG scripts (report packets, speedup)
 
 Release 7b(eta)
 ---------------
@@ -85,6 +91,9 @@ NEXT
 		all binaries incompatible to previous versions
 	- patch var/install to allow 6590 image installation on 6490 (WLAN wont work!)
 	- Distinct installed application package for uclibc 0.x and 1.x
+	- Remove annoying login outputs from /etc/profile, add /sbin/usr/sbin to path
+    	- Fix reassignment of console to 1st login
+	- ARM: Reintegrated pswtool
 
 release 18
 -------------------------------
@@ -214,7 +223,7 @@ release 9
 	- Add libid3tag / id3 tag support to mpd
 	- Fix access rights to /var/tmp/volume file at startup
 	- Make usbplayd self-respawning if it crashes
-	- Don't log usbplayd to /var/tmp to avoid hogging ramfs space
+	- Dont log usbplayd to /var/tmp to avoid hogging ramfs space
 	- Forward dropbear stderr outputs to /dev/console
 	- Create ssh symlink to dbclient
 	- Added curl binary

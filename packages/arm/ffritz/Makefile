@@ -25,6 +25,7 @@ BINFILES   += $(BR_TGT_BIN)/strace $(BR_TGT_BIN)/ldd $(BR_TGT_SBIN)/tcpdump
 BINFILES   += $(BR_TGT_BIN)/tcpbridge $(BR_TGT_BIN)/tcpprep $(BR_TGT_BIN)/tcpreplay $(BR_TGT_BIN)/tcpreplay-edit $(BR_TGT_BIN)/tcprewrite
 BINFILES   += $(BR_TGT_BIN)/rsync $(BR_TGT_BIN)/gdbserver
 BINFILES   += $(BR_TGT)/../host/usr/armeb-buildroot-linux-uclibcgnueabi/sysroot/usr/bin/curl
+BINFILES   += src/ffdaemon
 ETCFILES    = etc/ffritz-env.sh 
 
 STAGEDIR    = $(TOPDIR)/output/ffritz-arm
@@ -37,8 +38,9 @@ ifeq ($(INSTDIR),)
     INSTDIR=$(STAGEDIR)
 endif
 
-SUBDIRS	    = ../buildroot
+SUBDIRS	    = ../buildroot 
 SUBDIRS	   += ../athtool
+SUBDIRS	   += src
 
 .PHONY:	$(SUBDIRS)
 

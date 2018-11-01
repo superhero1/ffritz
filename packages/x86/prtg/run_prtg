@@ -1,0 +1,13 @@
+#!/bin/sh
+#
+# Install prtg xml scripts
+#
+. `dirname $0`/../etc/ffritz-env.sh || exit 1
+
+wd=`dirname $0`
+
+mkdir -p /var/prtg/scriptsxml
+
+cp $FFINSTDIR/etc/prtg/scriptsxml/* /var/prtg/scriptsxml
+ln -s $FFINSTDIR/bin/pcount /var/prtg/scriptsxml
+chmod +x /var/prtg/scriptsxml/*

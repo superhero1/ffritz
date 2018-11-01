@@ -7,7 +7,10 @@
 TOPDIR	    = $(shell pwd)
 PKGDIR	    = $(shell cd ..; pwd)
 
+SQ_ROOT     = ../../../atom/squashfs-root
+
 BR_TGT	    = ../buildroot/build/output/target
+BR_TGT_LIB1 = $(BR_TGT)/lib
 BR_TGT_LIB  = $(BR_TGT)/usr/lib
 BR_TGT_BIN  = $(BR_TGT)/usr/bin
 BR_TGT_SBIN = $(BR_TGT)/usr/sbin
@@ -21,6 +24,7 @@ BINFILES   += $(BR_TGT)/../host/usr/i686-buildroot-linux-uclibc/sysroot/usr/bin/
 BINFILES   += $(BR_TGT_SBIN)/openvpn
 BINFILES   += $(BR_TGT_BIN)/gdbserver
 BINFILES   += $(BR_TGT_BIN)/setpci $(BR_TGT_BIN)/lspci
+BINFILES   += $(BR_TGT_SBIN)/snmpd
 BINFILES   += ../shairport/build/shairport
 ETCFILES    = etc/ffritz-env.sh etc/mpd.conf etc/runmpd etc/ff_atom_startup etc/ffservices etc/run_usbplay etc/run_shairport etc/mkusers
 ETCFILES   += etc/run_lircd etc/lirc_options_dfl.conf etc/upmpdcli.conf-dist etc/run_bluetooth
@@ -38,7 +42,7 @@ ifeq ($(INSTDIR),)
 endif
 
 SUBDIRS	    = ../buildroot ../libmaru ../shairport ../libmpdclient ../mpc ../lirc ../libupnpp ../jsoncpp ../upmpdcli ../libnfs ../nfs ../mpd ../bt src
-INSTDIRS    = ../lirc/install ../libupnpp/install ../upmpdcli/install ../nfs/install ../bt/install
+INSTDIRS    = ../lirc/install ../libupnpp/install ../upmpdcli/install ../nfs/install ../bt/install ../prtg/install
 SUBDIRS    += ../libdvbfi
 INSTDIRS   += ../libdvbfi/install
 
@@ -100,6 +104,7 @@ install: $(BINFILES) $(ETCFILES) $(INSTDIRS) modules $(shell test -d $(BR_TGT_LI
 	cp -a $(BINFILES) $(INSTDIR)/bin
 	cp -a $(MODFILES) $(INSTDIR)/lib/modules
 	cp -a  $(shell ls  $(BR_TGT_LIB)/lib*so*) $(INSTDIR)/lib
+	cp -a  $(BR_TGT_LIB1)/libutil* $(INSTDIR)/lib
 	cp $(ETCFILES) $(INSTDIR)/etc
 	cp -ar etc/openvpn $(INSTDIR)/etc
 	sed -i -e 's@^rundir=.*@rundir=/var/media/ftp/ffritz@' $(INSTDIR)/etc/ff_atom_startup
@@ -120,7 +125,9 @@ install: $(BINFILES) $(ETCFILES) $(INSTDIRS) modules $(shell test -d $(BR_TGT_LI
 		strip $$l;\
 	    done; fi
 	cp -ar $(BR_TGT)/usr/share/terminfo $(INSTDIR)/share
+	cp -ar $(BR_TGT)/usr/share/snmp $(INSTDIR)/share
 	ls ${BR_TGT}/lib/libuClibc-* | sed -e 's/.*-\([0-9]\).*/\1/' > uclib-version || exit 1
+	./mkbblinks bb-apps /usr/bin/busybox-i686 output/ffritz/bin $(SQ_ROOT)/sbin $(SQ_ROOT)/bin $(SQ_ROOT)/usr/sbin $(SQ_ROOT)/usr/bin $(SQ_ROOT)/usr/local/bin
 	
 clean: 
 	rm -rf output $(IMAGE) ffimage.bin
