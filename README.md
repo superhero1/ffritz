@@ -5,7 +5,9 @@ You still need the original image to build a modified install image, and you
 need a way to upgrade.  I'm assuming you already have telnet/ssh access to
 the box by either already running a modified image or having gained access.
 
-It _might_ work on the FritzBox 6590, but i have never tested it.
+It is known to work on the FritzBox 6590, but i do not test it.
+Note that this is the branch for FritzOS 6.x. Use the "fritzos7" branch for
+this version (see below).
 
 There are some known methods how to perform an initial firmware update
 from a box that runs an original image.
@@ -29,9 +31,13 @@ Creating an install/update image
 --------------------------------
 
 - Clone repository (master branch) in the directory where the original
-    install image is located:
+  install image is located:
 
     `git clone https://fesc2000@bitbucket.org/fesc2000/ffritz.git`
+
+  For FritzOS 7 use:
+
+    `git clone https://fesc2000@bitbucket.org/fesc2000/ffritz.git -b fritzos7`
 
 - Go to ffritz directory and run make (sudo required).
 
