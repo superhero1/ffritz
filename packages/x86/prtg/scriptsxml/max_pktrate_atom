@@ -1,6 +1,6 @@
 # update max. rate every second in background
 #
-ffdaemon -i 1 /var/prtg/scriptsxml/pcount -s2 -i-1,all >/dev/null 2>&1
+ffdaemon -i 1 /var/prtg/scriptsxml/pcount -s2 -i-1,1 >/dev/null 2>&1
 
 # Report and reset whenever called
 #
