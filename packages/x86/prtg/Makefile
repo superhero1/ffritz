@@ -25,7 +25,7 @@ export PATH := $(TOOLCHAIN):$(PATH)
 
 vpath %.c ../../arm/athtool
 
-CFLAGS += -DATOM_BUILD
+CFLAGS += -DATOM_BUILD -DPROC_FILE_ACCESS
 
 ###############################################################################
 
@@ -37,7 +37,7 @@ TARGETS	    = pcount
 all:	$(TGTLIB) $(TARGETS)
 
 
-pcount:		pcount.o netdev_counters.o counters.o
+pcount:		pcount.o netdev_counters.o counters.o athtool_counters.o
 
 install:    all
 	cp $(TARGETS) $(DESTDIR)/bin

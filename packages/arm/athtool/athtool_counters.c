@@ -20,6 +20,7 @@
 /* ========================================================================= */
 
 #include <stdio.h>
+#include <fcntl.h>
 #include <stdint.h>
 #include <getopt.h>
 #include <string.h>
@@ -27,6 +28,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/shm.h>
+#include <malloc.h>
 
 #include "athtool.h"
 #include "counters.h"
@@ -81,7 +83,14 @@ static struct ath_counter_desc cnt_list_tpl[] =
 #define NUM_COUNTERS	(sizeof(cnt_list_tpl) / sizeof(cnt_list_tpl[0]))
 #define STATE_MEM_SZ	(sizeof(struct ath_counter_state) * NUM_COUNTERS * dev->num_ports)
 
+void *ath_st_alloc(void)
+{
+    struct ath_dev *dev = calloc(1, sizeof(struct ath_dev));
 
+    dev->num_ports = 5;
+
+    return dev;
+}
 
 /*! Print some/all per-port counters
  *
@@ -97,79 +106,36 @@ static struct ath_counter_desc cnt_list_tpl[] =
  *
  * \returns 0 on success, 1 on error
  */
-int ath_counters (struct ath_dev *dev, int port, const char *filter, int all)
+int ath_counters (void *devp, int port, const char *filter, int all, int slot, int reset)
 {
+#if !defined(PROC_FILE_ACCESS)
     uint32_t v32;
+#endif
     uint64_t v64;
-    int rc = 0;
-    uint64_t rtime, dtime;
+    uint64_t dtime;
     struct ath_counter_desc *desc;
     struct ath_counter_state *state;
-    int shmid;
     int i;
+    int fd;
+    ssize_t rs;
+    uint64_t pcount[MAX_PORTS];
+    uint64_t pcount_hi[MAX_PORTS];
+    struct ath_dev *dev = devp;
+    char port_id[50];
 
     if (dev->cnt_state == NULL)
     {
-	/* data is kept in IPC shared memory so that we can determine
-	 * per-second information
-	 */
-	shmid = shmget(0xfefec003 + dev->instance, STATE_MEM_SZ, 0);
-
-	if (shmid == -1)
-	{
-	    shmid = shmget(0xfefec003 + dev->instance, STATE_MEM_SZ, IPC_CREAT);
-	    dev->cnt_initialized = 0;
-	}
-	else
-	{
-	    dev->cnt_initialized = 1;
-	}
-
-	if (shmid == -1)
-	{
-	    perror ("shmget(IPC_CREAT)");
-	    SETERR("shmget");
-	    return 1;
-	}
-
-	if (all == 2)
-	{
-	    if (shmctl (shmid, IPC_RMID, NULL))
-	    {
-		perror ("shmctl(IPC_RMID)");
-	    }
-	    else
-	    {
-		printf ("destroyed\n");
-		return 1;
-	    }
-	}
-
-	dev->cnt_state = shmat (shmid, NULL, 0);
-
-	if (dev->cnt_state == ((void *) -1))
-	{
-	    perror ("shmat");
-	    SETERR("shmat");
-	    return 1;
-	}
-
-	if (dev->cnt_initialized == 0)
-	{
-	    memset (dev->cnt_state, 0, STATE_MEM_SZ);
-
-	    dev->cnt_initialized = 0;
-	}
-	else
-	{
-	    dev->cnt_initialized = 1;
-	}
+	dev->cnt_state = get_shm(0xfefec003, STATE_MEM_SZ, &dev->cnt_initialized);
+    }
+    if (dev->cnt_state == NULL)
+    {
+	return 1;
     }
 
     if (port == -1)
     {
 	for (port = 0; port < dev->num_ports; port++)
-	    if (ath_counters (dev, port, filter, all))
+	    if (ath_counters (dev, port, filter, all, slot, reset))
 		return 1;
 	return 0;
     }
@@ -180,6 +146,49 @@ int ath_counters (struct ath_dev *dev, int port, const char *filter, int all)
 	return 1;
     }
 
+#if defined(PROC_FILE_ACCESS)
+    if (dev->file_buffer == NULL)
+    {
+	dev->file_buffer = calloc(1, FILEBUF_SIZE);
+
+	if (!dev->file_buffer)
+	{
+	    SETERR("Failed to allocate ");
+	    return 1;
+	}
+
+	fd = open ("/proc/driver/avmnet/ar8327/rmon_all", O_RDONLY);
+	if (fd == -1)
+	{
+	    SETERR("Failed to open /proc/net/pp/global");
+	    return 1;
+	}
+
+	if ((rs = read (fd, dev->file_buffer, FILEBUF_SIZE-1) == -1))
+	{
+	    SETERR("Failed to read /proc/net/pp/global");
+	    return 1;
+	}
+	close (fd);
+
+	rs = strlen(dev->file_buffer);
+
+	dev->rtime = ullTime();
+    }
+#endif
+
+    if (!prtg_mode())
+    {
+	sprintf (port_id, "%2d", port);
+    }
+    else
+    {
+	if (port == 0)
+	    strcpy (port_id, "cpu");
+	else
+	    sprintf (port_id, "p%d", port);
+    }
+
     for (i = 0; i < NUM_COUNTERS; i++)
     {
 	desc = &cnt_list_tpl[i];
@@ -188,6 +197,7 @@ int ath_counters (struct ath_dev *dev, int port, const char *filter, int all)
 	if (filter && (!strstr (desc->name, filter)))
 	    continue;
 
+#if !defined(PROC_FILE_ACCESS)
 	v32 = ath_rmw (dev, 0x1000 + port*0x100 + desc->off, 0, 0, &rc);
 	if (rc)
 	    return 1;
@@ -204,21 +214,65 @@ int ath_counters (struct ath_dev *dev, int port, const char *filter, int all)
 	{
 	    v64 = v32;
 	}
+	dev->rtime = ullTime();
+#else
+	char *s = strstr(dev->file_buffer, desc->name);
 
-	if (state->lastReadTime == 0)
+	if (!s)
+	    continue;
+	
+	s += strlen(desc->name);
+	if (desc->sz == 8)
+	    s += sizeof("Low");
+
+	sscanf(s, "%lld%lld%lld%lld%lld%lld", 
+		&pcount[0], 
+		&pcount[1], 
+		&pcount[2], 
+		&pcount[3], 
+		&pcount[4], 
+		&pcount[5]);
+
+	if (desc->sz == 8)
 	{
-	    dtime = 0;
-	    state->sum = 0;
+	    s = strstr(s, desc->name);
+	    if (s)
+	    {
+		s += strlen(desc->name) + sizeof("High");
+
+		sscanf(s, "%lld%lld%lld%lld%lld%lld", 
+			&pcount_hi[0], 
+			&pcount_hi[1], 
+			&pcount_hi[2], 
+			&pcount_hi[3], 
+			&pcount_hi[4], 
+			&pcount_hi[5]);
+	    }
 	}
 	else
 	{
-	    rtime = ullTime();
-	    dtime = rtime - state->lastReadTime;
+	    memset (pcount_hi, 0, sizeof(pcount_hi));
 	}
 
-	state->lastReadTime = ullTime();
+	v64 = pcount[port] + pcount_hi[port]*0x100000000ULL;
+#endif
 
-	cntShow (port, v64, &state->sum, desc->name, 0, dtime, all);
+	if (state->lastReadTime[slot] == 0)
+	{
+	    dtime = 0;
+	    state->max_rate_per_sec = 0;
+	}
+	else
+	{
+	    dtime = dev->rtime - state->lastReadTime[slot];
+	}
+
+	state->lastReadTime[slot] = dev->rtime;
+
+	cntShow (port_id, v64, &state->sum[slot], desc->name, 0, dtime, all, &state->max_rate_per_sec);
+
+	if (reset)
+	    state->max_rate_per_sec = 0;
     }
 
     dev->cnt_initialized = 1;

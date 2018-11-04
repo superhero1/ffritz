@@ -45,7 +45,7 @@ pptool:		pptool.o pp_counters.o counters.o
 pptool:		LDFLAGS=-L$(TGTLIB)
 netdev:		netdev.o counters.o netdev_counters.o
 netdev:		LDFLAGS=-L$(TGTLIB)
-pcount:		pcount.o pp_counters.o netdev_counters.o pswtool_counters.o counters.o 
+pcount:		pcount.o pp_counters.o netdev_counters.o pswtool_counters.o counters.o athtool_counters.o
 pcount:		LDFLAGS=-L$(TGTLIB) -lticc
 
 $(TGTLIB):

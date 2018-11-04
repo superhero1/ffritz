@@ -24,6 +24,8 @@
 
 #define verb_printf(lvl, ...) if (_ath_verbose > lvl) { printf(__VA_ARGS__); }
 
+#define MAX_PORTS	6
+
 
 /*! \ingroup athtool */
 /*! @{ */
@@ -77,6 +79,12 @@ struct ath_dev
     /*! Whether counters have been initialized */
     int		cnt_initialized;
 
+    /*! Content of /proc/driver/avmnet/ar8327 */
+    char	*file_buffer;
+
+    /*! Read time of file_buffer */
+    uint64_t 	 rtime;
+
     /*! Register access callout
      *
      * \param dev this
@@ -99,6 +107,8 @@ struct ath_dev
     fprintf (stderr, " :: ERROR[%d] :: %s\n", dev->instance, dev->ath_err ? dev->ath_err : "(none)");\
     fflush(stderr);}
 
+#define FILEBUF_SIZE	10000
+
 extern uint32_t ath_rmw (struct ath_dev *dev, uint32_t reg, uint32_t mask, uint32_t value, int *err);
 extern void ath_vlan_show (struct ath_dev *dev);
 extern int ath_vlan_create (struct ath_dev *dev, uint32_t vid, uint32_t attr);
@@ -107,7 +117,6 @@ extern int ath_vlan_port_rm (struct ath_dev *dev, uint32_t vid, uint32_t port);
 extern int ath_vlan_port_add (struct ath_dev *dev, uint32_t vid, uint32_t port, uint32_t mode);
 extern uint32_t ath_attr_set_port (struct ath_dev *dev, uint32_t attr, uint32_t port, uint32_t mode);
 extern int ath_pvid_port (struct ath_dev *dev, uint32_t port, uint32_t vid);
-extern int ath_counters (struct ath_dev *dev, int port, const char *filter, int all);
 
 extern void ath_arl_dump (struct ath_dev *dev);
 extern int ath_arl_flags_parse (struct ath_dev *dev, struct ath_arl_entry *entry, char *entry_spec);

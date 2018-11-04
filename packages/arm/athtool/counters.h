@@ -73,6 +73,9 @@ extern void set_prtg_mode(enum prtg_mode mode);
 extern int netdev_counters (int port, const char *filter, int all, int slot, int reset);
 extern int pp_counters (int port, const char *filter, int all, int slot, int reset);
 extern int psw_counters (int port, const char *filter, int all, int slot, int reset);
+extern int ath_counters (void *devp, int port, const char *filter, int all, int slot, int reset);
 extern void *get_shm(unsigned int key, size_t size, int *cnt_initialized);
+extern void *ath_st_alloc(void);
+
 /*! @} */
 #endif
