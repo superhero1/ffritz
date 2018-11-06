@@ -484,7 +484,7 @@ int main (int argc, char **argv)
 	    if (s)
 		filter = strdup (s);
 
-	    if (ath_counters (dev, port, filter, all))
+	    if (ath_counters (dev, port, filter, all, 0, 0))
 	    {
 		PRERR("ath_counters");
 		return 1;

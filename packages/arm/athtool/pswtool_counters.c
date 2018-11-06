@@ -41,20 +41,20 @@
  */
 static struct ath_counter_desc cnt_list_tpl[] =
 {
-	{.name="RX_packets1", .off=0x00, .sz=4 },
-	{.name="RX_packets2", .off=0x04, .sz=4 },
-	{.name="Counter3", .off=0x08, .sz=4},
-	{.name="Counter4", .off=0x0c, .sz=4},
-	{.name="RX_octets", .off=0x10, .sz=4},
-	{.name="TX_packets1", .off=0x14, .sz=4},
-	{.name="TX_packets2", .off=0x18, .sz=4},
-	{.name="TX_octets", .off=0x1C, .sz=4},
-	{.name="Counter9", .off=0x20, .sz=4},
-	{.name="Counter10", .off=0x24, .sz=4},
-	{.name="Counter11", .off=0x28, .sz=4},
-	{.name="Counter12", .off=0x2C, .sz=4},
-	{.name="Counter13", .off=0x30, .sz=4},
-	{.name="Counter14", .off=0x34, .sz=4},
+	{.name="RX_packets1", .off=0x00, .sz=4, .type=PKT},
+	{.name="RX_packets2", .off=0x04, .sz=4, .type=PKT},
+	{.name="Counter3", .off=0x08, .sz=4, .type=PKT},
+	{.name="Counter4", .off=0x0c, .sz=4, .type=PKT},
+	{.name="RX_octets", .off=0x10, .sz=4, .type=OCTET},
+	{.name="TX_packets1", .off=0x14, .sz=4, .type=PKT},
+	{.name="TX_packets2", .off=0x18, .sz=4, .type=PKT},
+	{.name="TX_octets", .off=0x1C, .sz=4, .type=OCTET},
+	{.name="Counter9", .off=0x20, .sz=4, .type=PKT},
+	{.name="Counter10", .off=0x24, .sz=4, .type=PKT},
+	{.name="Counter11", .off=0x28, .sz=4, .type=PKT},
+	{.name="Counter12", .off=0x2C, .sz=4, .type=PKT},
+	{.name="Counter13", .off=0x30, .sz=4, .type=PKT},
+	{.name="Counter14", .off=0x34, .sz=4, .type=PKT},
 };
 
 #define NUM_COUNTERS	(sizeof(cnt_list_tpl) / sizeof(cnt_list_tpl[0]))
@@ -81,7 +81,7 @@ static struct ath_counter_state *cnt_state;
  *
  * \returns 0 on success, 1 on error
  */
-int psw_counters (int port, const char *filter, int all, int slot, int reset)
+int psw_counters (struct port_id *port, struct filter *filter, int all, int slot, int reset)
 {
     uint32_t v32;
     uint64_t v64;
@@ -105,21 +105,32 @@ int psw_counters (int port, const char *filter, int all, int slot, int reset)
 	return 1;
     }
 
-    if (port == -1)
+    if (port->num == -1)
     {
-	for (port = 0; port < num_ports; port++)
-	    if (psw_counters (port, filter, all, slot, reset))
+	for (port->num = 0; port->num < num_ports; port->num++)
+	{
+	    struct port_id nport;
+
+	    if (match_port(port, cnt_list_tpl[port->num].name, -1))
+		continue;
+
+	    nport = *port;
+
+	    if (psw_counters (&nport, filter, all, slot, reset))
 		return 1;
+	}
 	return 0;
     }
 
-    if ((port < 0) || (port >= num_ports))
+    if ((port->num < 0) || (port->num >= num_ports))
     {
 	SETERR("port number out of range");
 	return 1;
     }
 
-    if (L2SWITCH_GetPortStats (port, cnt))
+    port->name = cnt_list_tpl[port->num].name;
+
+    if (L2SWITCH_GetPortStats (port->num, cnt))
     {
 	SETERR("L2SWITCH_GetPortStats");
 	return 1;
@@ -127,7 +138,7 @@ int psw_counters (int port, const char *filter, int all, int slot, int reset)
 
     rtime = ullTime();
 
-    sprintf (port_id, "%2d", port);
+    sprintf (port_id, "%2d", port->num);
 
     if (prtg_mode())
 	strcat (port_id, "_");
@@ -135,9 +146,9 @@ int psw_counters (int port, const char *filter, int all, int slot, int reset)
     for (i = 0; i < NUM_COUNTERS; i++)
     {
 	desc = &cnt_list_tpl[i];
-	state = &cnt_state[port * NUM_COUNTERS + i];
+	state = &cnt_state[port->num * NUM_COUNTERS + i];
 
-	if (filter && (!strstr (desc->name, filter)))
+	if (match_filter(desc, filter))
 	    continue;
 
 	v32 = cnt[i];
@@ -155,7 +166,7 @@ int psw_counters (int port, const char *filter, int all, int slot, int reset)
 
 	state->lastReadTime[slot] = rtime;
 
-	cntShow (port_id, v64, &state->sum[slot], desc->name, 0, dtime, all, &state->max_rate_per_sec);
+	cntShow (port_id, v64, &state->sum[slot], desc->name, 0, dtime, all, &state->max_rate_per_sec, cnt_list_tpl[i].type);
 
 	if (reset)
 	    state->max_rate_per_sec = 0;

@@ -62,9 +62,14 @@ static const char *usage =
 #endif
 " --netif-counters|-i <p>[,<all>[,<filter>]] (network interfaces)\n"
 "                  : Print counters of port <p> (-1 for all ports).\n"
-"                    If <all> is 1 all counters are printed, otherwise only\n"
-"                    those that have changed since the previous call.\n"
-"                    Use optional <filter> for counter name substring match.\n"
+"                    p is either a number or a port name.\n"
+"                    If <all> is 1 all counters are printed,\n"
+"                    otherwise only those that have changed since the \n"
+"                    previous call.\n"
+"                    Use optional <filter> for counter name/type match:\n"
+"                     filter:=[substr][%%type]\n"
+"                      substr : substring match for counter name\n"
+"                      type   : byte/pkt for byte/packet counters\n"
 " --reset|-z       : Reset max. rate after output\n"
 " --slot|-s <num>  : A storage slot where counter history is kept.\n"
 "                    Usable for different average times, e.g. slot 0 for\n"
@@ -75,6 +80,8 @@ static const char *usage =
 "                    3 : Rate (1/s)\n"
 "                    4 : Maximum rate (1/s)\n"
 "                    5 : Both rate and maximum rate\n"
+" --bps|-B             : Display rates in bits per second\n"
+" --raw|-R             : Display rates as raw value\n"
 ;
 
 /* ========================================================================= */
@@ -86,13 +93,15 @@ int main (int argc, char **argv)
 {
     int c;
     char *s;
-    uint32_t port;
     int all = 0;
-    const char *filter= NULL;
+    struct filter filter;
+    struct port_id port;
     int reset = 0;
     int slot = 0;
     int pass;
+#if defined(ATOM_BUILD)
     void *ath_dev = ath_st_alloc();
+#endif
 
     for (pass = 0; pass < 2; pass++)
     {
@@ -112,6 +121,8 @@ int main (int argc, char **argv)
 		{"extsw-counters", required_argument, 0, 'e'},
 #endif
 		{"netif-counters", required_argument, 0, 'i'},
+		{"bps", no_argument, 0, 'B'},
+		{"raw", no_argument, 0, 'R'},
 		{"slot", required_argument, 0, 's'},
 		{"reset", no_argument, 0, 'z'},
 		{"prtg", required_argument, 0, 'x'},
@@ -120,13 +131,23 @@ int main (int argc, char **argv)
 	    };
 
 
-	    c = getopt_long (argc, argv, "e:p:l:i:s:zhx:", long_options, &option_index);
+	    c = getopt_long (argc, argv, "e:p:l:i:s:zhx:BR", long_options, &option_index);
 
 	    if (c == -1)
 		break;
 
+	    slot = 0;
+	    memset (&filter, 0, sizeof(filter));
+	    make_port(&port, NULL);
+
 	    switch (c)
 	    {
+	    case 'R':
+	    	set_hr_mode (0);
+		break;
+	    case 'B':
+	        set_bps_mode ();
+		break;
 	    case 'x':
 		set_prtg_mode((enum prtg_mode)atoi(optarg));
 		break;
@@ -141,18 +162,15 @@ int main (int argc, char **argv)
 	    	if (pass == 0)
 		    break;
 
-		filter= NULL;
-		slot = 0;
-
 		s = strtok (optarg, ",");
 		if (s)
 		    all = atoi(s);
 		if (s)
 		    s = strtok (NULL, ",");
 		if (s)
-		    filter = strdup (s);
+		    make_filter(&filter, s);
 
-		if (pp_counters (0, filter, all, slot, reset))
+		if (pp_counters (&filter, all, slot, reset))
 		{
 		    PRERR("pp_counters");
 		}
@@ -162,13 +180,9 @@ int main (int argc, char **argv)
 	    	if (pass == 0)
 		    break;
 
-		port = -1;
-		filter= NULL;
-		slot = 0;
-
 		s = strtok (optarg, ",");
 		if (s)
-		    port = atoi(s);
+		    make_port(&port, s);
 
 		if (s)
 		    s = strtok (NULL, ",");
@@ -177,9 +191,9 @@ int main (int argc, char **argv)
 		if (s)
 		    s = strtok (NULL, ",");
 		if (s)
-		    filter= strdup (s);
+		    make_filter(&filter, s);
 
-		if (psw_counters (port, filter, all, slot, reset))
+		if (psw_counters (&port, &filter, all, slot, reset))
 		{
 		    PRERR("psw_counters");
 		}
@@ -189,13 +203,9 @@ int main (int argc, char **argv)
 	    	if (pass == 0)
 		    break;
 
-		port = -1;
-		filter= NULL;
-		slot = 0;
-
 		s = strtok (optarg, ",");
 		if (s)
-		    port = atoi(s);
+		    make_port(&port, s);
 		if (s)
 		    s = strtok (NULL, ",");
 		if (s)
@@ -203,9 +213,9 @@ int main (int argc, char **argv)
 		if (s)
 		    s = strtok (NULL, ",");
 		if (s)
-		    filter = strdup (s);
+		    make_filter(&filter, s);
 
-		if (ath_counters (ath_dev, port, filter, all, slot, reset))
+		if (ath_counters (ath_dev, &port, &filter, all, slot, reset))
 		{
 		    PRERR("ath_counters");
 		}
@@ -216,13 +226,9 @@ int main (int argc, char **argv)
 	    	if (pass == 0)
 		    break;
 
-		port = -1;
-		filter= NULL;
-		slot = 0;
-
 		s = strtok (optarg, ",");
 		if (s)
-		    port = atoi(s);
+		    make_port(&port, s);
 		if (s)
 		    s = strtok (NULL, ",");
 		if (s)
@@ -230,9 +236,9 @@ int main (int argc, char **argv)
 		if (s)
 		    s = strtok (NULL, ",");
 		if (s)
-		    filter = strdup (s);
+		    make_filter(&filter, s);
 
-		if (netdev_counters (port, filter, all, slot, reset))
+		if (netdev_counters (&port, &filter, all, slot, reset))
 		{
 		    PRERR("netdev_counters");
 		}

@@ -28,7 +28,7 @@ export PATH := $(TOOLCHAIN):$(PATH)
 
 ###############################################################################
 
-TARGETS	    = mdio-release pswtool pptool netdev pcount
+TARGETS	    = mdio-release pswtool pptool pcount
 
 ## No longer supported in 6.8
 #TARGETS    += athtool
@@ -43,9 +43,7 @@ pswtool:	pswtool.o pswtool_counters.o counters.o
 pswtool:	LDFLAGS=-L$(TGTLIB) -lticc
 pptool:		pptool.o pp_counters.o counters.o 
 pptool:		LDFLAGS=-L$(TGTLIB)
-netdev:		netdev.o counters.o netdev_counters.o
-netdev:		LDFLAGS=-L$(TGTLIB)
-pcount:		pcount.o pp_counters.o netdev_counters.o pswtool_counters.o counters.o athtool_counters.o
+pcount:		pcount.o pp_counters.o netdev_counters.o pswtool_counters.o counters.o 
 pcount:		LDFLAGS=-L$(TGTLIB) -lticc
 
 $(TGTLIB):

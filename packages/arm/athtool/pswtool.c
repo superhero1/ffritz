@@ -91,7 +91,9 @@ int main (int argc, char **argv)
     int rc;
     uint32_t port, mode, vid;
     int all = 0;
-    const char *filter = NULL;
+    struct filter filter;
+
+    struct port_id portid;
     int reset = 0;
     int slot = 0;
 
@@ -132,7 +134,7 @@ int main (int argc, char **argv)
 	case 'c':
 	    s = strtok (optarg, ",");
 	    if (s)
-		port = atoi(s);
+		portid.num = atoi(s);
 	    else
 	    {
 		fprintf (stderr, usage);
@@ -145,9 +147,9 @@ int main (int argc, char **argv)
 	    if (s)
 		s = strtok (NULL, ",");
 	    if (s)
-		filter = strdup (s);
+		make_filter(&filter, s);
 
-	    if (psw_counters (port, filter, all, slot, reset))
+	    if (psw_counters (&portid, &filter, all, slot, reset))
 	    {
 		PRERR("psw_counters");
 		return 1;

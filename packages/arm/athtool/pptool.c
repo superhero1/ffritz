@@ -67,7 +67,7 @@ int main (int argc, char **argv)
     int c;
     char *s;
     int all = 0;
-    const char *filter = NULL;
+    struct filter filter;
     int slot = 0;
     int reset = 0;
 
@@ -102,9 +102,9 @@ int main (int argc, char **argv)
 	    if (s)
 		s = strtok (NULL, ",");
 	    if (s)
-		filter = strdup (s);
+		make_filter(&filter, s);
 
-	    if (pp_counters (0, filter, all, slot, reset))
+	    if (pp_counters (&filter, all, slot, reset))
 	    {
 		PRERR("psw_counters");
 		return 1;

@@ -38,41 +38,41 @@
 
 static struct ath_counter_desc cnt_list_tpl[] =
 {
-        {.name="PPDSP_rx_pkts"},
-        {.name="PPDSP_pkts_frwrd_to_cpdsp1"},
-        {.name="PPDSP_not_enough_descriptors"},
+        {.name="PPDSP_rx_pkts", .type=PKT},
+        {.name="PPDSP_pkts_frwrd_to_cpdsp1", .type=PKT},
+        {.name="PPDSP_not_enough_descriptors", .type=PKT},
 
-        {.name="CPDSP1_rx_pkts"},
-        {.name="CPDSP1_lut1_search_attempts"},
-        {.name="CPDSP1_lut1_matches"},
-        {.name="CPDSP1_pkts_frwrd_to_cpdsp2"},
+        {.name="CPDSP1_rx_pkts", .type=PKT},
+        {.name="CPDSP1_lut1_search_attempts", .type=PKT},
+        {.name="CPDSP1_lut1_matches", .type=PKT},
+        {.name="CPDSP1_pkts_frwrd_to_cpdsp2", .type=PKT},
 
-        {.name="CPDSP2_rx_pkts"},
-        {.name="CPDSP2_lut2_search_attempts"},
-        {.name="CPDSP2_lut2_matches"},
-        {.name="CPDSP2_pkts_frwrd_to_mpdsp"},
-        {.name="CPDSP2_synch_timeout_events"},
-        {.name="CPDSP2_reassembly_db_full"},
-        {.name="CPDSP2_reassembly_db_timeout"},
+        {.name="CPDSP2_rx_pkts", .type=PKT},
+        {.name="CPDSP2_lut2_search_attempts", .type=PKT},
+        {.name="CPDSP2_lut2_matches", .type=PKT},
+        {.name="CPDSP2_pkts_frwrd_to_mpdsp", .type=PKT},
+        {.name="CPDSP2_synch_timeout_events", .type=PKT},
+        {.name="CPDSP2_reassembly_db_full", .type=PKT},
+        {.name="CPDSP2_reassembly_db_timeout", .type=PKT},
 
-        {.name="MPDSP_rx_pkts"},
-        {.name="MPDSP_ipv4_rx_pkts"},
-        {.name="MPDSP_ipv6_rx_pkts"},
-        {.name="MPDSP_frwrd_to_host"},
-        {.name="MPDSP_frwrd_to_qpdsp"},
-        {.name="MPDSP_frwrd_to_synch_q"},
-        {.name="MPDSP_discards"},
-        {.name="MPDSP_synchq_overflow_events"},
+        {.name="MPDSP_rx_pkts", .type=PKT},
+        {.name="MPDSP_ipv4_rx_pkts", .type=PKT},
+        {.name="MPDSP_ipv6_rx_pkts", .type=PKT},
+        {.name="MPDSP_frwrd_to_host", .type=PKT},
+        {.name="MPDSP_frwrd_to_qpdsp", .type=PKT},
+        {.name="MPDSP_frwrd_to_synch_q", .type=PKT},
+        {.name="MPDSP_discards", .type=PKT},
+        {.name="MPDSP_synchq_overflow_events", .type=PKT},
 
-        {.name="PrxPDSP_popped_from_In_queues"},
-        {.name="PrxPDSP_forward_to_L2switch"},
-        {.name="PrxPDSP_from_L2switch"},
-        {.name="PrxPDSP_pushed_to_Prefetcher"},
-        {.name="PrxPDSP_Not_enough_buffers"},
-        {.name="PrxPDSP_Not_enough_Descriptors"},
-        {.name="PrxPDSP_pktsToSmallForPadding"},
+        {.name="PrxPDSP_popped_from_In_queues", .type=PKT},
+        {.name="PrxPDSP_forward_to_L2switch", .type=PKT},
+        {.name="PrxPDSP_from_L2switch", .type=PKT},
+        {.name="PrxPDSP_pushed_to_Prefetcher", .type=PKT},
+        {.name="PrxPDSP_Not_enough_buffers", .type=PKT},
+        {.name="PrxPDSP_Not_enough_Descriptors", .type=PKT},
+        {.name="PrxPDSP_pktsToSmallForPadding", .type=PKT},
 
-        {.name="QPDSP_ooo_discards"},
+        {.name="QPDSP_ooo_discards", .type=PKT},
 
 };
 
@@ -100,7 +100,7 @@ static struct ath_counter_state *cnt_state = NULL;
  *
  * \returns 0 on success, 1 on error
  */
-int pp_counters (int port, const char *filter, int all, int slot, int reset)
+int pp_counters (struct filter *filter, int all, int slot, int reset)
 {
     uint64_t v64;
     uint64_t rtime, dtime;
@@ -112,6 +112,7 @@ int pp_counters (int port, const char *filter, int all, int slot, int reset)
     ssize_t rs;
     int retry;
     char port_id[10] = "";
+    int port = 0;
 
     if (slot >= CNT_SLOTS)
 	return 1;
@@ -122,20 +123,6 @@ int pp_counters (int port, const char *filter, int all, int slot, int reset)
     }
     if (cnt_state == NULL)
     {
-	return 1;
-    }
-
-    if (port == -1)
-    {
-	for (port = 0; port < num_ports; port++)
-	    if (pp_counters (port, filter, all, slot, reset))
-		return 1;
-	return 0;
-    }
-
-    if ((port < 0) || (port >= num_ports))
-    {
-	SETERR("port number out of range");
 	return 1;
     }
 
@@ -166,7 +153,7 @@ int pp_counters (int port, const char *filter, int all, int slot, int reset)
         rtime = ullTime();
 
 	if (!prtg_mode())
-	    sprintf (port_id, "%2d", port);
+	    sprintf (port_id, "%2d", 0);
 
 	for (i = 0; i < NUM_COUNTERS; i++)
 	{
@@ -178,7 +165,7 @@ int pp_counters (int port, const char *filter, int all, int slot, int reset)
 	    desc = &cnt_list_tpl[i];
 	    state = &cnt_state[port * NUM_COUNTERS + i];
 
-	    if (filter && (!strstr (desc->name, filter)))
+	    if (match_filter(desc, filter))
 		continue;
 
 	    strcpy (prefix, cnt_list_tpl[i].name);
@@ -231,7 +218,7 @@ int pp_counters (int port, const char *filter, int all, int slot, int reset)
 
 	    state->lastReadTime[slot] = rtime;
 
-	    cntShow (port_id, v64, &state->sum[slot], desc->name, 0, dtime, all, &state->max_rate_per_sec);
+	    cntShow (port_id, v64, &state->sum[slot], desc->name, 0, dtime, all, &state->max_rate_per_sec, cnt_list_tpl[i].type);
 
 	    if (reset)
 		state->max_rate_per_sec = 0;
