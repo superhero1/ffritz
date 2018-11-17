@@ -42,7 +42,7 @@ ifeq ($(INSTDIR),)
 endif
 
 SUBDIRS	    = ../buildroot ../libmaru ../shairport ../libmpdclient ../mpc ../lirc ../libupnpp ../jsoncpp ../upmpdcli ../libnfs ../nfs ../mpd ../bt src
-INSTDIRS    = ../lirc/install ../libupnpp/install ../upmpdcli/install ../nfs/install ../bt/install ../prtg/install
+INSTDIRS    = ../lirc/install ../libupnpp/install ../upmpdcli/install ../nfs/install ../bt/install ../prtg/install ../athtool/install
 SUBDIRS    += ../libdvbfi
 INSTDIRS   += ../libdvbfi/install
 

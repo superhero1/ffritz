@@ -117,6 +117,10 @@ extern int ath_vlan_port_rm (struct ath_dev *dev, uint32_t vid, uint32_t port);
 extern int ath_vlan_port_add (struct ath_dev *dev, uint32_t vid, uint32_t port, uint32_t mode);
 extern uint32_t ath_attr_set_port (struct ath_dev *dev, uint32_t attr, uint32_t port, uint32_t mode);
 extern int ath_pvid_port (struct ath_dev *dev, uint32_t port, uint32_t vid);
+extern int ath_svid_port (struct ath_dev *dev, uint32_t port, uint32_t vid);
+extern int ath_port_vlan_attr_parse(char *attr_list, uint32_t *value, uint32_t *mask);
+extern int ath_vattr_port (struct ath_dev *dev, uint32_t port, uint32_t attr, uint32_t mask);
+
 
 extern void ath_arl_dump (struct ath_dev *dev);
 extern int ath_arl_flags_parse (struct ath_dev *dev, struct ath_arl_entry *entry, char *entry_spec);

@@ -1,0 +1,21 @@
+
+# script to flatten the external switch (VLAN 4)
+# If it fails, bad luck (login via WiFi should still work)
+#
+
+# Set port properties
+#
+athtool -F1,TLS=0:PROP_EN=1:OUTMODE=1 -F2,TLS=0:PROP_EN=1:OUTMODE=1 -F3,TLS=0:PROP_EN=1:OUTMODE=1 -F4,TLS=0:PROP_EN=1:OUTMODE=1
+
+# remove/add VLAN 4
+#
+athtool -D 4 -A0,tag -A1,untag -A2,untag -A3,untag -A4,untag -C4 
+
+# Reset default VIDs
+#
+athtool -S 1,4 -S2,4 -S3,4 -S4,4
+
+# And show the result
+#
+athtool -V
+

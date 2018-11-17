@@ -20,6 +20,7 @@
 /* ========================================================================= */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <getopt.h>
 #include <string.h>
@@ -29,6 +30,70 @@
 
 /*! \ingroup athtool */
 /*! @{ */
+
+static struct
+{
+    char *id;
+    uint32_t val;
+} vattr[] =
+{
+    { "EGTYPE", AR8327_PORT_VLAN1_EG_TYPE_1 },
+    { "EG_MODE", AR8327_PORT_VLAN1_OUT_MODE },
+    { "IG_MODE", AR8327_PORT_VLAN1_IN_MODE },
+    { "SPCHECK", AR8327_PORT_VLAN1_SPCHECK },
+    { "CORE", AR8327_PORT_VLAN1_CORE_PORT },
+    { "FRC_VID", AR8327_PORT_VLAN1_FRCDEFV },
+    { "TLS", AR8327_PORT_VLAN1_TLS },
+    { "PROP_EN", AR8327_PORT_VLAN1_PORT_VLAN_PROP },
+    { "CLONE_EN", AR8327_PORT_VLAN1_CLONE },
+    { "PRIO", AR8327_PORT_VLAN1_PRIPRO },
+    { NULL, 0 }
+};
+
+static int fbit(uint32_t val)
+{
+    int i;
+    for (i = 0; i < 32; i++)
+    {
+	if (val & (1<<i))
+	    return i;
+    }
+    return -1;
+}
+
+/*! Parse vlan port attributes (PORT_VLAN1)
+ *
+ * \param attr_list list of ATTR=value pairs
+ * \param value	[out] pointer to parsed values
+ * \param mask	[out] pointer to value mask
+ *
+ * \returns number of parsed attributes
+ */
+int ath_port_vlan_attr_parse(char *attr_list, uint32_t *value, uint32_t *mask)
+{
+    char *s;
+    int count = 0;
+    int i;
+
+    for (i = 0; vattr[i].id != NULL; i++)
+    {
+	if ((s = strstr(attr_list, vattr[i].id)) == NULL)
+	{
+	    continue;
+	}
+	if (strncmp(s, vattr[i].id, strlen(vattr[i].id)))
+	{
+	    continue;
+	}
+	
+	s += strlen(vattr[i].id)+1;
+
+	*value |= (atoi(s) << fbit(vattr[i].val)) & vattr[i].val;
+	*mask  |= vattr[i].val;
+	count++;
+    }
+    return count;
+}
 
 /*! Execute VTU command
  *
@@ -251,7 +316,7 @@ int ath_vlan_port_add (struct ath_dev *dev, uint32_t vid, uint32_t port, uint32_
     return 0;
 }
 
-/*! Set default VID for untagged ingress frames
+/*! Set default CVID for untagged ingress frames
  *
  * \param dev	Device handle
  * \param port port number
@@ -272,6 +337,61 @@ int ath_pvid_port (struct ath_dev *dev, uint32_t port, uint32_t vid)
     ath_rmw (dev, AR8327_REG_PORT_VLAN0(port),
 	AR8327_PORT_VLAN0_DEF_CVID,
 	vid << AR8327_PORT_VLAN0_DEF_CVID_S,
+	&rc);
+
+    return rc;
+}
+
+/*! Set default SVID for untagged ingress frames
+ *
+ * \param devDevice handle
+ * \param port port number
+ * \param vid  VLAN id
+ *
+ * \returns 0 on success, 1 on error
+ */
+int ath_svid_port (struct ath_dev *dev, uint32_t port, uint32_t vid)
+{
+    int rc = 0;
+
+    if ((port > 6) || (vid > 4095))
+    {
+	SETERR("parameter out of range");
+	return 1;
+    }
+
+    ath_rmw (dev, AR8327_REG_PORT_VLAN0(port),
+	AR8327_PORT_VLAN0_DEF_SVID,
+	vid << AR8327_PORT_VLAN0_DEF_SVID_S,
+	&rc);
+
+    return rc;
+}
+
+/*! Set vlan attributes for a port
+ *
+ * See ath_port_vlan_attr_parse()
+ *
+ * \param devDevice handle
+ * \param port port number
+ * \param attr bitfield of attributes (PORT_VLAN1 register)
+ * \param mask mask which attributes to change 
+ *
+ * \returns 0 on success, 1 on error
+ */
+int ath_vattr_port (struct ath_dev *dev, uint32_t port, uint32_t attr, uint32_t mask)
+{
+    int rc = 0;
+
+    if (port > 6)
+    {
+	SETERR("parameter out of range");
+	return 1;
+    }
+
+    ath_rmw (dev, AR8327_REG_PORT_VLAN1(port),
+	mask,
+	attr,
 	&rc);
 
     return rc;
@@ -483,10 +603,10 @@ void ath_vlan_show (struct ath_dev *dev)
 	}
 	printf ("\nVLAN%6d: ", vid);
 	printf ("{V=%d IVL=%d LLD=%d PO=%d PRI=%d}",
-	    ((vr1 && BIT(20)) != 0),
-	    ((vr1 && BIT(19)) != 0),
-	    ((vr1 && BIT(18)) != 0),
-	    ((vr1 && BIT(3)) != 0),
+	    ((vr1 & BIT(20)) != 0),
+	    ((vr1 & BIT(19)) != 0),
+	    ((vr1 & BIT(18)) != 0),
+	    ((vr1 & BIT(3)) != 0),
 	    vr1 & 7);
     }
 
