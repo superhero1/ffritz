@@ -1,20 +1,4 @@
-
-# Use AVM toolchain by default
-#
-ifeq ($(BUILDROOT),)
-BUILDROOT   = $(shell cd ../buildroot/build; pwd)
-endif
-
-ifeq ($(BUILDROOT),)
-$(error BUILDROOT (buildroot top directory) not defined)
-endif
-
-ifeq ($(CROSS_COMPILE),)
-CROSS_COMPILE=armeb-buildroot-linux-uclibcgnueabi-
-endif
-
-
-
+include ../toolchain.mk
 
 ###############################################################################
 
@@ -24,11 +8,15 @@ DESTDIR	    = $(TOPDIR)/output
 TGTLIB	    = ../../../arm/squashfs-root/lib
 #TGTLIB	    = ../../../tmp/squashfs-root/lib/
 
+CMN	    = ../../common/athtool
+
 export PATH := $(TOOLCHAIN):$(PATH)
+vpath %.c $(CMN)
+CFLAGS += -I$(CMN)
 
 ###############################################################################
 
-TARGETS	    = mdio-release pswtool pptool pcount
+TARGETS	    = mdio-release pswtool pcount
 
 ## No longer supported in 6.8
 #TARGETS    += athtool
@@ -41,8 +29,6 @@ athtool:	LDFLAGS=-L$(TGTLIB) -lticc
 mdio-release:	mdio-release.o
 pswtool:	pswtool.o pswtool_counters.o counters.o
 pswtool:	LDFLAGS=-L$(TGTLIB) -lticc
-pptool:		pptool.o pp_counters.o counters.o 
-pptool:		LDFLAGS=-L$(TGTLIB)
 pcount:		pcount.o pp_counters.o netdev_counters.o pswtool_counters.o counters.o 
 pcount:		LDFLAGS=-L$(TGTLIB) -lticc
 
@@ -54,11 +40,6 @@ install:    all
 
 clean:
 	rm -f $(TARGETS) *.o *.d
-
-doc:	html/index.html
-
-html/index.html:    $(wildcard *.c *.h) Doxyfile
-	doxygen Doxyfile
 
 include ../../rules.mk
 -include $(wildcard *.d)

@@ -4,6 +4,8 @@ TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
 export PATH := $(TOOLCHAIN):$(PATH)
 CC	    = armeb-buildroot-linux-uclibcgnueabi-gcc
 
+vpath %.c ../../../common/ffdaemon
+
 CFLAGS  += 
 LDFLAGS +=
 

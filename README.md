@@ -22,7 +22,8 @@ rebuild them is located below packages.
 Have Fun,
 <f/e/s/c/2/0/0/0/@/g/m/a/i/l/./c/o/m>
 
-NOTE: This is the FrizOS 7 branch, which is still beta.
+NOTE: This is the main branch which only supports FrizOS 7. Older versions
+      are kept on the "fritzos6" branch.
 
 Usage
 =====
@@ -33,7 +34,7 @@ Creating an install/update image
 - Clone repository (master branch) in the directory where the original
     install image is located:
 
-    `git clone https://fesc2000@bitbucket.org/fesc2000/ffritz.git -b fritzos7`
+    `git clone https://fesc2000@bitbucket.org/fesc2000/ffritz.git`
 
 - Go to ffritz directory and run make (sudo required).
 
@@ -257,12 +258,8 @@ Notes
 
 Toolchain
 ---------
-Cross-compile toolchain for ARM is buildroot-2013.02 from the original avm
-source tarball.
-It is installed in packages/arm/avm (just do a make there).
-
-For Atom, the toolchain is buildroot-2013.02 (packages/x86/buildroot).
-The atom source tarball (packages/x86/avm) does not work for me.
+Cross-compile toolchain for ARM and atom is buildroot-2016.05.
+It is installed in packages/(arm|x86)/buildroot (just do a make there).
 
 Build Host
 ----------

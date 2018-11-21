@@ -104,6 +104,7 @@ Usage:
  --pp-counters|-p [<all>[,<filter>]]               (ARM only!)
  --l2sw-counters|-l <p>[,<all>[,<filter>]]         (ARM only!)
  --netif-counters|-i <p>[,<all>[,<filter>]]
+ --extsw-counters|-i <p>[,<all>[,<filter>]]	   (Atom only)
                   : Print counters of port <p> (-1 for all ports).
                     If <all> is 1 all counters are printed, otherwise only
                     those that have changed since the previous call.
@@ -123,6 +124,7 @@ Usage:
 - pp-counters:    These are some counters from the packet processor
 - l2sw-counters:  Counters of the internal L2 switch
 - netif-counters: Counters of all network interfaces (from /proc/net/dev)
+- extsw-counters: Counters of external switch ports 
 
 To call the arm tool from atom, just use "rpc pcount ...".
 
@@ -172,7 +174,7 @@ Atom libraries
 - Espcially mpd requires a lot of additional shared libraries. Rather than
     integrating them into /lib / /usr/lib, they remain in their own lib
     directory (/usr/local/lib).
-    Also, the systems's `LD_LIBRARY_PATH` is not modified. This is to avoid any
+    Also, the systemss `LD_LIBRARY_PATH` is not modified. This is to avoid any
     conflicts/incompatibilies with other box services.
 
     In order to be able to call these binaries they are invoked via a wrapper

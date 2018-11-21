@@ -35,7 +35,8 @@ STAGEDIR    = $(TOPDIR)/output/ffritz
 
 VERSION     = $(shell cat version)
 
-IMAGE       = ffritz-app-$(VERSION).tar
+IMAGE       = ffritz-app-$(VERSION)-fos7.tar
+CSUM	    = ffritz-app-$(VERSION)-fos7.sha256sum
 
 ifeq ($(INSTDIR),)
     INSTDIR=$(STAGEDIR)
@@ -45,6 +46,10 @@ SUBDIRS	    = ../buildroot ../libmaru ../shairport ../libmpdclient ../mpc ../lir
 INSTDIRS    = ../lirc/install ../libupnpp/install ../upmpdcli/install ../nfs/install ../bt/install ../prtg/install ../athtool/install
 SUBDIRS    += ../libdvbfi
 INSTDIRS   += ../libdvbfi/install
+
+ifeq ($(CASH),)
+CASH=$(shell ls -d ../cash 2>/dev/null)
+endif
 
 ifneq ($(CASH),)
 SUBDIRS    += $(CASH)
@@ -73,16 +78,16 @@ $(INSTDIRS):
 	make -C `dirname $@` install DESTDIR=$(INSTDIR)
 
 $(IMAGE): ffimage.bin
-	sha256sum ffimage.bin | sed -e 's/ .*//' > ffimage.sha256sum
+	sha256sum ffimage.bin | sed -e 's/ .*//' > $(CSUM)
 	cp ../../../*.md .
 	cp ../libdvbfi/README.txt README-dvb.txt 
 	cp ../libdvbfi/fwd .
-	tar cf $(IMAGE) ffimage.bin ffimage.sha256sum *.md README-dvb.txt fwd uclib-version
+	tar cf $(IMAGE) ffimage.bin $(CSUM) *.md README-dvb.txt fwd uclib-version
 #	tar cf $(IMAGE) ffimage.bin ffimage.sha256sum *.md uclib-version
 	@echo
 	@echo +++ DONE +++
 	@echo "Atom image file: $(TOPDIR)/$(IMAGE)"
-	@echo "Image checksum:  `cat ffimage.sha256sum`"
+	@echo "Image checksum:  `cat $(CSUM)`"
 	@echo
 	
 

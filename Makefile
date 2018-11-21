@@ -6,9 +6,9 @@ HOST    = $(shell uname -m)
 SUDO	= sudo
 
 
-###############################################################################################
+################################################################################
 # Configuration
-###############################################################################################
+################################################################################
 #
 # The original firmware tarball
 #
@@ -17,19 +17,22 @@ SUDO	= sudo
 #URL=http://download.avm.de/firmware/6590/96980342/$(shell basename $(ORIG))
 #
 # 6490:
-ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.07.00.image
-URL=http://download.avm.de/firmware//6490/36787213/$(shell basename $(ORIG))
+#URL=http://download.avm.de/firmware//6490/36787213/FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.07.00.image
+URL=http://download.avm.de/firmware//6490/70988975/FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.07.01.image
+
+# where to store/fetch from
+#
+ORIG=$(TOPDIR)/../$(shell basename $(URL))
 
 # Keep original rootfs for diff?
 # sudo dirdiff arm/orig/ arm/squashfs-root/
 #
 KEEP_ORIG = 1
 
-# The optional arm package contains some binaries which may as well be installed to
-# to the ftp directory (-> /var/media/ftp/ffritz-arm)
-# To build: "make arm-package"
+# The optional arm package contains some none-essential binaries for the
+# arm core (tcpdump, gdb, ...)
 #
-#FFRITZ_ARM_PACKAGE=../ffritz-arm-0.4.tar.gz
+#FFRITZ_ARM_PACKAGE=../ffritz-arm-0.6-fos7.tar.gz
 
 
 ## Host tools (unsquashfs4-lzma-avm-be, mksquashfs4-lzma-avm-be) can either be built
@@ -58,11 +61,9 @@ ifeq ($(FWVER),)
 $(error Could not determine firmware version ($(ORIG) missing?))
 endif
 
-DFL_ARM_PACKAGE=packages/arm/ffritz/ffritz-arm-$(ARM_VER).tar.gz
+DFL_ARM_PACKAGE=packages/arm/ffritz/ffritz-arm-$(ARM_VER)-fos7.tar.gz
 ifeq ($(FFRITZ_ARM_PACKAGE),)
-ifneq ("$(wildcard $(DFL_ARM_PACKAGE))","")
 FFRITZ_ARM_PACKAGE=$(DFL_ARM_PACKAGE)
-endif
 endif
 
 BUSYBOX	= $(shell which busybox)
@@ -83,6 +84,9 @@ all: release
 
 $(ORIG):
 	wget $(URL) -O $(ORIG)
+
+$(FFRITZ_ARM_PACKAGE):
+	wget https://bitbucket.org/fesc2000/ffritz/downloads/$(shell basename $(FFRITZ_ARM_PACKAGE)) -O $(FFRITZ_ARM_PACKAGE) || true
 
 ###############################################################################################
 ## Unpack, patch and repack ARM FS

@@ -32,7 +32,7 @@
 #include <signal.h>
 #include <alloca.h>
 
-#include "usbplayd.h"
+#include "ffdaemon.h"
 
 
 #define SNAME "ffd_service_name"

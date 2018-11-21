@@ -1,18 +1,19 @@
 Change history of application package
 =====================================
 
-NEXT (fritzos7 branch)
-----------------------
-- Application package version 8b
+Release 8 (FritzOS7 only)
+-------------------------
+- Application package version 8
 	- Added support for PRTG Network Monitor (see README-APP.md)
 	- Provide all busybox apps as links in /usr/local/bin
 	- Some enhancements to ffdaemon for service management
 	- Added netsnmp (for manual start)
+	- Added athtool (ext. switch config)
+
  - TODO
  	- libdvbfi: sometimes stops working after closing stream
    		- MIGHT CRASH THE BOX!
 	- start/configure snmpd, get if-mib working
-	- Enhance PRTG scripts (report packets, speedup)
 
 Release 7b(eta)
 ---------------
@@ -84,9 +85,9 @@ TODO
 Change history of ffritz core integration:
 ==========================================
 
-NEXT
+release 19
 ------------------------------
-- Draft support for Fritz!OS 7
+- Support for FritzOS 7 (only)
 	- New buildroot toolchain -> new uClibc etc. ->
 		all binaries incompatible to previous versions
 	- patch var/install to allow 6590 image installation on 6490 (WLAN wont work!)

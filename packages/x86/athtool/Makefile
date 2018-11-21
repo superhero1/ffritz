@@ -1,17 +1,4 @@
-ifeq ($(BUILDROOT),)
-BUILDROOT   = $(shell cd ../buildroot/build; pwd)
-endif
-
-ifeq ($(BUILDROOT),)
-$(error BUILDROOT (buildroot top directory) not defined)
-endif
-
-ifeq ($(CROSS_COMPILE),)
-CROSS_COMPILE=i686-buildroot-linux-uclibc-
-endif
-
-
-
+include ../toolchain.mk
 
 ###############################################################################
 
@@ -21,9 +8,9 @@ DESTDIR	    = $(TOPDIR)/output
 
 export PATH := $(TOOLCHAIN):$(PATH)
 
-vpath %.c ../../arm/athtool
+vpath %.c ../../common/athtool
 
-CFLAGS += -DATOM_BUILD -DPROC_FILE_ACCESS -I../../arm/athtool
+CFLAGS += -DATOM_BUILD -DPROC_FILE_ACCESS -I../../common/athtool
 
 ###############################################################################
 
@@ -39,11 +26,6 @@ install:    all
 
 clean:
 	rm -f $(TARGETS) *.o *.d
-
-doc:	html/index.html
-
-html/index.html:    $(wildcard *.c *.h) Doxyfile
-	doxygen Doxyfile
 
 include ../../rules.mk
 -include $(wildcard *.d)

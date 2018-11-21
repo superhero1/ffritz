@@ -32,7 +32,7 @@ STAGEDIR    = $(TOPDIR)/output/ffritz-arm
 
 VERSION     = $(shell cat version)
 
-IMAGE       = ffritz-arm-$(VERSION).tar.gz
+IMAGE       = ffritz-arm-$(VERSION)-fos7.tar.gz
 
 ifeq ($(INSTDIR),)
     INSTDIR=$(STAGEDIR)

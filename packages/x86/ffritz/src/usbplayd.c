@@ -32,7 +32,7 @@
 #include <libmaru.h>
 #include <samplerate.h>
 
-#include "usbplayd.h"
+#include "ffdaemon.h"
 
 #define MAX_PFDS 10
 
@@ -683,7 +683,7 @@ main (int argc, char **argv)
 
     if (daemon_mode)
     {
-	if (daemon2 ("/var/run/usbplayd.pid", 0, 0, 0, 0))
+	if (daemon2 ("/var/run/usbplayd.pid", 0, 0, 0, 0, "usbplayd"))
 	{
 	    exit (1);
 	}

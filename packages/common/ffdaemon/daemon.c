@@ -33,7 +33,7 @@
 #include <sys/types.h>
 #include <signal.h>
 
-#include "usbplayd.h"
+#include "ffdaemon.h"
 
 /*================================== DEFINES ================================*/
 
