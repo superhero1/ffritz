@@ -32,9 +32,13 @@ Creating an install/update image
 --------------------------------
 
 - Clone repository (master branch) in the directory where the original
-    install image is located:
+  install image is located:
 
     `git clone https://fesc2000@bitbucket.org/fesc2000/ffritz.git`
+
+  For FritzOS 7 use:
+
+    `git clone https://fesc2000@bitbucket.org/fesc2000/ffritz.git -b fritzos7`
 
 - Go to ffritz directory and run make (sudo required).
 
