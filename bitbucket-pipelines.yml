@@ -9,7 +9,7 @@ pipelines:
   default:
     - step:
         script: # Modify the commands below to build your repository.
-          - sudo apt-get update && apt-get install -y gcc make bison libreadline-dev gawk libtool realpath pkg-config zlibc gnulib libcap-dev rsync busybox curl wget squashfs-tools flex python perl zip unzip tcl bzip2 locales git xsltproc
+          - sudo apt-get update && apt-get install -y gcc make bison libreadline-dev gawk libtool realpath pkg-config zlibc gnulib libcap-dev rsync busybox curl wget squashfs-tools flex python perl zip unzip tcl bzip2 locales git xsltproc bc subversion
           - sudo locale-gen en_US.UTF-8
           - make package-atom
           - make package-arm

@@ -36,9 +36,9 @@ Creating an install/update image
 
     `git clone https://fesc2000@bitbucket.org/fesc2000/ffritz.git`
 
-  For FritzOS 7 use:
+  For FritzOS 6 use:
 
-    `git clone https://fesc2000@bitbucket.org/fesc2000/ffritz.git -b fritzos7`
+    `git clone https://fesc2000@bitbucket.org/fesc2000/ffritz.git -b fritzos6`
 
 - Go to ffritz directory and run make (sudo required).
 
