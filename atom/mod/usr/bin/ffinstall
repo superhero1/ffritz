@@ -6,10 +6,31 @@
 # usage: ffinstall image-file sha256sum
 #
 #
+export FFRITZ_HOME=/var/media/ftp/ffritz
+
+UCLIB_VERSION=`ls /lib/libuClibc-* | sed -e 's/.*-\([0-9]\).*/\1/'`
+
+REL=
+if [ $UCLIB_VERSION -gt 0 ]; then
+	REL=-${UCLIB_VERSION}
+fi
+
+DATADIR=$FFRITZ_HOME/data
+TMPDIR=$DATADIR/tmp
+BINFILE=$DATADIR/ffimage${REL}.bin
+CSUMFILE=/var/tmp/ffnvram/ffimage${REL}.sha256
+
+restart=0
+if [ "$1" = "-r" ]; then
+	restart=1
+	shift
+fi
 
 if [ "$1" = "" -o "$2" = "" ]; then
-	echo "usage: $0 release-image sha256sum"
+	echo "usage: $0 [-r] release-image sha256sum"
 	echo "       release-image can be relative to /var/media/ftp"
+	echo "       -r : Attempt to stop/kill all processes using /usr/local,"
+	echo "            unmount, install, remount and restart"
 	exit 1
 fi
 
@@ -24,15 +45,55 @@ fi
 
 csum=$2
 
-mkdir -p /var/media/ftp/ffritz/data/tmp || exit 1
+if [ $restart -eq 1 ]; then
+	pids=`busybox lsof | grep /usr/local | sort -u |sed -e 's/[^0-9].*//'`
+	if [ "$pids" != "" ]; then
+		echo +++ stopping PIDs $pids
+		kill $pids
+	fi
+	
+	sleep 2
+	pids=`busybox lsof | grep /usr/local | sort -u |sed -e 's/[^0-9].*//'`
+	if [ "$pids" != "" ]; then
+		echo killing PIDs $pids
+		kill -9 $pids
+		sleep 2
+	fi
+
+	mount|grep /usr/local >/dev/null
+
+	if [ $? -eq 0 ]; then
+		umount /usr/local
+		if [ $? -ne 0 ]; then
+			echo FAILED to unmount /usr/local 1>&2
+			exit 1
+		fi
+	fi
+fi
+
+rm -rf ${TMPDIR}
+mkdir -p ${TMPDIR} || exit 1
 
 echo +++ Unpacking
-tar -x -C /var/media/ftp/ffritz/data/tmp -f $relfile || exit 1
+tar -x -C ${TMPDIR} -f $relfile || exit 1
+
+echo +++ Verifying compatibility
+
+if [ -r ${TMPDIR}/uclib-version ]; then
+	nver=`cat ${TMPDIR}/uclib-version`
+else
+	nver=0
+fi
+
+if [ $nver -ne ${UCLIB_VERSION} ]; then
+	echo FAILED: Expected uClibc major version ${UCLIB_VERSION}, image is for $nver
+	exit 1
+fi
 
 echo +++ Verifying sha256sum
 
-FSIG=`cat /var/media/ftp/ffritz/data/tmp/ffimage.sha256sum`
-VSIG=`openssl dgst -sha256 /var/media/ftp/ffritz/data/tmp/ffimage.bin | sed -e 's/.* //'`
+FSIG=`cat ${TMPDIR}/ffimage.sha256sum`
+VSIG=`openssl dgst -sha256 ${TMPDIR}/ffimage.bin | sed -e 's/.* //'`
 
 if [ "$VSIG" != "$FSIG" ]; then
 	echo " Does not match, expected $FSIG, got $VSIG"
@@ -44,16 +105,23 @@ if [ "$VSIG" != "$csum" ]; then
 	exit 1
 fi
 
-if [ -f /var/media/ftp/ffritz/data/ffimage.bin ]; then
+if [ -f $BINFILE ]; then
 	echo +++ Backing up old image
-	rm -f /var/media/ftp/ffritz/data/ffimage.bin.old
-	mv /var/media/ftp/ffritz/data/ffimage.bin /var/media/ftp/ffritz/data/ffimage.bin.old
+	rm -f ${BINFILE}.old
+	mv ${BINFILE} ${BINFILE}.old
 fi
 
 echo +++ Installing
-mv /var/media/ftp/ffritz/data/tmp/ffimage.sha256sum /var/tmp/ffnvram/ffimage.sha256 || exit 1
-mv /var/media/ftp/ffritz/data/tmp/ffimage.bin /var/media/ftp/ffritz/data/ffimage.bin || exit 1
+mv ${TMPDIR}/ffimage.sha256sum ${CSUMFILE} || exit 1
+mv ${TMPDIR}/ffimage.bin ${BINFILE} || exit 1
 
 echo +++ Synchronizing nvram
 nvsync || exit 1
 
+if [ $restart -eq 1 ]; then
+	echo +++ Remounting
+	/etc/init.d/S93-ffimage || exit 1
+
+	echo +++ Starting services
+	/etc/init.d/S94-ffstart || exit 1
+fi

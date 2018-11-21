@@ -12,7 +12,7 @@
 TOPDIR	    = $(shell pwd)
 PKGDIR	    = $(shell cd ..; pwd)
 
-BR_OUTPUT   = $(PKGDIR)/avm/build/prefix_sehr_sehr_sehr_sehr_sehr_sehr_sehr_sehr_sehr_lang_buildroot-2013.05/output
+BR_OUTPUT   = $(PKGDIR)/buildroot/build/output
 
 BR_TGT	    = $(BR_OUTPUT)/target
 BR_TGT_LIB  = $(BR_TGT)/usr/lib
@@ -25,19 +25,22 @@ BINFILES   += $(BR_TGT_BIN)/strace $(BR_TGT_BIN)/ldd $(BR_TGT_SBIN)/tcpdump
 BINFILES   += $(BR_TGT_BIN)/tcpbridge $(BR_TGT_BIN)/tcpprep $(BR_TGT_BIN)/tcpreplay $(BR_TGT_BIN)/tcpreplay-edit $(BR_TGT_BIN)/tcprewrite
 BINFILES   += $(BR_TGT_BIN)/rsync $(BR_TGT_BIN)/gdbserver
 BINFILES   += $(BR_TGT)/../host/usr/armeb-buildroot-linux-uclibcgnueabi/sysroot/usr/bin/curl
+BINFILES   += src/ffdaemon
 ETCFILES    = etc/ffritz-env.sh 
 
 STAGEDIR    = $(TOPDIR)/output/ffritz-arm
 
 VERSION     = $(shell cat version)
 
-IMAGE       = ffritz-arm-$(VERSION).tar.gz
+IMAGE       = ffritz-arm-$(VERSION)-fos7.tar.gz
 
 ifeq ($(INSTDIR),)
     INSTDIR=$(STAGEDIR)
 endif
 
-SUBDIRS	    = ../avm ../athtool
+SUBDIRS	    = ../buildroot 
+SUBDIRS	   += ../athtool
+SUBDIRS	   += src
 
 .PHONY:	$(SUBDIRS)
 

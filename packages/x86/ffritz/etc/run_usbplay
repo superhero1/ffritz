@@ -24,4 +24,4 @@ fi
 chmod 666 /var/tmp/volume
 
 umask 0
-$FFINSTDIR/bin/usbplayd -D -V /var/tmp/volume $options 
+ffdaemon $FFINSTDIR/bin/usbplayd -V /var/tmp/volume $options 

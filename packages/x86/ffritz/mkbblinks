@@ -1,0 +1,29 @@
+#!/bin/sh
+
+bb_apps=$1
+shift || exit 1
+bb_bin=$1
+shift || exit 1
+dest_dir=$1
+shift || exit 1
+dirs="$dest_dir $*"
+
+if [ ! -r $bb_apps ]; then 
+	exit 1
+fi
+
+for app in `cat $bb_apps`; do
+	exists=0
+
+	for dir in $dirs; do
+		if [ -r $dir/$app ]; then
+			exists=1
+			#echo $app exists in $dir
+			break;
+		fi
+	done
+
+	if [ $exists -eq 0 ]; then
+		ln -s $bb_bin $dest_dir/$app 
+	fi
+done

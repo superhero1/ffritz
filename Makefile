@@ -6,28 +6,33 @@ HOST    = $(shell uname -m)
 SUDO	= sudo
 
 
-###############################################################################################
+################################################################################
 # Configuration
-###############################################################################################
+################################################################################
 #
 # The original firmware tarball
 #
-ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.06.87.image
-
-# Works only for a specific release
+# 6590:
+#ORIG=$(TOPDIR)/../FRITZ.Box_6590_Cable.de-en-es-it-fr-pl.148.07.00.image
+#URL=http://download.avm.de/firmware/6590/96980342/$(shell basename $(ORIG))
 #
-URL=http://download.avm.de/firmware/6490/78434061/$(shell basename $(ORIG))
+# 6490:
+#URL=http://download.avm.de/firmware//6490/36787213/FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.07.00.image
+URL=http://download.avm.de/firmware//6490/70988975/FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.07.01.image
+
+# where to store/fetch from
+#
+ORIG=$(TOPDIR)/../$(shell basename $(URL))
 
 # Keep original rootfs for diff?
 # sudo dirdiff arm/orig/ arm/squashfs-root/
 #
 KEEP_ORIG = 1
 
-# The optional arm package contains some binaries which may as well be installed to
-# to the ftp directory (-> /var/media/ftp/ffritz-arm)
-# To build: "make arm-package"
+# The optional arm package contains some none-essential binaries for the
+# arm core (tcpdump, gdb, ...)
 #
-#FFRITZ_ARM_PACKAGE=../ffritz-arm-0.4.tar.gz
+#FFRITZ_ARM_PACKAGE=../ffritz-arm-0.6-fos7.tar.gz
 
 
 ## Host tools (unsquashfs4-lzma-avm-be, mksquashfs4-lzma-avm-be) can either be built
@@ -45,18 +50,20 @@ ATOM_MODFILES = $(shell find atom/mod/ -type f -o -type d)
 
 ###############################################################################################
 ###############################################################################################
-FWVER=$(shell echo $(ORIG) | sed -e 's/.*\(..\...\)\.image/\1/')
+FWVER=$(shell echo $(ORIG) | sed -e 's/.*\([0-9]*.\.[0-9]*\).*\.image/\1/')
+
+MODEL=$(shell echo $(ORIG) | sed -e 's/.*_\(....\)_Cable.*/\1/')
+#FWVER=07.00
+
 FWNUM=$(subst .,,$(FWVER))
 
 ifeq ($(FWVER),)
 $(error Could not determine firmware version ($(ORIG) missing?))
 endif
 
-DFL_ARM_PACKAGE=packages/arm/ffritz/ffritz-arm-$(ARM_VER).tar.gz
+DFL_ARM_PACKAGE=packages/arm/ffritz/ffritz-arm-$(ARM_VER)-fos7.tar.gz
 ifeq ($(FFRITZ_ARM_PACKAGE),)
-ifneq ("$(wildcard $(DFL_ARM_PACKAGE))","")
 FFRITZ_ARM_PACKAGE=$(DFL_ARM_PACKAGE)
-endif
 endif
 
 BUSYBOX	= $(shell which busybox)
@@ -77,6 +84,9 @@ all: release
 
 $(ORIG):
 	wget $(URL) -O $(ORIG)
+
+$(FFRITZ_ARM_PACKAGE):
+	wget https://bitbucket.org/fesc2000/ffritz/downloads/$(shell basename $(FFRITZ_ARM_PACKAGE)) -O $(FFRITZ_ARM_PACKAGE) || true
 
 ###############################################################################################
 ## Unpack, patch and repack ARM FS
@@ -153,6 +163,7 @@ atom/.applied.fs: $(ATOM_MODFILES) atom/squashfs-root $(ATOM_PATCHST)
 	@echo "PATCH  atom/squashfs-root"
 	@$(SUDO) $(RSYNC) -a atom/mod/ atom/squashfs-root/
 	@mkdir -p atom/squashfs-root/usr/local
+#	@packages/x86/ffritz/mkbblinks packages/x86/ffritz/bb-apps busybox-i686 atom/squashfs-root/usr/bin atom/squashfs-root/sbin atom/squashfs-root/bin atom/squashfs-root/usr/sbin atom/squashfs-root/usr/bin atom/squashfs-root/usr/local/bin
 	@touch $@
 
 atom/filesystem.image: atom/.applied.fs
@@ -164,16 +175,19 @@ atom/filesystem.image: atom/.applied.fs
 #.PHONY:		$(RELDIR)
 
 ###############################################################################################
-release:    $(RELDIR)/fb6490_$(FWVER)-$(VERSION).tar
+FWFILE  = fb$(MODEL)_$(FWVER)-$(VERSION).tar
+
+release:    $(RELDIR)/$(FWFILE)
 	
-$(RELDIR)/fb6490_$(FWVER)-$(VERSION).tar: armfs atomfs $(RELDIR) 
+$(RELDIR)/$(FWFILE): armfs atomfs $(RELDIR) 
 	@rm -rf $(RELDIR)/var
 	@cd $(RELDIR); tar xf $(ORIG)
-	@echo "PACK   $(RELDIR)/fb6490_$(FWVER)-$(VERSION).tar"
+	@echo "PACK   $(RELDIR)/$(FWFILE)"
 	@cp arm/filesystem.image $(RELDIR)/var/remote/var/tmp/filesystem.image
 	@cp arm/mod/usr/local/etc/switch_bootbank $(RELDIR)/var
 	@cp atom/filesystem.image $(RELDIR)/var/remote/var/tmp/x86/filesystem.image
-	@cd $(RELDIR); $(TAR) cf fb6490_$(FWVER)-$(VERSION).tar var
+	@cd $(RELDIR); patch -p0 < ../install.p
+	@cd $(RELDIR); $(TAR) cf $(FWFILE) var
 	@rm -rf $(RELDIR)/var
 	@echo
 	@echo +++ Done +++

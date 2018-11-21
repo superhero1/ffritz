@@ -183,6 +183,12 @@
 #define   AR8327_PORT_VLAN1_IN_MODE_ALL         0
 #define   AR8327_PORT_VLAN1_IN_MODE_TAG         1
 #define   AR8327_PORT_VLAN1_IN_MODE_UNTAG       2
+#define   AR8327_PORT_VLAN1_SPCHECK		BIT(10)
+#define   AR8327_PORT_VLAN1_CORE_PORT		BIT(9)
+#define   AR8327_PORT_VLAN1_FRCDEFV		BIT(8)
+#define   AR8327_PORT_VLAN1_TLS			BIT(7)
+#define   AR8327_PORT_VLAN1_CLONE		BIT(5)
+#define   AR8327_PORT_VLAN1_PRIPRO		BIT(4)
 
 #define AR8327_REG_ATU_DATA0                    0x600
 #define   AR8327_ATU_ADDR0                      BITS(0, 8)

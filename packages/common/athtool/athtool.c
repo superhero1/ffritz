@@ -24,9 +24,12 @@
 #include <getopt.h>
 #include <string.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "athtool.h"
 #include "libticc.h"
+#include "counters.h"
 
 /* ========================================================================= */
 
@@ -82,7 +85,21 @@ static const char *usage =
 "                  : Create VLAN <vid>, using previous -A statememts as port\n"
 "                    list/attributes.\n"
 " --pvid-set|-P <p>,<vid>\n"
-"                  : Assign default VID (PVID)\n"
+"                  : Assign default VID (CVID)\n"
+" --svid-set|-S <p>,<vid>\n"
+"                  : Assign default SVID (SVID)\n"
+" --port-flags|-F <p>,<flags>\n"
+"                  : Colon separated list of port flags (name=value)\n"
+"                    EGTYPE : only tagged frames can be\n"
+"                    OUTMODE : 0=no modify, 1=no tag, 2=with tag\n"
+"                    INMODE : 0=all, 1=tag only, 2=untagged only\n"
+"                    SPCHECK : Source port check enable\n"
+"                    CORE : 1=core, 0=edge port\n"
+"                    FRC_VID : force to use port default VID\n"
+"                    TLS : 1=TLS mode\n"
+"                    PROP_EN : 1=enable port base vlan propagate\n"
+"                    CLONE_EN : 1=enable port clone\n"
+"                    PRIO : vlan priority propagation enable\n"
 " ==== Counters ====\n"
 " --show-counters|-c <p>[,<all>[,<filter>]]\n"
 "                  : Print counters of port <p> (-1 for all ports).\n"
@@ -112,7 +129,103 @@ static const char *usage =
 
 int _ath_verbose = 0;
 
+#define AR8327_VTU_FUNC0_DFL (AR8327_VTU_FUNC0_IVL|AR8327_VTU_FUNC0_PO|AR8327_VTU_FUNC0_EG_MODE)
+
 /* ========================================================================= */
+
+#if defined(ATOM_BUILD)
+
+/* an ungly hack to access switch registers via switch_reg proc entry.
+ * reg write is just writing, reg read is extracting the read result from the 
+ * kernel log :-(
+ */
+
+#define SWREG_FILE "/proc/driver/avmnet/ar8327/switch_reg"
+#define KMSG "/proc/kmsg"
+
+int extSwitchReadAthReg (uint32_t reg, uint32_t *val)
+{
+    int fd;
+    int kmsg_fd;
+    char cmd[100];
+    char kmsg[1000];
+    char *s;
+
+    fd = open (SWREG_FILE, O_RDWR);
+    if (fd == -1)
+    {
+	perror (SWREG_FILE);
+	exit(1);
+    }
+
+    kmsg_fd = open (KMSG, O_RDWR|O_NONBLOCK);
+    if (kmsg_fd == -1)
+    {
+	perror (KMSG);
+	exit(1);
+    }
+
+    /* flush /kmsg */
+    while (read(kmsg_fd, kmsg, sizeof(kmsg)) != -1)
+	;
+
+    sprintf (cmd, "read 0x%x\n", reg);
+
+    if (write(fd, cmd, strlen(cmd)) == -1)
+    {
+	perror ("write" SWREG_FILE);
+	return 1;
+    }
+
+    /* get read response from kmsg, hope that its already there
+     * ena no one else is using this feature in parallel
+     */
+    memset (kmsg, 0, sizeof(kmsg));
+    if (read(kmsg_fd, kmsg, sizeof(kmsg)) == -1)
+    {
+	perror ("read " KMSG);
+	exit (1);
+    }
+
+    close (fd);
+    close (kmsg_fd);
+
+    s = strstr(kmsg, "register_read");
+    if (s)
+	s = strstr(s, "=");
+
+    if (s)
+	*val = strtoul(s+1, NULL, 16);
+    else
+	return 1;
+
+    return 0;
+}
+
+int extSwitchWriteAthReg (uint32_t reg, uint32_t val)
+{
+    int fd;
+    char cmd[100];
+
+    fd = open (SWREG_FILE, O_RDWR);
+    if (fd == -1)
+    {
+	perror (SWREG_FILE);
+	exit(1);
+    }
+
+    sprintf (cmd, "write 0x%x 0x%x\n", reg, val);
+
+    if (write(fd, cmd, strlen(cmd)) == -1)
+    {
+	perror ("write" SWREG_FILE);
+	return 1;
+    }
+    return 0;
+}
+
+
+#endif
 
 /*! Read-modify-write a switch register
  *
@@ -350,11 +463,13 @@ int main (int argc, char **argv)
     int multi;
     int src_port;
     int rc;
-    uint32_t port, mode, vid;
+    uint32_t mode, vid;
     int all = 0;
-    const char *filter = NULL;
+    struct filter filter;
     struct ath_dev *dev;
     struct ath_arl_entry entry;
+    struct port_id port;
+    uint32_t avalue, amask;
 
     dev = calloc (1, sizeof(*dev));
     if (!dev)
@@ -380,7 +495,7 @@ int main (int argc, char **argv)
 
     /* default vlan create attributes
      */
-    mode = AR8327_VTU_FUNC0_IVL|AR8327_VTU_FUNC0_LLD|AR8327_VTU_FUNC0_PO|AR8327_VTU_FUNC0_EG_MODE;
+    mode = AR8327_VTU_FUNC0_DFL;
 
     while (1)
     {
@@ -397,6 +512,8 @@ int main (int argc, char **argv)
 	    {"vlan-add", required_argument, 0, 'A'},
 	    {"vlan-remove", required_argument, 0, 'R'},
 	    {"pvid-set", required_argument, 0, 'P'},
+	    {"svid-set", required_argument, 0, 'S'},
+	    {"port-flags", required_argument, 0, 'F'},
 	    {"show-counters", required_argument, 0, 'c'},
 	    {"l2-show", no_argument, 0, 't'},
 	    {"l2-add", required_argument, 0, 'm'},
@@ -406,7 +523,7 @@ int main (int argc, char **argv)
 	    {0, 0, 0, 0}
 	};
 
-	c = getopt_long (argc, argv, "Vr:w:hM:E:I:vC:D:A:R:P:c:tm:d:", long_options, &option_index);
+	c = getopt_long (argc, argv, "Vr:w:hM:E:I:vC:D:A:R:P:S:c:tm:d:F:", long_options, &option_index);
 
 	if (c == -1)
 	    break;
@@ -466,24 +583,22 @@ int main (int argc, char **argv)
 	    break;
 
 	case 'c':
+	    make_port(&port, NULL);
+	    memset (&filter, 0, sizeof(filter));
+
 	    s = strtok (optarg, ",");
 	    if (s)
-		port = atoi(s);
-	    else
-	    {
-		fprintf (stderr, usage);
-		return 1;
-	    }
-
-	    s = strtok (NULL, ",");
+		make_port(&port, s);
+	    if (s)
+		s = strtok (NULL, ",");
 	    if (s)
 		all = atoi(s);
 	    if (s)
 		s = strtok (NULL, ",");
 	    if (s)
-		filter = strdup (s);
+		make_filter(&filter, s);
 
-	    if (ath_counters (dev, port, filter, all))
+	    if (ath_counters (dev, &port, &filter, all, 0, 0))
 	    {
 		PRERR("ath_counters");
 		return 1;
@@ -609,6 +724,9 @@ int main (int argc, char **argv)
 		PRERR("ath_vlan_create");
 		return 1;
 	    }
+
+	    /* reset mode for next VLAN definition */
+	    mode = AR8327_VTU_FUNC0_DFL;
 	    break;
 
 	case 'D':
@@ -622,7 +740,7 @@ int main (int argc, char **argv)
 	case 'A':
 	    s = strtok (optarg, ",");
 	    if (s)
-		port = strtoul (s, NULL, 0);
+		make_port(&port, s);
 
 	    if (!s)
 	    {
@@ -643,13 +761,13 @@ int main (int argc, char **argv)
 		return 1;
 	    }
 
-	    mode = ath_attr_set_port (dev, mode, port, val);
+	    mode = ath_attr_set_port (dev, mode, port.num, val);
 	    break;
 	    
 	case 'R':
 	    s = strtok (optarg, ",");
 	    if (s)
-		port = strtoul (s, NULL, 0);
+		make_port(&port, s);
 	    if (s)
 		s = strtok (NULL, ",");
 	    if (s)
@@ -661,7 +779,7 @@ int main (int argc, char **argv)
 		return 1;
 	    }
 
-	    if (ath_vlan_port_rm (dev, vid, port))
+	    if (ath_vlan_port_rm (dev, vid, port.num))
 	    {
 		PRERR("ath_vlan_port_rm");
 		return 1;
@@ -671,7 +789,7 @@ int main (int argc, char **argv)
 	case 'P':
 	    s = strtok (optarg, ",");
 	    if (s)
-		port = strtoul (s, NULL, 0);
+		make_port(&port, s);
 	    if (s)
 		s = strtok (NULL, ",");
 	    if (s)
@@ -683,11 +801,57 @@ int main (int argc, char **argv)
 		return 1;
 	    }
 
-	    if (ath_pvid_port (dev, port, vid))
+	    if (ath_pvid_port (dev, port.num, vid))
 	    {
 		PRERR("ath_pvid_port");
 		return 1;
 	    }
+	    break;
+
+	case 'S':
+	    s = strtok (optarg, ",");
+	    if (s)
+		make_port(&port, s);
+	    if (s)
+		s = strtok (NULL, ",");
+	    if (s)
+		vid = strtoul (s, NULL, 0);
+
+	    if (!s)
+	    {
+		fprintf (stderr, usage);
+		return 1;
+	    }
+
+	    if (ath_svid_port (dev, port.num, vid))
+	    {
+		PRERR("ath_svid_port");
+		return 1;
+	    }
+	    break;
+
+	case 'F':
+		
+	    s = strtok (optarg, ",");
+	    if (s)
+		make_port(&port, s);
+	    if (s)
+		s = strtok (NULL, ",");
+	    if (s)
+		ath_port_vlan_attr_parse(s, &avalue, &amask);
+
+	    if (!s)
+	    {
+		fprintf (stderr, usage);
+		return 1;
+	    }
+
+	    if (ath_vattr_port (dev, port.num, avalue, amask))
+	    {
+		PRERR("ath_vattr_port");
+		return 1;
+	    }
+	    break;
 
 	case 'v':
 	    _ath_verbose++;

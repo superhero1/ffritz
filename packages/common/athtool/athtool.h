@@ -24,6 +24,8 @@
 
 #define verb_printf(lvl, ...) if (_ath_verbose > lvl) { printf(__VA_ARGS__); }
 
+#define MAX_PORTS	6
+
 
 /*! \ingroup athtool */
 /*! @{ */
@@ -55,29 +57,6 @@ struct ath_arl_entry {
         uint8_t mac[6];
 };
 
-/*! MIB/Counter descriptor */
-struct ath_counter_desc
-{
-    /*! Counter name */
-    const char	name[64];
-
-    /*! Offset from counter base address */
-    unsigned	off;
-
-    /*! Counter size in bytes (4 or 8) */
-    unsigned	sz;
-};
-
-/*! Counter history */
-struct ath_counter_state
-{
-    /*! Last known total counter */
-    uint64_t	sum;
-
-    /*! Last read time in usec since epoch (0: has not yet been read) */
-    uint64_t	lastReadTime;
-};
-
 
 /*! Atheros switch device handle */
 struct ath_dev
@@ -99,6 +78,12 @@ struct ath_dev
 
     /*! Whether counters have been initialized */
     int		cnt_initialized;
+
+    /*! Content of /proc/driver/avmnet/ar8327 */
+    char	*file_buffer;
+
+    /*! Read time of file_buffer */
+    uint64_t 	 rtime;
 
     /*! Register access callout
      *
@@ -122,6 +107,8 @@ struct ath_dev
     fprintf (stderr, " :: ERROR[%d] :: %s\n", dev->instance, dev->ath_err ? dev->ath_err : "(none)");\
     fflush(stderr);}
 
+#define FILEBUF_SIZE	10000
+
 extern uint32_t ath_rmw (struct ath_dev *dev, uint32_t reg, uint32_t mask, uint32_t value, int *err);
 extern void ath_vlan_show (struct ath_dev *dev);
 extern int ath_vlan_create (struct ath_dev *dev, uint32_t vid, uint32_t attr);
@@ -130,12 +117,16 @@ extern int ath_vlan_port_rm (struct ath_dev *dev, uint32_t vid, uint32_t port);
 extern int ath_vlan_port_add (struct ath_dev *dev, uint32_t vid, uint32_t port, uint32_t mode);
 extern uint32_t ath_attr_set_port (struct ath_dev *dev, uint32_t attr, uint32_t port, uint32_t mode);
 extern int ath_pvid_port (struct ath_dev *dev, uint32_t port, uint32_t vid);
-extern int ath_counters (struct ath_dev *dev, int port, const char *filter, int all);
+extern int ath_svid_port (struct ath_dev *dev, uint32_t port, uint32_t vid);
+extern int ath_port_vlan_attr_parse(char *attr_list, uint32_t *value, uint32_t *mask);
+extern int ath_vattr_port (struct ath_dev *dev, uint32_t port, uint32_t attr, uint32_t mask);
+
 
 extern void ath_arl_dump (struct ath_dev *dev);
 extern int ath_arl_flags_parse (struct ath_dev *dev, struct ath_arl_entry *entry, char *entry_spec);
 extern int ath_arl_add (struct ath_dev *dev, struct ath_arl_entry *entry);
 extern int ath_arl_rm (struct ath_dev *dev, struct ath_arl_entry *entry);
+
 #endif
 
 

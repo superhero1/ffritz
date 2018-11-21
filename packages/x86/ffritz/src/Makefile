@@ -4,8 +4,10 @@ TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
 export PATH := $(TOOLCHAIN):$(PATH)
 CC	    = i686-buildroot-linux-uclibc-gcc
 
-CFLAGS += -I../../libmaru
+CFLAGS += -I../../libmaru -I../../../common/ffdaemon
 LDFLAGS += ../../libmaru/libmaru.a -lusb-1.0 -pthread
+
+vpath %.c ../../../common/ffdaemon
 
 .c.o:
 	$(CC) -Wall -c $< -std=c99 $(CFLAGS)

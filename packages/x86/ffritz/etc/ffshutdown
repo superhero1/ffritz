@@ -7,10 +7,8 @@ if [ `readlink -f $0` != /var/tmp/ffshutdown ]; then
 	exec /var/tmp/ffshutdown
 fi
 
-killall ffdaemon
-killall usbplayd
-killall shairport
-lsof -p `pidof cableinfo`|grep libdvbfi > /dev/null && killall cableinfo
+ffdaemon -K %all
+busybox lsof -p `pidof cableinfo`|grep libdvbfi > /dev/null && killall cableinfo
 
 if [ -f /var/media/ftp/ffritz/.mtab ]; then
 	/usr/local/etc/usrmount -u /var/media/ftp/ffritz/.mtab >/dev/null 2>&1
@@ -20,5 +18,6 @@ sleep 5
 umount /usr/local && exit 0
 
 echo Some processes still access /usr/local:
-lsof /usr/local
+busybox lsof | grep /usr/local | sort -u
 
+exit 1

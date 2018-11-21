@@ -1,8 +1,22 @@
 Change history of application package
 =====================================
 
-Next
-----
+Release 8 (FritzOS7 only)
+-------------------------
+- Application package version 8
+	- Added support for PRTG Network Monitor (see README-APP.md)
+	- Provide all busybox apps as links in /usr/local/bin
+	- Some enhancements to ffdaemon for service management
+	- Added netsnmp (for manual start)
+	- Added athtool (ext. switch config)
+
+ - TODO
+ 	- libdvbfi: sometimes stops working after closing stream
+   		- MIGHT CRASH THE BOX!
+	- start/configure snmpd, get if-mib working
+
+Release 7b(eta)
+---------------
 - mpd 0.20.5 -> 0.20.18
 - mpdclient 2.9 -> 2.11
 - Bluetooth btstack Apr 10 2018 [0a42fd2391f2ec0205a46de679e23220490c6da8]
@@ -70,6 +84,17 @@ TODO
 
 Change history of ffritz core integration:
 ==========================================
+
+release 19
+------------------------------
+- Support for FritzOS 7 (only)
+	- New buildroot toolchain -> new uClibc etc. ->
+		all binaries incompatible to previous versions
+	- patch var/install to allow 6590 image installation on 6490 (WLAN wont work!)
+	- Distinct installed application package for uclibc 0.x and 1.x
+	- Remove annoying login outputs from /etc/profile, add /sbin/usr/sbin to path
+    	- Fix reassignment of console to 1st login
+	- ARM: Reintegrated pswtool
 
 release 18
 -------------------------------
@@ -199,7 +224,7 @@ release 9
 	- Add libid3tag / id3 tag support to mpd
 	- Fix access rights to /var/tmp/volume file at startup
 	- Make usbplayd self-respawning if it crashes
-	- Don't log usbplayd to /var/tmp to avoid hogging ramfs space
+	- Dont log usbplayd to /var/tmp to avoid hogging ramfs space
 	- Forward dropbear stderr outputs to /dev/console
 	- Create ssh symlink to dbclient
 	- Added curl binary

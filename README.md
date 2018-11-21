@@ -5,9 +5,7 @@ You still need the original image to build a modified install image, and you
 need a way to upgrade.  I'm assuming you already have telnet/ssh access to
 the box by either already running a modified image or having gained access.
 
-It is known to work on the FritzBox 6590, but i do not test it.
-Note that this is the branch for FritzOS 6.x. Use the "fritzos7" branch for
-this version (see below).
+It is known to work on 6590 as well, although i do not test it.
 
 There are some known methods how to perform an initial firmware update
 from a box that runs an original image.
@@ -23,6 +21,9 @@ rebuild them is located below packages.
 
 Have Fun,
 <f/e/s/c/2/0/0/0/@/g/m/a/i/l/./c/o/m>
+
+NOTE: This is the main branch which only supports FrizOS 7. Older versions
+      are kept on the "fritzos6" branch.
 
 Usage
 =====
@@ -48,6 +49,8 @@ To rebuild these binaries:
 
 If you want to build an image base on a different original firmware, edit
 the ORIG definition in the Makefile.
+
+The same applies for building an image for FritzBox 6590, edit the Makefile.
 
 IMPORTANT NOTE
 --------------
@@ -239,6 +242,10 @@ If you don't want to restart the box after installing a new image:
 - Run mount script for new image: /etc/init.d/S93-ffimage
 - Start services: /etc/init.d/S94-ffstart
 
+Current core image supports -r switch as first parameter, which does all this:
+
+	ffinstall -r ffritz-app-VERSION.tar CHECKSUM
+
 Optional Arm package
 --------------------
 
@@ -255,12 +262,8 @@ Notes
 
 Toolchain
 ---------
-Cross-compile toolchain for ARM is buildroot-2013.02 from the original avm
-source tarball.
-It is installed in packages/arm/avm (just do a make there).
-
-For Atom, the toolchain is buildroot-2013.02 (packages/x86/buildroot).
-The atom source tarball (packages/x86/avm) does not work for me.
+Cross-compile toolchain for ARM and atom is buildroot-2016.05.
+It is installed in packages/(arm|x86)/buildroot (just do a make there).
 
 Build Host
 ----------

@@ -2,8 +2,6 @@
 PKGTOP	= $(shell cd ../..; pwd)
 DLDIR	= $(PKGTOP)/dl
 
-export PATH := $(TOOLCHAIN):$(PATH)
-
 URL	= $(shell cat $(PKGTOP)/url-buildroot)
 FILE	= $(DLDIR)/$(shell basename $(URL))
 
@@ -13,9 +11,9 @@ FILE	= $(DLDIR)/$(shell basename $(URL))
 #
 #GCCFLAGS=HOSTCC=gcc-4.7
 
-all:	.build.stamp arch-patches
-	@make -C build $(GCCFLAGS) -j2
-	@make -C build $(BUILDROOT_TARGETS) -j2
+all:	.build.stamp arch-patches .toolchain.stamp
+	@make -C build $(GCCFLAGS) -j2 
+	@if [ "$(BUILDROOT_TARGETS)" != "" ]; then make -C build $(BUILDROOT_TARGETS) -j2; fi
 
 base:	.build.stamp arch-patches
 	@make -C build $(GCCFLAGS) -j2
@@ -31,8 +29,12 @@ $(FILE):
 	ln -sf $(DLDIR) build/dl
 	touch .build.stamp
 
+.toolchain.stamp:
+	@make -C build $(GCCFLAGS) -j2 toolchain
+	@touch .toolchain.stamp
+
 clean:
-	rm -rf build .build.stamp .*.applied
+	rm -rf build .build.stamp .*.applied .toolchain.stamp
 
 distclean:
 	rm -rf build

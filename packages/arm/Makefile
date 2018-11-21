@@ -6,13 +6,13 @@
 #
 MODDIR=$(shell cd ../../arm/mod; pwd)
 
-SUBDIRS = avm dropbear ffritz
+SUBDIRS = ffritz
 
-BASE_SUBDIRS = avm dropbear
+BASE_SUBDIRS = buildroot dropbear
 
-.PHONY:	$(SUBDIRS)
+.PHONY:	$(SUBDIRS) $(BASE_SUBDIRS)
 
-all:	$(SUBDIRS)
+all:	$(SBUDIRS)
 
 base:	$(BASE_SUBDIRS)
 
@@ -25,6 +25,9 @@ avm:
 dropbear:
 	make -C dropbear 
 	make -C dropbear install
+
+buildroot:
+	make -C buildroot
 
 ffritz:
 	make -C ffritz

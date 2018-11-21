@@ -24,8 +24,10 @@
 #include <getopt.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/time.h>
 
 #include "libticc.h"
+#include "counters.h"
 
 /* ========================================================================= */
 
@@ -78,7 +80,6 @@ static const char *usage =
 
 /* ========================================================================= */
 
-extern int psw_counters (int port, const char *filter, int all);
 
 /*! pswtool main
  */
@@ -90,7 +91,11 @@ int main (int argc, char **argv)
     int rc;
     uint32_t port, mode, vid;
     int all = 0;
-    const char *filter = NULL;
+    struct filter filter;
+
+    struct port_id portid;
+    int reset = 0;
+    int slot = 0;
 
     /* default vlan create attributes
      */
@@ -107,21 +112,29 @@ int main (int argc, char **argv)
 	    {"vlan-remove", required_argument, 0, 'R'},
 	    {"pvid-set", required_argument, 0, 'P'},
 	    {"show-counters", required_argument, 0, 'c'},
+	    {"slot", required_argument, 0, 's'},
+	    {"reset", no_argument, 0, 'z'},
 	    {"help", no_argument, 0, 'h'},
 	    {0, 0, 0, 0}
 	};
 
-	c = getopt_long (argc, argv, "Vr:w:hM:E:I:vC:D:A:R:P:c:tm:d:", long_options, &option_index);
+	c = getopt_long (argc, argv, "Vr:w:hM:E:I:vC:D:A:R:P:c:tm:d:s:z", long_options, &option_index);
 
 	if (c == -1)
 	    break;
 
 	switch (c)
 	{
+	case 's':
+	    slot = atoi(optarg);
+	    break;
+	case 'z':
+	    reset = 1;
+	    break;
 	case 'c':
 	    s = strtok (optarg, ",");
 	    if (s)
-		port = atoi(s);
+		portid.num = atoi(s);
 	    else
 	    {
 		fprintf (stderr, usage);
@@ -134,9 +147,9 @@ int main (int argc, char **argv)
 	    if (s)
 		s = strtok (NULL, ",");
 	    if (s)
-		filter = strdup (s);
+		make_filter(&filter, s);
 
-	    if (psw_counters (port, filter, all))
+	    if (psw_counters (&portid, &filter, all, slot, reset))
 	    {
 		PRERR("psw_counters");
 		return 1;
@@ -260,3 +273,13 @@ int main (int argc, char **argv)
     return 0;
 }
 /*! @} */
+
+/* linker issues with libubacktrace.so .. but we dont need those ..
+ */
+void backtrace(void)
+{
+}
+
+void backtrace_symbols_fd(void)
+{
+}

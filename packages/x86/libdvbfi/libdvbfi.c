@@ -24,6 +24,7 @@
  *****************************************************************************/
 
 #include <stdint.h>
+#include <malloc.h>
 #include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -194,6 +195,7 @@ uint32_t (*p_di_spectrum_progress)(uint32_t * a1);
 uint32_t (*p_di_spectrum_start)(uint32_t a1, uint32_t a2, int64_t a3, uint32_t a4);
 uint32_t (*p_di_spectrum_stop)(void);
 uint32_t (*p_di_tune_stream)(struct lib_ctx *ctx, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5, uint32_t a6, uint32_t a7, uint32_t a8);
+uint32_t (*p_di_reset)(struct lib_ctx *ctx);
 
 uint32_t (*p_csock_sockaddr_set_inaddr) (void *a1, struct dstip *dstip, int dstport, void *a4);
 
@@ -276,6 +278,7 @@ void libinit(void)
 	p_di_spectrum_start = dlsym (lh, "di_spectrum_start");
 	p_di_spectrum_stop = dlsym (lh, "di_spectrum_stop");
 	p_di_tune_stream = dlsym (lh, "di_tune_stream");
+	p_di_reset = dlsym (lh, "di_reset");
 
 	/* get original csock_sockaddr_set_inaddr()
  	 */
@@ -481,23 +484,34 @@ uint32_t di_free_stream(struct wrap_ctx *ctx)
 {
 	uint32_t rc = 0;
 
+	printf ("%s(%p) -> ", __FUNCTION__, ctx);
+	fflush(stdout);
+
 	if (!ctx)
 	{
 		/* called twice, second time with NULL
 		 */
 		rc = p_di_free_stream(NULL);
 	}
+	else if (ctx->magic != WRAP_MAGIC)
+	{
+		printf ("di_free_stream: bad magic: 0x%08x\n", ctx->magic);
+		fflush(stdout);
+		return rc;
+	}
 	else
 	{
-		rc = p_di_free_stream (ctx->lib_ctx);
+		printf (" [%p] ", ctx->lib_ctx);
+		fflush(stdout);
 
 		pthread_cancel (ctx->ptid);
 
+		rc = p_di_free_stream (ctx->lib_ctx);
+
 		close (ctx->sockfd);
 		free (ctx);
-
-		printf ("%s(%p) -> 0x%x\n", __FUNCTION__, ctx, rc);
 	}
+	printf ("0x%x\n", rc);
 
 	return rc;
 }
@@ -608,6 +622,27 @@ uint32_t di_tune_stream(struct wrap_ctx *ctx, uint32_t freq, uint32_t symrate, u
 {
 	uint32_t rc = p_di_tune_stream (ctx->lib_ctx, freq, symrate, specinv, mtype, a6, a7, a8);
 	printf ("%s(%p 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x) -> 0x%x\n", __FUNCTION__, ctx, freq, symrate, specinv, mtype, a6, a7, a8, rc);
+	return rc;
+}
+uint32_t di_reset(struct wrap_ctx *ctx)
+{
+	uint32_t rc = 0;
+
+	printf ("%s(%p) -> \n", __FUNCTION__, ctx);
+	fflush(stdout);
+
+	if (p_di_reset)
+	{
+		if (ctx && (ctx->magic == WRAP_MAGIC) && ctx->lib_ctx)
+		{
+			rc = p_di_reset(ctx->lib_ctx);
+		}
+		else
+		{
+			rc = p_di_reset((void*)ctx);
+		}
+	}
+	printf ("0x%x\n", rc);
 	return rc;
 }
 
