@@ -12,7 +12,7 @@ BASE_SUBDIRS = buildroot dropbear
 
 .PHONY:	$(SUBDIRS) $(BASE_SUBDIRS)
 
-all:	$(SBUDIRS)
+all:	$(SUBDIRS)
 
 base:	$(BASE_SUBDIRS)
 
