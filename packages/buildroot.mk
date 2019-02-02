@@ -11,7 +11,7 @@ FILE	= $(DLDIR)/$(shell basename $(URL))
 #
 #GCCFLAGS=HOSTCC=gcc-4.7
 
-all:	.build.stamp arch-patches .toolchain.stamp
+all:	.build.stamp arch-patches 
 	@make -C build $(GCCFLAGS) -j2 
 	@if [ "$(BUILDROOT_TARGETS)" != "" ]; then make -C build $(BUILDROOT_TARGETS) -j2; fi
 
@@ -28,10 +28,6 @@ $(FILE):
 	cd build; tar xf $(FILE) --strip-components=1
 	ln -sf $(DLDIR) build/dl
 	touch .build.stamp
-
-.toolchain.stamp:
-	@make -C build $(GCCFLAGS) -j2 toolchain
-	@touch .toolchain.stamp
 
 clean:
 	rm -rf build .build.stamp .*.applied .toolchain.stamp

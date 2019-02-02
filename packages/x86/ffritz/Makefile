@@ -15,11 +15,12 @@ BR_TGT_LIB  = $(BR_TGT)/usr/lib
 BR_TGT_BIN  = $(BR_TGT)/usr/bin
 BR_TGT_SBIN = $(BR_TGT)/usr/sbin
 
-BINFILES    = ../mpd/build/src/mpd src/sndlist src/usbplay src/usbplayd src/ffdaemon
+BINFILES    = src/sndlist src/usbplay src/usbplayd src/ffdaemon
 BINFILES   += $(BR_TGT_BIN)/strace $(BR_TGT_BIN)/ldd $(BR_TGT_SBIN)/tcpdump 
 BINFILES   += $(BR_TGT_BIN)/ltrace
 BINFILES   += $(BR_TGT_BIN)/tcpbridge $(BR_TGT_BIN)/tcpprep $(BR_TGT_BIN)/tcpreplay $(BR_TGT_BIN)/tcpreplay-edit $(BR_TGT_BIN)/tcprewrite
-BINFILES   += $(BR_TGT_BIN)/mpc $(BR_TGT_BIN)/rsync $(BR_TGT_BIN)/socat 
+BINFILES   += $(BR_TGT_BIN)/rsync $(BR_TGT_BIN)/socat 
+BINFILES   += $(BR_TGT_BIN)/fusermount
 BINFILES   += $(BR_TGT)/../host/usr/i686-buildroot-linux-uclibc/sysroot/usr/bin/curl
 BINFILES   += $(BR_TGT_SBIN)/openvpn
 BINFILES   += $(BR_TGT_BIN)/gdbserver
@@ -42,10 +43,33 @@ ifeq ($(INSTDIR),)
     INSTDIR=$(STAGEDIR)
 endif
 
-SUBDIRS	    = ../buildroot ../libmaru ../shairport ../libmpdclient ../mpc ../lirc ../libupnpp ../jsoncpp ../upmpdcli ../libnfs ../nfs ../mpd ../bt src
-INSTDIRS    = ../lirc/install ../libupnpp/install ../upmpdcli/install ../nfs/install ../bt/install ../prtg/install ../athtool/install
-SUBDIRS    += ../libdvbfi
+## Packages
+#
+SUBDIRS	    = ../buildroot
+SUBDIRS    += ../libmaru
+SUBDIRS    += ../shairport 
+SUBDIRS    += ../libmpdclient 
+SUBDIRS    += ../lirc 
+SUBDIRS    += ../jsoncpp 
+SUBDIRS    += ../upmpdcli 
+SUBDIRS    += ../libnfs 
+SUBDIRS    += ../nfs 
+SUBDIRS    += src
+
+## Packages with (build/)install target
+#
+INSTDIRS   += ../lirc/install 
+INSTDIRS   += ../libupnpp/install 
+INSTDIRS   += ../upmpdcli/install 
+INSTDIRS   += ../nfs/install 
+INSTDIRS   += ../bt/install 
+INSTDIRS   += ../prtg/install 
+INSTDIRS   += ../athtool/install 
+INSTDIRS   += ../unionfs-fuse/install 
+INSTDIRS   += ../dnsmasq/install
 INSTDIRS   += ../libdvbfi/install
+INSTDIRS   += ../mpc/install
+INSTDIRS   += ../mpd/install
 
 ifeq ($(CASH),)
 CASH=$(shell ls -d ../cash 2>/dev/null)
@@ -82,8 +106,9 @@ $(IMAGE): ffimage.bin
 	cp ../../../*.md .
 	cp ../libdvbfi/README.txt README-dvb.txt 
 	cp ../libdvbfi/fwd .
-	tar cf $(IMAGE) ffimage.bin $(CSUM) *.md README-dvb.txt fwd uclib-version
-#	tar cf $(IMAGE) ffimage.bin ffimage.sha256sum *.md uclib-version
+	cp $(CSUM) ffimage.sha256sum
+	tar cf $(IMAGE) ffimage.bin ffimage.sha256sum *.md uclib-version
+	rm -f ffimage.sha256sum
 	@echo
 	@echo +++ DONE +++
 	@echo "Atom image file: $(TOPDIR)/$(IMAGE)"
@@ -113,11 +138,8 @@ install: $(BINFILES) $(ETCFILES) $(INSTDIRS) modules $(shell test -d $(BR_TGT_LI
 	cp $(ETCFILES) $(INSTDIR)/etc
 	cp -ar etc/openvpn $(INSTDIR)/etc
 	sed -i -e 's@^rundir=.*@rundir=/var/media/ftp/ffritz@' $(INSTDIR)/etc/ff_atom_startup
-	make -C ../lirc install DESTDIR=$(INSTDIR)
-	make -C ../libupnpp install DESTDIR=$(INSTDIR)
-	make -C ../upmpdcli install DESTDIR=$(INSTDIR)
-	make -C ../nfs install DESTDIR=$(INSTDIR)
 	cp -a bin/ffwrap $(INSTDIR)/bin/exec
+#	test -d $(INSTDIR)/sbin && mv $(INSTDIR)/sbin/* $(INSTDIR)/bin
 	@cd $(INSTDIR)/bin; \
 	    for f in `ls | xargs file | grep ELF | grep -v cash_wrap.so | sed -e 's/:.*//'`; do\
 		test `basename $$f` != cash -a $(NOSTRIP) -eq 0 && strip $$f;\
@@ -136,6 +158,7 @@ install: $(BINFILES) $(ETCFILES) $(INSTDIRS) modules $(shell test -d $(BR_TGT_LI
 	
 clean: 
 	rm -rf output $(IMAGE) ffimage.bin
+	for d in $(SUBDIRS) $(INSTDIRS:%/install=%); do if [ $$d != ../buildroot ]; then make -k -C $$d clean || true; fi; done
 
 cleanall:
-	for d in $(SUBDIRS); do make -C $${d} clean; done
+	for d in $(SUBDIRS) $(INSTDIRS:%/install=%); do make -k -C $${d} clean || true; done

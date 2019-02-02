@@ -36,11 +36,11 @@ nfs directories to an (existing) location below /var/media/ftp.
 The format of the file is an nfs URL, options are those accepted by the
 fuse-nfs tool:
 
-    MOUNT  nfs://server/service mount-options
+	MOUNT  nfs://server/service mount-options
 
 For example, to mount the music database from an external NAS:
 
-    MOUNT Musik/NAS nfs://nas/Multimedia/Music --allow_other
+	MOUNT Musik/NAS nfs://nas/Multimedia/Music --allow_other
 
 lirc
 ----
@@ -50,11 +50,11 @@ lirc can be used to operate an IR transceiver connected to the fritzbox
 - General configuration settings (used driver, network port, ...) can be
   modified in
 
-    /var/media/ftp/ffritz/lirc_options.conf
+	/var/media/ftp/ffritz/lirc_options.conf
 
 - Remote control configuration can be placed into
 
-    /var/media/ftp/ffritz/etc/lirc/lircd.conf.d
+	/var/media/ftp/ffritz/etc/lirc/lircd.conf.d
 
 - To restart lirc after doing this:
 
@@ -160,7 +160,9 @@ and various wrapper scripts will be placed there at startup.
 To directly call pcount as sensor tool make sure to put parameters into quotes.
 For example when creating a "pcount_arm" sensor:
 
+~~~~
 "-p1,MPDSP_frwrd_to_host" "-x2"
+~~~~
 
 This will create a sensor that monitors packets forwarded to ARM due to LUT miss,
 which is an indication for a DOS attack ;-).

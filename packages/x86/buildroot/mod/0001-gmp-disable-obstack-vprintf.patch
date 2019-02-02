@@ -1,0 +1,13 @@
+diff -urN gmp-6.1.0_orig/config.in gmp-6.1.0/config.in
+--- gmp-6.1.0_orig/config.in	2015-11-01 16:19:54.000000000 +0100
++++ gmp-6.1.0/config.in	2019-01-14 05:11:46.181410000 +0100
+@@ -357,9 +357,6 @@
+ /* Define to 1 if you have the <nl_types.h> header file. */
+ #undef HAVE_NL_TYPES_H
+ 
+-/* Define to 1 if you have the `obstack_vprintf' function. */
+-#undef HAVE_OBSTACK_VPRINTF
+-
+ /* Define to 1 if you have the `popen' function. */
+ #undef HAVE_POPEN
+ 

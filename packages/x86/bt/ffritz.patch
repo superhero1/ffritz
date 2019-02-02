@@ -1,8 +1,8 @@
 diff --git a/example/a2dp_sink_demo.c b/example/a2dp_sink_demo.c
-index 7d4cb21..eace88c 100644
+index 95409ef..26c932d 100644
 --- a/example/a2dp_sink_demo.c
 +++ b/example/a2dp_sink_demo.c
-@@ -86,7 +86,7 @@
+@@ -78,7 +78,7 @@
  
  #ifdef HAVE_POSIX_FILE_IO
  #include "wav_util.h"
@@ -11,7 +11,7 @@ index 7d4cb21..eace88c 100644
  #define STORE_SBC_TO_WAV_FILE 
  #endif
  
-@@ -151,6 +151,8 @@ static FILE * sbc_file;
+@@ -122,6 +122,8 @@ static FILE * sbc_file;
  static char * sbc_filename = "avdtp_sink.sbc";
  #endif
  
@@ -20,17 +20,27 @@ index 7d4cb21..eace88c 100644
  typedef struct {
      // bitmaps
      uint8_t sampling_frequency_bitmap;
-@@ -290,7 +292,7 @@ static int a2dp_sink_and_avrcp_services_init(void){
-     // Set local name with a template Bluetooth address, that will be automatically
-     // replaced with a actual address once it is available, i.e. when BTstack boots
-     // up and starts talking to a Bluetooth module.
+@@ -238,7 +240,7 @@ static int a2dp_and_avrcp_setup(void){
+     avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10001, AVRCP_BROWSING_ENABLED, 1, NULL, NULL);
+     sdp_register_service(sdp_avrcp_controller_service_buffer);
+     
 -    gap_set_local_name("A2DP Sink Demo 00:00:00:00:00:00");
 +    gap_set_local_name(sink_name);
      gap_discoverable_control(1);
      gap_set_class_of_device(0x200408);
  
-@@ -1131,6 +1133,17 @@ int btstack_main(int argc, const char * argv[]){
-     (void)argc;
+@@ -711,7 +713,9 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
+             }
+             printf("A2DP Sink demo: streaming connection is established, address %s, a2dp cid 0x%02X, local_seid %d\n", bd_addr_to_str(address), a2dp_cid, local_seid);
+             
++#ifdef HAVE_BTSTACK_STDIN
+             memcpy(device_addr, address, 6);
++#endif
+ 
+             local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
+             a2dp_sink_connected = 1;
+@@ -952,6 +956,15 @@ int btstack_main(int argc, const char * argv[]){
+     UNUSED(argc);
      (void)argv;
  
 +    if (argc > 1)
@@ -41,17 +51,15 @@ index 7d4cb21..eace88c 100644
 +
 +    printf ("name: %s  output=%s\n", sink_name, wav_filename);
 + 
-+	
 +
-+
-     int err = a2dp_sink_and_avrcp_services_init();
-     if (err) return err;
-     // turn on!
+     a2dp_and_avrcp_setup();
+ 
+ #ifdef HAVE_BTSTACK_STDIN
 diff --git a/platform/libusb/hci_transport_h2_libusb.c b/platform/libusb/hci_transport_h2_libusb.c
-index 23c73eb..df46dbb 100644
+index 7a289e7..3b24bf4 100644
 --- a/platform/libusb/hci_transport_h2_libusb.c
 +++ b/platform/libusb/hci_transport_h2_libusb.c
-@@ -77,6 +77,14 @@
+@@ -85,6 +85,14 @@
  
  #define ASYNC_POLLING_INTERVAL_MS 1
  
@@ -80,7 +88,7 @@ index ade3c52..96a0ab5 100644
  #endif
  
 diff --git a/port/libusb/Makefile b/port/libusb/Makefile
-index 67c28fb..e9411c7 100644
+index 085b076..2d8e416 100644
 --- a/port/libusb/Makefile
 +++ b/port/libusb/Makefile
 @@ -1,3 +1,9 @@
@@ -93,7 +101,7 @@ index 67c28fb..e9411c7 100644
  # Makefile for libusb based examples
  BTSTACK_ROOT = ../..
  
-@@ -20,8 +26,10 @@ VPATH += ${BTSTACK_ROOT}/platform/libusb
+@@ -27,8 +33,10 @@ VPATH += ${BTSTACK_ROOT}/platform/libusb
  VPATH += ${BTSTACK_ROOT}/chipset/csr
  
  # use pkg-config
@@ -107,7 +115,7 @@ index 67c28fb..e9411c7 100644
  EXAMPLES += csr_set_bd_addr
  
 diff --git a/port/libusb/btstack_config.h b/port/libusb/btstack_config.h
-index 7056a82..fd09945 100644
+index 66d77ad..5cd739c 100644
 --- a/port/libusb/btstack_config.h
 +++ b/port/libusb/btstack_config.h
 @@ -8,7 +8,7 @@

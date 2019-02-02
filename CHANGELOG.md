@@ -7,8 +7,10 @@ Release 8 (FritzOS7 only)
 	- Added support for PRTG Network Monitor (see README-APP.md)
 	- Provide all busybox apps as links in /usr/local/bin
 	- Some enhancements to ffdaemon for service management
-	- Added netsnmp (for manual start)
+	- Added netsnmp, dnsmasq  (for manual start)
+	- Added unionfs-fuse
 	- Added athtool (ext. switch config)
+	- Updated btstack repository
 
  - TODO
  	- libdvbfi: sometimes stops working after closing stream
