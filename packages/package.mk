@@ -104,7 +104,6 @@ NO_MAKE_INSTALL=
 endif
 
 ifeq ($(DESTDIR),TOOLCHAIN)
-DESTDIR	= $(TGTDIR)/bin
 INST_TO_TOOLCHAIN=1
 else
 INST_TO_TOOLCHAIN=0
@@ -167,7 +166,7 @@ install: all
 	@$(foreach f,$(INSTALL_ETC),$(call _INST,$(f),$(DESTDIR)/etc))
 	@$(foreach f,$(INSTALL_SHARE),$(call _INST,$(f),$(DESTDIR)/share))
 ifeq ($(NO_MAKE_INSTALL),)
-ifneq ($(INST_TO_TOOLCHAIN),)
+ifeq ($(INST_TO_TOOLCHAIN),)
 	make -C build install DESTDIR=$(DESTDIR) $(MAKE_INSTALL_OPTIONS)
 else
 	make -C build install DESTDIR=$(SYSROOT) $(MAKE_INSTALL_OPTIONS)

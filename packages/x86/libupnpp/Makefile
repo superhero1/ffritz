@@ -1,40 +1,6 @@
-PKGTOP	= $(shell cd ../..; pwd)
-DLDIR	= $(PKGTOP)/dl
 
-TOPDIR	    = $(shell pwd)
-BUILDROOT   = $(shell cd ../buildroot/build; pwd)
-TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
-SYSROOT	    = $(BUILDROOT)/output/host/usr/i686-buildroot-linux-uclibc/sysroot
-TGTROOT	    = $(BUILDROOT)/output/target
-DESTDIR	    = $(SYSROOT)
+CONFTYPE	= autoconf
 
-URL	= $(shell cat $(PKGTOP)/url-libupnpp)
-FILE	= $(DLDIR)/$(shell basename $(URL))
+DESTDIR = TOOLCHAIN
 
-export PATH := $(TOOLCHAIN):$(PATH)
-
-all:	build/config.status
-	@make -C build PATH=$(TOOLCHAIN):$(PATH)
-
-$(FILE):
-	@cd $(DLDIR); wget $(URL)
-
-build/configure:    $(FILE)
-	@mkdir -p build
-	@cd build; tar xf $(FILE) --strip-components=1
-	@cd build; patch -p1 < ../ff-libupnpp.patch
-#	cd build; sh autogen.sh
-	@touch build/configure
-
-build/config.status:	build/configure
-	@cd build; ./configure --host=i686-buildroot-linux-uclibc --target=i686-buildroot-linux-uclibc prefix=/usr
-	@cd build; make install DESTDIR=$(SYSROOT)
-	@cd build; make install DESTDIR=$(TOPDIR)/output
-
-install:
-	@cp -av output/usr/lib/lib*so* $(SYSROOT)/usr/lib
-	@cp -av output/usr/lib/lib*so* $(TGTROOT)/usr/lib
-	@cp -arv output/usr/include/libupnpp $(SYSROOT)/usr/include
-
-clean:
-	rm -rf build
+include ../../package.mk
