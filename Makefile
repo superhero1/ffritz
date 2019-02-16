@@ -18,7 +18,8 @@ SUDO	= sudo
 #
 # 6490:
 #URL=http://download.avm.de/firmware//6490/36787213/FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.07.00.image
-URL=http://download.avm.de/firmware//6490/70988975/FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.07.01.image
+#URL=http://download.avm.de/firmware//6490/70988975/FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.07.01.image
+URL=https://download.avm.de/firmware/6490/59088767/FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.07.02.image
 
 # where to store/fetch from
 #

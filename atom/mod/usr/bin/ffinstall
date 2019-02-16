@@ -46,6 +46,10 @@ fi
 csum=$2
 
 if [ $restart -eq 1 ]; then
+    	if [ -f /usr/local/etc/ffshutdown ]; then
+	    /usr/local/etc/ffshutdown
+	fi
+
 	pids=`busybox lsof | grep /usr/local | sort -u |sed -e 's/[^0-9].*//'`
 	if [ "$pids" != "" ]; then
 		echo +++ stopping PIDs $pids

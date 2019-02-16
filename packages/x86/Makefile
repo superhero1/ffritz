@@ -5,7 +5,7 @@
 MODDIR		= $(shell cd ../../atom/mod; pwd)
 STAGEDIR	= $(shell pwd)/staging
 
-BASE_PACKAGES=buildroot dropbear privatekeypassword openssh
+BASE_PACKAGES=buildroot dropbear privatekeypassword openssh unionfs-fuse
 
 .PHONY:	$(BASE_PACKAGES)
 
@@ -23,6 +23,8 @@ base-install:
 	rm -f  $(STAGEDIR)/usr/bin/c_rehash $(STAGEDIR)/etc/ssl/openssl.cnf
 	make -C privatekeypassword install DESTDIR=$(STAGEDIR)/usr
 	make -C dropbear install DESTDIR=$(STAGEDIR) prefix=/usr
+	make -C unionfs-fuse install DESTDIR=$(STAGEDIR)
+	make -e -C buildroot/build/output/build/libfuse-2.9.6/ install DESTDIR=$(STAGEDIR)
 #	make -C openssh install DESTDIR=$(STAGEDIR)
 #	mv $(STAGEDIR)/etc/openssh $(STAGEDIR)/etc/openssh.dfl
 #	mkdir -p $(STAGEDIR)/var/empty

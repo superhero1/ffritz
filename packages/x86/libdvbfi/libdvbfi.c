@@ -926,13 +926,13 @@ void *send_thread(void *arg)
 				
 			case FWD_TS:
 				udp_send (ctx, (void*)ctx->buffer, ctx->wrlen);
-				ctx->client_cb ((uint32_t)ctx->buffer, 1300,
+				ctx->client_cb ((uint32_t)ctx->buffer, ctx->wrlen,
 					ctx->client_cb_arg, ctx->client_cb_arg4);
 				break;
 
 			case FWD_RTP:
 				rtp_send (ctx, (void*)ctx->buffer, ctx->wrlen);
-				ctx->client_cb ((uint32_t)ctx->buffer, 1300,
+				ctx->client_cb ((uint32_t)ctx->buffer, ctx->wrlen,
 					ctx->client_cb_arg, ctx->client_cb_arg4);
 				break;
 		}

@@ -55,7 +55,7 @@ libsamplerate has different algorithms:
 
 The "best quality" algorithm results in a CPU load of ca 50% (44.1KHz -> 48KHz).
 The default is 2 (`SRC_SINC_FASTEST`) (ca. 7% load), a good compromise is `MEDIUM_QUALITY`
-with 17% load (although i don't hear a difference).
+with 17% load (although i don nott hear a difference).
 Add the `-c <algo-number>` switch to `USBPLAYD_ARGS` to change the default.
 
 MPD
@@ -87,8 +87,49 @@ and specifying the "volume_file" attribute.
 
 The default mpd.conf uses /var/tmp/volume as expected by usbplayd.
 
+Recorder plugin
+---------------
+I was always annoyed that in the middle of listening to a title i come to the conclusion
+that i would have liked to record it.
+So i enhanced the recorder plugin to be able to continuously record, but 
+discard the title after it has finished, except i want to keep it.
+
+Sample setup:
+
+~~~
+audio_output {
+        type            "recorder"
+        name            "Recorder-One"
+        format_path     "[/tmp/samba/[%artist%-]%title%.ogg]"
+        archive_path    "[/var/media/ftp/Musik/NAS/rip/archive/[%artist%-]%title%.ogg]"
+        encoder         "vorbis"
+        quality         "10"
+        delete_after_record "1"
+}
+audio_output {
+        type            "recorder"
+        name            "Recorder-KeepCurrent"
+        parent          "Recorder-One"
+}
+~~~
+
+The "Recorder-One" instance is meant to be running always. It will store the current 
+title to /tmp and discard it afterwards ("delete_after_record" atrtibute).
+
+The "Recorder-KeepCurrent" instance will do nothing, except telling the "Recorder-One" 
+instance to move the current title to its "archive_path" before deleting it.
+This is triggered by an "disable->enable" transition of the "Recorder-KeepCurrent" 
+instance any time during the runtime of the current title.
+
+After having saved the title, the "Recorder-One" will resume deleting everything 
+until the next time "Recorder-KeepCurrent" is enabled.
+
+Putting the temporary file ("format_path") to /tmp (RAMdisk) saves CPU time, does
+not harm the flash or continuously accesses the NAS (wherever the permanent storage is).
+/tmp/samba happens to be writeable for all (mpd does not run as root).
+
 NFS Mounts
-----------
+==========
 If you want to mount an external database, use the .mtab feature as described in README.
 For example is use this entry in /var/media/ftp/ffritz/.mtab so that mpd can access
 my music database on an external NAS:

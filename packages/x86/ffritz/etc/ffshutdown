@@ -13,11 +13,28 @@ busybox lsof -p `pidof cableinfo`|grep libdvbfi > /dev/null && killall cableinfo
 if [ -f /var/media/ftp/ffritz/.mtab ]; then
 	/usr/local/etc/usrmount -u /var/media/ftp/ffritz/.mtab >/dev/null 2>&1
 fi
-sleep 5
+sleep 2
 
-umount /usr/local && exit 0
+pids=`busybox lsof | grep /usr/local | sort -u |sed -e 's/[^0-9].*//'`
+if [ "$pids" != "" ]; then
+	echo +++ stopping PIDs $pids
+	kill $pids
+fi
 
-echo Some processes still access /usr/local:
-busybox lsof | grep /usr/local | sort -u
+sleep 2
+pids=`busybox lsof | grep /usr/local | sort -u |sed -e 's/[^0-9].*//'`
+if [ "$pids" != "" ]; then
+	echo killing PIDs $pids
+	kill -9 $pids
+	sleep 2
+fi
 
-exit 1
+mount|grep /usr/local >/dev/null
+
+if [ $? -eq 0 ]; then
+	umount /usr/local
+	if [ $? -ne 0 ]; then
+		echo FAILED to unmount /usr/local 1>&2
+		exit 1
+	fi
+fi

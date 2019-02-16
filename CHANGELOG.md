@@ -1,6 +1,23 @@
 Change history of application package
 =====================================
 
+NEXT
+-------------------------
+- Application package
+	- mpd: Enhanced Recorder plugin
+		- "parent" property will create a recorder instance
+		  which just tells named instance to copy current
+		  title to archive_path
+		- archive_path: like format_path, will copy current
+		  title there when told by a client instance to do so.
+		- delete_after_record: Delete current title after
+		  recording it.
+	  The purpose is to be able to capture the complete title that
+	  is currently playing by:
+	  - Continuously running an instance with "delete_after_record"
+	  - only save the title when toggling the run state of an
+	    instance with a "parent" attribute (stop->start).
+
 Release 8 (FritzOS7 only)
 -------------------------
 - Application package version 8

@@ -67,7 +67,7 @@ $(error No url/git file for $(PKGNAME))
 endif
 endif
 
-all:
+all: all-pkg
 
 ifeq ($(CONFTYPE),)
 CONFTYPE=autoconf
@@ -106,7 +106,7 @@ endif
 ifeq ($(DESTDIR),TOOLCHAIN)
 INST_TO_TOOLCHAIN=1
 else
-INST_TO_TOOLCHAIN=0
+INST_TO_TOOLCHAIN=
 endif
 
 ifeq ($(DESTDIR),)
@@ -144,7 +144,7 @@ build:	$(REPO)
 endif
 
 
-all:	$(ALL_DEP)
+all-pkg:	$(ALL_DEP)
 	make -C build$(MAKE_SUBDIR) -j4 PATH=$(TOOLCHAIN):$(PATH) $(MAKE_OPTIONS)
 
 build$(MAKE_SUBDIR)/Makefile:    build
@@ -156,11 +156,14 @@ build/config.status:	build/configure
 	cd build; export PATH=$(TOOLCHAIN):$(PATH); ./configure $(CONFIGURE_FLAGS) --build=x86_64-unknown-linux-gnu --prefix=/usr/local --exec-prefix=/usr --sysconfdir=/usr/local/etc --localstatedir=/var --program-prefix= --disable-doc --disable-docs --disable-documentation --disable-static --enable-shared $(PKG_CONFIGURE_FLAGS)
 	touch $@
 
-clean:
+clean:	clean-pkg
+ 
+clean-pkg:
 	rm -rf build
 
+install: install-pkg
 
-install: all
+install-pkg: all
 	@$(foreach f,$(INSTALL_BIN),$(call _INST,$(f),$(DESTDIR)/bin))
 	@$(foreach f,$(INSTALL_LIB),$(call _INST,$(f),$(DESTDIR)/lib))
 	@$(foreach f,$(INSTALL_ETC),$(call _INST,$(f),$(DESTDIR)/etc))

@@ -51,7 +51,7 @@ SUBDIRS    += ../shairport
 SUBDIRS    += ../libmpdclient 
 SUBDIRS    += ../lirc 
 SUBDIRS    += ../jsoncpp 
-SUBDIRS    += ../upmpdcli 
+#SUBDIRS    += ../upmpdcli 
 SUBDIRS    += ../libnfs 
 SUBDIRS    += ../nfs 
 SUBDIRS    += src
@@ -91,8 +91,6 @@ all:	$(SUBDIRS) $(IMAGE)
 modules:
 	mkdir -p lib/modules
 	make -C ../avm ff-modules-install DESTDIR=$(TOPDIR)/lib/modules
-
-../upmpdcli:	../libupnpp/install
 
 $(SUBDIRS):	
 	mkdir -p ../../dl
