@@ -1,7 +1,7 @@
 /*****************************************************************************
  * libdvbfi.c DVB-C library wrapper and TS/RTP forwareder
  *****************************************************************************
- * Copyright (C) 2018 Felix Schmidt
+ * Copyright (C) 2018,2019 Felix Schmidt
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -132,8 +132,8 @@ struct wrap_ctx
 	uint32_t		seq;
 	uint8_t			ssrc[4];
 
-	uint32_t (*client_cb)(uint32_t, uint32_t, uint32_t, uint32_t);
-	uint32_t 		client_cb_arg, client_cb_arg4;
+	uint32_t (*client_cb)(uint32_t, uint32_t, uint32_t);
+	uint32_t 		client_cb_arg;
 
 	int			write_triggered;
 	pthread_mutex_t		mutex;
@@ -170,36 +170,35 @@ int udp_size = 1316;
 
 /* Function pointers to libdvbid.so
  */
-uint32_t (*p_di_add_pcr_pid)(struct lib_ctx *ctx, uint32_t a2, uint32_t a3);
+uint32_t (*p_di_add_pcr_pid)(struct lib_ctx *ctx, uint32_t a2);
 uint32_t (*p_di_add_pid)(struct lib_ctx *ctx, int16_t a2);
 uint32_t (*p_di_add_pids)(struct lib_ctx *ctx, uint32_t * a2);
 struct lib_ctx * (*p_di_alloc_stream)(uint32_t a1);
-struct stream_param* (*p_di_alloc_stream_param)(char * a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5, uint32_t a6, uint32_t a7, uint32_t a8, uint32_t a9, uint32_t a10);
+struct stream_param* (*p_di_alloc_stream_param)(char * a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5, uint32_t a6, uint32_t a7);
 uint32_t (*p_di_automode_supported)(void);
-uint32_t (*p_di_close_stream)(struct lib_ctx *ctx, uint32_t a2, uint32_t a3);
+uint32_t (*p_di_close_stream)(struct lib_ctx *ctx);
 uint32_t (*p_di_exit)(void);
 uint32_t (*p_di_free_stream)(struct lib_ctx *ctx);
 uint32_t (*p_di_free_stream_param)(uint32_t * a1);
-uint32_t (*p_di_get_error_rates)(struct lib_ctx *ctx, uint32_t * a2, uint32_t * a3, uint32_t * a4, uint32_t a5);
+uint32_t (*p_di_get_error_rates)(struct lib_ctx *ctx, uint32_t * a2, uint32_t * a3, uint32_t * a4);
 uint32_t (*p_di_get_input_signal_power)(struct lib_ctx *ctx, float32_t * a2);
 uint32_t (*p_di_get_lock_status)(struct lib_ctx *ctx, uint32_t a1);
 uint32_t (*p_di_get_number_of_tuners)(void);
 uint32_t (*p_di_get_signal_noise_ratio)(struct lib_ctx *ctx, float32_t * a2);
 uint32_t (*p_di_get_support_data)(void);
-uint32_t (*p_di_init)(uint32_t a1);
+uint32_t (*p_di_init)();
 uint32_t (*p_di_open_stream)(struct lib_ctx *ctx);
-uint32_t (*p_di_recvpid_stream)(struct lib_ctx *ctx, uint32_t (*a2)(uint32_t, uint32_t, uint32_t, uint32_t), uint32_t a3);
+uint32_t (*p_di_recvpid_stream)(struct lib_ctx *ctx, uint32_t (*a2)(uint32_t, uint32_t, uint32_t), uint32_t a3);
 uint32_t (*p_di_remove_pid)(struct lib_ctx *ctx, uint32_t a2);
 uint32_t (*p_di_remove_pids)(struct lib_ctx *ctx, uint32_t * a2);
 uint32_t (*p_di_spectrum_progress)(uint32_t * a1);
 uint32_t (*p_di_spectrum_start)(uint32_t a1, uint32_t a2, int64_t a3, uint32_t a4);
 uint32_t (*p_di_spectrum_stop)(void);
-uint32_t (*p_di_tune_stream)(struct lib_ctx *ctx, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5, uint32_t a6, uint32_t a7, uint32_t a8);
-uint32_t (*p_di_reset)(struct lib_ctx *ctx);
+uint32_t (*p_di_tune_stream)(struct lib_ctx *ctx, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5, uint32_t a6);
 
 uint32_t (*p_csock_sockaddr_set_inaddr) (void *a1, struct dstip *dstip, int dstport, void *a4);
 
-uint32_t my_cableinfo_callback (uint32_t dvb_data, uint32_t a2, uint32_t a3, uint32_t a4);
+uint32_t my_cableinfo_callback (uint32_t dvb_data, uint32_t a2, uint32_t a3);
 void udp_init (struct wrap_ctx *ctx);
 void *send_thread(void *arg);
 int wr_trigger(struct wrap_ctx *ctx, uint8_t *buffer, int len);
@@ -278,7 +277,6 @@ void libinit(void)
 	p_di_spectrum_start = dlsym (lh, "di_spectrum_start");
 	p_di_spectrum_stop = dlsym (lh, "di_spectrum_stop");
 	p_di_tune_stream = dlsym (lh, "di_tune_stream");
-	p_di_reset = dlsym (lh, "di_reset");
 
 	/* get original csock_sockaddr_set_inaddr()
  	 */
@@ -391,10 +389,10 @@ int match_dest (uint32_t ip, int port, uint32_t *redir_ip, int *redir_port)
 
 /* wrappers 
  */
-uint32_t di_add_pcr_pid(struct wrap_ctx *ctx, uint32_t a2, uint32_t a3)
+uint32_t di_add_pcr_pid(struct wrap_ctx *ctx, uint32_t a2)
 {
-	uint32_t rc = p_di_add_pcr_pid (ctx->lib_ctx, a2, a3);
-	printf ("%s(%p 0x%x 0x%x) -> 0x%x\n", __FUNCTION__, ctx, a2, a3, rc);
+	uint32_t rc = p_di_add_pcr_pid (ctx->lib_ctx, a2);
+	printf ("%s(%p 0x%x) -> 0x%x\n", __FUNCTION__, ctx, a2, rc);
 	return rc;
 }
 uint32_t di_add_pid(struct wrap_ctx *ctx, int16_t pid)
@@ -451,13 +449,13 @@ struct wrap_ctx *di_alloc_stream(uint32_t a1)
 
 	return wrap_ctx;
 }
-struct stream_param *di_alloc_stream_param(char * a1, uint32_t a2, uint32_t a3, uint32_t dest_ip, uint32_t src_port, uint32_t dest_port, uint32_t a7, uint32_t a8, uint32_t a9, uint32_t a10)
+struct stream_param *di_alloc_stream_param(char * a1, uint32_t a2, uint32_t a3, uint32_t dest_ip, uint32_t src_port, uint32_t dest_port, uint32_t a7)
 {
 	struct stream_param *rc;
 
-	rc = p_di_alloc_stream_param (a1, a2, a3, dest_ip, src_port, dest_port, a7, a8, a9, a10);
+	rc = p_di_alloc_stream_param (a1, a2, a3, dest_ip, src_port, dest_port, a7);
 
-	printf ("%s(%s 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x) -> %p\n", __FUNCTION__, a1, a2, a3, dest_ip, src_port, dest_port, a7, a8, a9, a10, rc);
+	printf ("%s(%s 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x) -> %p\n", __FUNCTION__, a1, a2, a3, dest_ip, src_port, dest_port, a7, rc);
 
 	printf ("%x %x\n", dest_ip, rc->dst_ipv4);
 	return rc;
@@ -468,10 +466,10 @@ uint32_t di_automode_supported(void)
 	printf ("%s() -> 0x%x\n", __FUNCTION__, rc);
 	return rc;
 }
-uint32_t di_close_stream(struct wrap_ctx *ctx, uint32_t a2, uint32_t a3)
+uint32_t di_close_stream(struct wrap_ctx *ctx)
 {
-	uint32_t rc = p_di_close_stream (ctx->lib_ctx, a2, a3);
-	printf ("%s(%p 0x%x 0x%x) -> 0x%x\n", __FUNCTION__, ctx, a2, a3, rc);
+	uint32_t rc = p_di_close_stream (ctx->lib_ctx);
+	printf ("%s(%p) -> 0x%x\n", __FUNCTION__, ctx, rc);
 	return rc;
 }
 uint32_t di_exit(void)
@@ -521,10 +519,10 @@ uint32_t di_free_stream_param(uint32_t * a1)
 	printf ("%s(%p) -> 0x%x\n", __FUNCTION__, a1, rc);
 	return rc;
 }
-uint32_t di_get_error_rates(struct wrap_ctx *ctx, uint32_t * a2, uint32_t * a3, uint32_t * a4, uint32_t a5)
+uint32_t di_get_error_rates(struct wrap_ctx *ctx, uint32_t * a2, uint32_t * a3, uint32_t * a4)
 {
-	uint32_t rc = p_di_get_error_rates (ctx->lib_ctx, a2, a3, a4, a5);
-	printf ("%s(%p 0x%x 0x%x 0x%x 0x%x) -> 0x%x\n", __FUNCTION__, ctx, a2, a3, a4, a5, rc);
+	uint32_t rc = p_di_get_error_rates (ctx->lib_ctx, a2, a3, a4);
+	printf ("%s(%p 0x%x 0x%x 0x%x) -> 0x%x\n", __FUNCTION__, ctx, a2, a3, a4, rc);
 	return rc;
 }
 uint32_t di_get_input_signal_power(struct wrap_ctx *ctx, float32_t * a2)
@@ -570,7 +568,7 @@ uint32_t di_open_stream(struct wrap_ctx *ctx)
 	return rc;
 }
 
-uint32_t di_recvpid_stream(struct wrap_ctx *ctx, uint32_t (*cableinfo_callback)(uint32_t, uint32_t, uint32_t, uint32_t), uint32_t a3)
+uint32_t di_recvpid_stream(struct wrap_ctx *ctx, uint32_t (*cableinfo_callback)(uint32_t, uint32_t, uint32_t), uint32_t a3)
 {
 	uint32_t rc;
 
@@ -618,31 +616,10 @@ uint32_t di_spectrum_stop(void)
 	printf ("%s() -> 0x%x\n", __FUNCTION__, rc);
 	return rc;
 }
-uint32_t di_tune_stream(struct wrap_ctx *ctx, uint32_t freq, uint32_t symrate, uint32_t specinv, uint32_t mtype, uint32_t a6, uint32_t a7, uint32_t a8)
+uint32_t di_tune_stream(struct wrap_ctx *ctx, uint32_t freq, uint32_t symrate, uint32_t specinv, uint32_t mtype, uint32_t a6)
 {
-	uint32_t rc = p_di_tune_stream (ctx->lib_ctx, freq, symrate, specinv, mtype, a6, a7, a8);
-	printf ("%s(%p 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x) -> 0x%x\n", __FUNCTION__, ctx, freq, symrate, specinv, mtype, a6, a7, a8, rc);
-	return rc;
-}
-uint32_t di_reset(struct wrap_ctx *ctx)
-{
-	uint32_t rc = 0;
-
-	printf ("%s(%p) -> \n", __FUNCTION__, ctx);
-	fflush(stdout);
-
-	if (p_di_reset)
-	{
-		if (ctx && (ctx->magic == WRAP_MAGIC) && ctx->lib_ctx)
-		{
-			rc = p_di_reset(ctx->lib_ctx);
-		}
-		else
-		{
-			rc = p_di_reset((void*)ctx);
-		}
-	}
-	printf ("0x%x\n", rc);
+	uint32_t rc = p_di_tune_stream (ctx->lib_ctx, freq, symrate, specinv, mtype, a6);
+	printf ("%s(%p 0x%x 0x%x 0x%x 0x%x 0x%x) -> 0x%x\n", __FUNCTION__, ctx, freq, symrate, specinv, mtype, a6, rc);
 	return rc;
 }
 
@@ -818,12 +795,10 @@ void rtp_send2 (struct wrap_ctx *ctx, void *buffer, int len)
  * Sends out buffer  of size buf_size as up to 20 individual rtp packets.
  * a3 seems to be context data, a4 unknown
  */
-uint32_t my_cableinfo_callback (uint32_t buffer, uint32_t buf_size, uint32_t a3, uint32_t a4)
+uint32_t my_cableinfo_callback (uint32_t buffer, uint32_t buf_size, uint32_t a3)
 {
 	struct wrap_ctx *ctx = (struct wrap_ctx*)a3;
 	uint32_t rc = 0;
-
-	ctx->client_cb_arg4 = a4;
 
 	/* Let all send methods be handled in a dedicated thread, including the original
 	 * callback back to the cableinfo thread.
@@ -908,6 +883,12 @@ int wr_trigger(struct wrap_ctx *ctx, uint8_t *buffer, int len)
 	return 0;
 }
 
+void client_cb_wrapper(struct wrap_ctx *ctx, int mode)
+{
+	ctx->client_cb ((uint32_t)ctx->buffer, mode ? ctx->wrlen : 1300,
+		ctx->client_cb_arg);
+}
+
 void *send_thread(void *arg)
 {
 	struct wrap_ctx *ctx = arg;
@@ -920,20 +901,17 @@ void *send_thread(void *arg)
 		switch (ctx->udp_fwd)
 		{
 			case FWD_CABLEINFO:
-				ctx->client_cb ((uint32_t)ctx->buffer, ctx->wrlen,
-					ctx->client_cb_arg, ctx->client_cb_arg4);
+				client_cb_wrapper (ctx, 1);
 				break;
 				
 			case FWD_TS:
 				udp_send (ctx, (void*)ctx->buffer, ctx->wrlen);
-				ctx->client_cb ((uint32_t)ctx->buffer, ctx->wrlen,
-					ctx->client_cb_arg, ctx->client_cb_arg4);
+				client_cb_wrapper (ctx, 0);
 				break;
 
 			case FWD_RTP:
 				rtp_send (ctx, (void*)ctx->buffer, ctx->wrlen);
-				ctx->client_cb ((uint32_t)ctx->buffer, ctx->wrlen,
-					ctx->client_cb_arg, ctx->client_cb_arg4);
+				client_cb_wrapper (ctx, 0);
 				break;
 		}
 
