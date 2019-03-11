@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Buildroot 2016.05-g7294cfc-dirty Configuration
+# Buildroot 2016.05-g724ded1 Configuration
 #
 BR2_HAVE_DOT_CONFIG=y
 BR2_HOST_GCC_AT_LEAST_4_6=y
@@ -399,71 +399,7 @@ BR2_PACKAGE_KODI_ARCH_SUPPORTS=y
 #
 # BR2_PACKAGE_MJPEGTOOLS is not set
 # BR2_PACKAGE_MODPLUGTOOLS is not set
-BR2_PACKAGE_MPD=y
-
-#
-# Archive plugins
-#
-# BR2_PACKAGE_MPD_BZIP2 is not set
-BR2_PACKAGE_MPD_SQLITE=y
-
-#
-# Converter plugins
-#
-BR2_PACKAGE_MPD_LIBSAMPLERATE=y
-BR2_PACKAGE_MPD_LIBSOXR=y
-
-#
-# Decoder plugins
-#
-BR2_PACKAGE_MPD_AUDIOFILE=y
-BR2_PACKAGE_MPD_DSD=y
-BR2_PACKAGE_MPD_FAAD2=y
-BR2_PACKAGE_MPD_FFMPEG=y
-BR2_PACKAGE_MPD_FLAC=y
-BR2_PACKAGE_MPD_LIBSNDFILE=y
-BR2_PACKAGE_MPD_MAD=y
-BR2_PACKAGE_MPD_MPG123=y
-BR2_PACKAGE_MPD_MUSEPACK=y
-BR2_PACKAGE_MPD_OPUS=y
-BR2_PACKAGE_MPD_TREMOR=y
-BR2_PACKAGE_MPD_VORBIS=y
-BR2_PACKAGE_MPD_WAVPACK=y
-
-#
-# Encoder plugins
-#
-# BR2_PACKAGE_MPD_LAME is not set
-# BR2_PACKAGE_MPD_TWOLAME is not set
-
-#
-# Input plugins
-#
-BR2_PACKAGE_MPD_CURL=y
-BR2_PACKAGE_MPD_LIBNFS=y
-
-#
-# samba support needs an (e)glibc toolchain w/ dynamic library, RPC
-#
-BR2_PACKAGE_MPD_SOUNDCLOUD=y
-
-#
-# Output plugins
-#
-BR2_PACKAGE_MPD_ALSA=y
-# BR2_PACKAGE_MPD_AO is not set
-# BR2_PACKAGE_MPD_HTTPD_OUTPUT is not set
-# BR2_PACKAGE_MPD_JACK2 is not set
-# BR2_PACKAGE_MPD_OSS is not set
-# BR2_PACKAGE_MPD_PULSEAUDIO is not set
-
-#
-# Miscellaneous plugins
-#
-BR2_PACKAGE_MPD_AVAHI_SUPPORT=y
-# BR2_PACKAGE_MPD_NEIGHBOR_DISCOVERY_SUPPORT is not set
-BR2_PACKAGE_MPD_TCP=y
-BR2_PACKAGE_MPD_UPNP=y
+# BR2_PACKAGE_MPD is not set
 # BR2_PACKAGE_MPD_MPC is not set
 BR2_PACKAGE_MPG123=y
 BR2_PACKAGE_MPLAYER_ARCH_SUPPORTS=y
@@ -482,7 +418,7 @@ BR2_PACKAGE_MUSEPACK=y
 #
 # BR2_PACKAGE_TSTOOLS is not set
 # BR2_PACKAGE_TWOLAME is not set
-BR2_PACKAGE_UPMPDCLI=y
+# BR2_PACKAGE_UPMPDCLI is not set
 
 #
 # v4l2grab needs a toolchain w/ threads, dynamic library, C++ and headers >= 3.0

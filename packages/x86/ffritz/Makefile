@@ -51,7 +51,6 @@ SUBDIRS    += ../shairport
 SUBDIRS    += ../libmpdclient 
 SUBDIRS    += ../lirc 
 SUBDIRS    += ../jsoncpp 
-#SUBDIRS    += ../upmpdcli 
 SUBDIRS    += ../libnfs 
 SUBDIRS    += ../nfs 
 SUBDIRS    += src
@@ -59,7 +58,6 @@ SUBDIRS    += src
 ## Packages with (build/)install target
 #
 INSTDIRS   += ../lirc/install 
-INSTDIRS   += ../libupnpp/install 
 INSTDIRS   += ../upmpdcli/install 
 INSTDIRS   += ../nfs/install 
 INSTDIRS   += ../bt/install 
@@ -84,7 +82,7 @@ ifeq ($(NOSTRIP),)
 NOSTRIP	    = 0
 endif
 
-.PHONY:	$(SUBDIRS) $(IMAGE)
+.PHONY:	$(SUBDIRS) $(INSTDIRS) $(IMAGE)
 
 all:	$(SUBDIRS) $(IMAGE)
 
