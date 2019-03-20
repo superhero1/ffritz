@@ -17,6 +17,7 @@ NEXT
 	  - Continuously running an instance with "delete_after_record"
 	  - only save the title when toggling the run state of an
 	    instance with a "parent" attribute (stop->start).
+	- DVB-C: Some adaptions to wrapper library, looks now stable.
 
 Release 8 (FritzOS7 only)
 -------------------------
