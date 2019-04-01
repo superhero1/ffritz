@@ -114,14 +114,14 @@ decrypt_nvram
 
 ## If something went wrong with decrypting nvram storage, try legacy mode
 ## (copy from /nvram on ARM)
-if [ $? -ne 0 ]; then
-	echo failed to decrypt nvram image, copying /nvram data >>$FFLOG
-	rpc tar cf - nvram/shadow nvram/root-ssh_x86 nvram/dropbear_x86 | (cd $NVRAM_COPY; tar xf -)
-	mv $NVRAM_COPY/nvram/shadow $NVRAM_COPY
-	mv $NVRAM_COPY/nvram/root-ssh_x86 $NVRAM_COPY/root-ssh
-	mv $NVRAM_COPY/nvram/dropbear_x86 $NVRAM_COPY/dropbear
-	rmdir $NVRAM_COPY/nvram
-fi
+#if [ $? -ne 0 ]; then
+#	echo failed to decrypt nvram image, copying /nvram data >>$FFLOG
+#	rpc tar cf - nvram/shadow nvram/root-ssh_x86 nvram/dropbear_x86 | (cd $NVRAM_COPY; tar xf -)
+#	mv $NVRAM_COPY/nvram/shadow $NVRAM_COPY
+#	mv $NVRAM_COPY/nvram/root-ssh_x86 $NVRAM_COPY/root-ssh
+#	mv $NVRAM_COPY/nvram/dropbear_x86 $NVRAM_COPY/dropbear
+#	rmdir $NVRAM_COPY/nvram
+#fi
 
 # by default, /var/tmp/shadow is the default from var.tar, use it if we don't have one
 #
