@@ -1,0 +1,9 @@
+
+if [ -f /var/media/ftp/ffritz/.mtab ]; then
+	if [ "x$1" = "xstop" ]; then
+		$FFINSTDIR/etc/usrmount -u /var/media/ftp/ffritz/.mtab
+	else
+		$FFINSTDIR/etc/usrmount /var/media/ftp/ffritz/.mtab
+	fi
+fi
+

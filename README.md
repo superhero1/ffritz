@@ -273,7 +273,7 @@ Tested: Debian 7, Debian 8, CentOS 7, ubuntu 14.04 (preferred)
 Used disk space is ca. 10G.
 
 Required (debian) packages are:
-gcc g++ make bison libreadline-dev gawk libtool realpath pkg-config zlibc gnulib libcap-dev rsync busybox curl wget squashfs-tools flex python perl zip unzip tcl bzip2 locales git xsltproc libncurses-dev gettext sudo
+gcc g++ make bison libreadline-dev gawk libtool realpath pkg-config zlibc gnulib libcap-dev rsync busybox curl wget squashfs-tools flex python perl zip unzip tcl bzip2 locales git xsltproc libncurses-dev gettext sudo bc subversion
 
 
 Big endian squashfs tools

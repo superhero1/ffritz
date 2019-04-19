@@ -18,6 +18,16 @@ NEXT
 	  - only save the title when toggling the run state of an
 	    instance with a "parent" attribute (stop->start).
 	- DVB-C: Some adaptions to wrapper library, looks now stable.
+	- Change startup/service scripts
+		- now in /tmp/ffnvram/etc/inid.d, linked to etc/rc.d
+		  for execution
+		- can be changed and saved with nvstore
+	- Package complete buildroot root:
+		- in /usr/local/buildroot
+		- init script will make chroot-able fs in /tmp/br
+		- ramdisc overlay with unionfs-fuse
+		- experimental, far goal is to use buildroot for all
+		  services, maybe even root
 
 Release 8 (FritzOS7 only)
 -------------------------
@@ -104,6 +114,11 @@ TODO
 
 Change history of ffritz core integration:
 ==========================================
+
+NEXT
+----
+- Fix startup issue on FRITZOS 7.02 when previously no ffritz was installed.
+- Do not download ARM extension package by default
 
 release 19
 ------------------------------

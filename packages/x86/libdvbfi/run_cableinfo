@@ -2,6 +2,11 @@
 #
 rc=/var/media/ftp/ffritz/libdvb.rc
 
+if [ "x$1" = "xstop" ]; then
+    	killall cableinfo
+	exit 0
+fi
+
 if [ -r "$1" ]; then
 	plib=`readlink -f $1`
 	shift

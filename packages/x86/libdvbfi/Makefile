@@ -27,7 +27,8 @@ clean:
 
 install: all
 	@mkdir -p $(DESTDIR)/lib
-	@mkdir -p $(DESTDIR)/etc
+	@mkdir -p $(DESTDIR)/etc/init.d
 	@cp libdvb.rc run_cableinfo $(DESTDIR)/etc
+	@cp run_cableinfo $(DESTDIR)/etc/init.d/30cableinfo
 	@cp libdvbfi.so $(DESTDIR)/lib
 

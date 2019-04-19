@@ -2,9 +2,15 @@
 #        
 # lircd startup file
 #                   
-. `dirname $0`/../etc/ffritz-env.sh || exit 1
+. /usr/local/etc/ffritz-env.sh || exit 1
+
 
 VPNDIR=/var/tmp/root-ssh/openvpn
+
+if [ "x$1" = "xstop" ]; then
+	$FFINSTDIR/bin/ffdaemon -K openvpn
+	exit 0
+fi
 
 if [ ! -f $VPNDIR/openvpn.conf ]; then
 	echo OpenVPN not started, no config file

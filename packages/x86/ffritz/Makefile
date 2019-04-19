@@ -2,6 +2,7 @@
 #
 # Options: 
 #	CASH    relative path to cash tool
+#	FFAD    relative path to ffad tool
 #       NOSTRIP Set to 1 to not strip binaries (for debugging)
 #
 TOPDIR	    = $(shell pwd)
@@ -16,20 +17,22 @@ BR_TGT_BIN  = $(BR_TGT)/usr/bin
 BR_TGT_SBIN = $(BR_TGT)/usr/sbin
 
 BINFILES    = src/sndlist src/usbplay src/usbplayd src/ffdaemon
-BINFILES   += $(BR_TGT_BIN)/strace $(BR_TGT_BIN)/ldd $(BR_TGT_SBIN)/tcpdump 
-BINFILES   += $(BR_TGT_BIN)/ltrace
-BINFILES   += $(BR_TGT_BIN)/tcpbridge $(BR_TGT_BIN)/tcpprep $(BR_TGT_BIN)/tcpreplay $(BR_TGT_BIN)/tcpreplay-edit $(BR_TGT_BIN)/tcprewrite
-BINFILES   += $(BR_TGT_BIN)/rsync $(BR_TGT_BIN)/socat 
-BINFILES   += $(BR_TGT_BIN)/fusermount
-BINFILES   += $(BR_TGT)/../host/usr/i686-buildroot-linux-uclibc/sysroot/usr/bin/curl
-BINFILES   += $(BR_TGT_SBIN)/openvpn
-BINFILES   += $(BR_TGT_BIN)/gdbserver
-BINFILES   += $(BR_TGT_BIN)/setpci $(BR_TGT_BIN)/lspci
-BINFILES   += $(BR_TGT_SBIN)/snmpd
+#BINFILES   += $(BR_TGT_BIN)/strace $(BR_TGT_BIN)/ldd $(BR_TGT_SBIN)/tcpdump 
+#BINFILES   += $(BR_TGT_BIN)/ltrace
+#BINFILES   += $(BR_TGT_BIN)/tcpbridge $(BR_TGT_BIN)/tcpprep $(BR_TGT_BIN)/tcpreplay $(BR_TGT_BIN)/tcpreplay-edit $(BR_TGT_BIN)/tcprewrite
+#BINFILES   += $(BR_TGT_BIN)/rsync $(BR_TGT_BIN)/socat 
+#BINFILES   += $(BR_TGT_BIN)/fusermount
+#BINFILES   += $(BR_TGT)/../host/usr/i686-buildroot-linux-uclibc/sysroot/usr/bin/curl
+#BINFILES   += $(BR_TGT_SBIN)/openvpn
+#BINFILES   += $(BR_TGT_BIN)/gdbserver
+#BINFILES   += $(BR_TGT_BIN)/setpci $(BR_TGT_BIN)/lspci
+#BINFILES   += $(BR_TGT_SBIN)/snmpd
+#BINFILES   += $(BR_TGT_BIN)/nmap
 BINFILES   += ../shairport/build/shairport
-ETCFILES    = etc/ffritz-env.sh etc/mpd.conf etc/runmpd etc/ff_atom_startup etc/ffservices etc/run_usbplay etc/run_shairport etc/mkusers
-ETCFILES   += etc/run_lircd etc/lirc_options_dfl.conf etc/upmpdcli.conf-dist etc/run_bluetooth
-ETCFILES   += etc/run_openvpn etc/usrmount etc/fflogrotate etc/ffshutdown
+ETCFILES    = etc/ffritz-env.sh etc/mpd.conf etc/ff_atom_startup etc/ffservices etc/mkusers
+ETCFILES   += etc/lirc_options_dfl.conf etc/upmpdcli.conf-dist
+ETCFILES   += etc/usrmount etc/fflogrotate etc/ffshutdown
+ETCFILES   += etc/init.d
 MODFILES    = lib/modules/cdc-acm.ko
 
 STAGEDIR    = $(TOPDIR)/output/ffritz
@@ -70,12 +73,21 @@ INSTDIRS   += ../mpc/install
 INSTDIRS   += ../mpd/install
 
 ifeq ($(CASH),)
-CASH=$(shell ls -d ../cash 2>/dev/null)
+CASH=$(shell ls -d ../cash/build/.. 2>/dev/null)
 endif
 
 ifneq ($(CASH),)
 SUBDIRS    += $(CASH)
 INSTDIRS   += $(CASH)/install
+endif
+
+ifeq ($(FFAD),)
+FFAD=$(shell ls -d ../ffad/build/.. 2>/dev/null)
+endif
+
+ifneq ($(FFAD),)
+SUBDIRS    += $(FFAD)
+INSTDIRS   += $(FFAD)/install
 endif
 
 ifeq ($(NOSTRIP),)
@@ -129,18 +141,23 @@ install: $(BINFILES) $(ETCFILES) $(INSTDIRS) modules $(shell test -d $(BR_TGT_LI
 	mkdir -p $(INSTDIR)/etc
 	cp -a $(BINFILES) $(INSTDIR)/bin
 	cp -a $(MODFILES) $(INSTDIR)/lib/modules
-	cp -a  $(shell ls  $(BR_TGT_LIB)/lib*so*) $(INSTDIR)/lib
-	cp -a  $(BR_TGT_LIB1)/libutil* $(INSTDIR)/lib
-	cp $(ETCFILES) $(INSTDIR)/etc
+	cp -r $(ETCFILES) $(INSTDIR)/etc
 	cp -ar etc/openvpn $(INSTDIR)/etc
 	sed -i -e 's@^rundir=.*@rundir=/var/media/ftp/ffritz@' $(INSTDIR)/etc/ff_atom_startup
+	rsync -a $(BR_TGT)/ $(INSTDIR)/buildroot 
+	cd $(INSTDIR)/bin/exec; ln -s ../../buildroot/usr/bin/* . || true
+	cd $(INSTDIR)/lib; ln -s ../buildroot/usr/lib/* . || true
+	cd $(INSTDIR)/lib; ln -s ../buildroot/lib/libutil* . || true
 	cp -a bin/ffwrap $(INSTDIR)/bin/exec
 #	test -d $(INSTDIR)/sbin && mv $(INSTDIR)/sbin/* $(INSTDIR)/bin
 	@cd $(INSTDIR)/bin; \
 	    for f in `ls | xargs file | grep ELF | grep -v cash_wrap.so | sed -e 's/:.*//'`; do\
 		test `basename $$f` != cash -a $(NOSTRIP) -eq 0 && strip $$f;\
 		mv $$f exec/$$f;\
-		ln -sv exec/ffwrap $$f;\
+	    done
+	@cd $(INSTDIR)/bin/exec; \
+	    for f in `ls | xargs file -L | grep ELF | grep -v cash_wrap.so | sed -e 's/:.*//'`; do\
+		ln -sv exec/ffwrap ../$$f;\
 	    done
 	@if [ $(NOSTRIP) -eq 0 ]; then \
 	    cd $(INSTDIR)/lib; \
@@ -149,8 +166,10 @@ install: $(BINFILES) $(ETCFILES) $(INSTDIRS) modules $(shell test -d $(BR_TGT_LI
 	    done; fi
 	cp -ar $(BR_TGT)/usr/share/terminfo $(INSTDIR)/share
 	cp -ar $(BR_TGT)/usr/share/snmp $(INSTDIR)/share
+	cp -ar $(BR_TGT)/usr/share/nmap $(INSTDIR)/share
+	cd $(INSTDIR)/bin/exec; ln -s ../../share/nmap/* .
 	ls ${BR_TGT}/lib/libuClibc-* | sed -e 's/.*-\([0-9]\).*/\1/' > uclib-version || exit 1
-	./mkbblinks bb-apps /usr/bin/busybox-i686 output/ffritz/bin $(SQ_ROOT)/sbin $(SQ_ROOT)/bin $(SQ_ROOT)/usr/sbin $(SQ_ROOT)/usr/bin $(SQ_ROOT)/usr/local/bin
+#	./mkbblinks bb-apps /usr/bin/busybox-i686 output/ffritz/bin $(SQ_ROOT)/sbin $(SQ_ROOT)/bin $(SQ_ROOT)/usr/sbin $(SQ_ROOT)/usr/bin $(SQ_ROOT)/usr/local/bin
 	
 clean: 
 	rm -rf output $(IMAGE) ffimage.bin

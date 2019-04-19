@@ -1,11 +1,16 @@
 #!/bin/sh
 #
-. `dirname $0`/../etc/ffritz-env.sh || exit 1
-. `dirname $0`/../etc/mkusers || exit 1
+. /usr/local/etc/ffritz-env.sh || exit 1
+. /usr/local/etc/mkusers || exit 1
+
+if [ "x$1" = "xstop" ]; then
+    $FFINSTDIR/bin/ffdaemon -K shairport 
+    exit 0
+fi
 
 # Make sure usbplayd runs
 #
-$FFINSTDIR/etc/run_usbplay
+$FFINSTDIR/etc/init.d/usbplay start
 
 ####################################################################################
 # Shairport Daemon options

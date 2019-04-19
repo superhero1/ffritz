@@ -1,0 +1,12 @@
+--- build//src/fuse_ops.c	2019-04-19 20:57:19.783040000 +0200
++++ build_n/src/fuse_ops.c	2019-04-19 15:39:17.235040000 +0200
+@@ -388,7 +388,8 @@
+ 	}
+ 
+ 	// This makes exec() fail
+-	//fi->direct_io = 1;
++	if (strstr(path, "/proc"))
++		fi->direct_io = 1;
+ 	fi->fh = (unsigned long)fd;
+ 
+ 	DBG("fd = %"PRIx64"\n", fi->fh);

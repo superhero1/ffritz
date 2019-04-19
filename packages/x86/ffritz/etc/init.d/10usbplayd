@@ -1,8 +1,11 @@
 #!/bin/sh
 #
-. `dirname $0`/../etc/ffritz-env.sh || exit 1
+. /usr/local/etc/ffritz-env.sh || exit 1
 
-ps|grep -v grep|grep usbplayd >/dev/null && exit 0
+if [ "x$1" = "xstop" ]; then
+    ffdaemon -K usbplayd
+    exit 0
+fi
 
 # By default, create an input pipe for mpd and shairport (priority) each
 #

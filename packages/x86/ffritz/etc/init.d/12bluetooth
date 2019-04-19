@@ -2,7 +2,13 @@
 #        
 # lircd startup file
 #                   
-. `dirname $0`/../etc/ffritz-env.sh || exit 1
+. /usr/local/etc/ffritz-env.sh || exit 1
+
+
+if [ "x$1" = "xstop" ]; then
+	$FFINSTDIR/bin/ffdaemon -K a2dp_sink_demo
+	exit 0
+fi
 
 # where to store pairing data
 #

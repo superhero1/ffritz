@@ -4,17 +4,78 @@
 # Preparations should have been done in /etc/init.d/S91-...
 #
 
-. `dirname $0`/../etc/ffritz-env.sh || exit 1
+. /usr/local/etc/ffritz-env.sh || exit 1
+
+OVERLAY=$NVRAM/rootfs-overlay
 
 touch $FFLOG
 chmod 666 $FFLOG
 
+# Prepare etc directory in nvram
+# This contains all persistent data in /etc, including rc scripts
+#
+# It will be used as unionfs overlay to /etc for the buildroot directory
+#
+# This function is intended for first-time initialization after updating
+# to this ff image version. Make sure to stay compatible with a system
+# that does not have a ffimage overlay.
+#
+# shadow:   moves to  rootfs-overlay/etc
+# root-ssh: moves to rootfs-overlay/.ssh
+#
+prep_etcdir()
+{
+	mod=0
+
+	# check/reate /tmp/ffnvram/rootfs-overlay
+	if [ ! -d $OVERLAY ]; then
+		mod=1
+		mkdir -p $OVERLAY/etc/init.d
+		mkdir -p $OVERLAY/etc/rc.d
+		mkdir -p $NVRAM/etc
+		cd $NVRAM/etc
+		mv rc.d rc.d.old
+		ln -s ../rootfs-overlay/etc/rc.d .
+	fi
+
+	# move/link etc/shadow
+	if [ ! -f $OVERLAY/etc/shadow ]; then
+		mod=1
+		cd $NVRAM
+		mv shadow rootfs-overlay/etc/shadow
+		ln -s rootfs-overlay/etc/shadow .
+	fi
+
+	# move/link roots .ssh
+	if [ ! -d $OVERLAY/.ssh ]; then
+		mod=1
+		mv $NVRAM/root-ssh $OVERLAY/.ssh
+		cd $NVRAM
+		ln -s rootfs-overlay/.ssh root-ssh
+	fi
+
+	# check/install all services
+	# XXX should take old .keep files into account...
+	for svc in `cd $FFINSTDIR/etc/init.d; ls`; do
+		if [ ! -f $OVERLAY/etc/rc.d/$svc -a ! -f $OVERLAY/etc/init.d/$svc ]; then
+			mod=1
+			cp $FFINSTDIR/etc/init.d/$svc $OVERLAY/etc/init.d/$svc
+			chmod +x $OVERLAY/etc/init.d/$svc
+			cd $OVERLAY/etc/rc.d/
+			ln -s ../init.d/$svc .
+		fi
+	done
+
+	# make changes persistent
+	if [ $mod -ne 0 ]; then
+		nvsync
+	fi
+}
+
+
 # Start services
 #
 (
-mkdir -p /var/run/mpd
-chown ffritz /var/run/mpd
-
 # wait for all FB services to be up ... :-(
 # Otherwise trouble with USB, OpenVPN, ...
 #
@@ -27,70 +88,16 @@ fi
 #
 $FFINSTDIR/etc/mkusers
 
-# Run user mounts
+# Adjust rootfs-overlay if requires
 #
-if [ -f /var/media/ftp/ffritz/.mtab ]; then
-    $FFINSTDIR/etc/usrmount /var/media/ftp/ffritz/.mtab
-fi
+prep_etcdir
 
-# run shairport
+# Start services
 #
-if [ -x $FFINSTDIR/etc/run_shairport -a ! -f /var/media/ftp/.skip_shairport ]; then
-    echo Starting shairport 
-    $FFINSTDIR/etc/run_shairport
-else
-    echo shairport skipped 
-fi
-
-# run mpd
-#
-if [ -x $FFINSTDIR/etc/runmpd -a ! -f /var/media/ftp/.skip_mpd ]; then
-    echo Starting mpd 
-    $FFINSTDIR/etc/runmpd
-else
-    echo mpd not started 
-fi
-
-# and lircd
-#
-if [ -x $FFINSTDIR/etc/run_lircd -a ! -f /var/media/ftp/.skip_lircd ]; then
-    echo Starting lircd 
-    $FFINSTDIR/etc/run_lircd
-else
-    echo lircd not started 
-fi
-
-# bluetooth
-#
-if [ -x $FFINSTDIR/etc/run_bluetooth -a ! -f /var/media/ftp/.skip_bluetooth ]; then
-    echo Starting bluetooth s2dp sink
-    $FFINSTDIR/etc/run_bluetooth
-else
-    echo bluetooth a2dp sink not started 
-fi
-
-# and openvpn.
-# XXX need some delay for network
-#
-if [ -x $FFINSTDIR/etc/run_openvpn -a -r /var/tmp/root-ssh/openvpn/openvpn.conf ]; then
-	sleep 20
-	echo starting OpenVPN
-	$FFINSTDIR/etc/run_openvpn
-else
-	echo OpenVPN not started
-fi
-
-# cableinfo stream redirect
-#
-if [ -x $FFINSTDIR/etc/run_cableinfo ]; then
-	$FFINSTDIR/etc/run_cableinfo -N
-fi
-
-# Install prtg scripts
-#
-if [ -x $FFINSTDIR/etc/run_prtg ]; then
-	$FFINSTDIR/etc/run_prtg
-fi
+cd $NVRAM/etc/rc.d && for svc in `ls|sort`; do
+    echo starting $svc
+    sh $svc start
+done
 
 ) | tee -a $FFLOG 2>&1 &
 

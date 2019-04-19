@@ -13,8 +13,7 @@ SUDO	= sudo
 # The original firmware tarball
 #
 # 6590:
-#ORIG=$(TOPDIR)/../FRITZ.Box_6590_Cable.de-en-es-it-fr-pl.148.07.00.image
-#URL=http://download.avm.de/firmware/6590/96980342/$(shell basename $(ORIG))
+#URL=http://download.avm.de/firmware/6590/96980342/FRITZ.Box_6590_Cable.de-en-es-it-fr-pl.148.07.00.image
 #
 # 6490:
 #URL=http://download.avm.de/firmware//6490/36787213/FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.07.00.image
@@ -24,6 +23,7 @@ URL=https://download.avm.de/firmware/6490/59088767/FRITZ.Box_6490_Cable.de-en-es
 # where to store/fetch from
 #
 ORIG=$(TOPDIR)/../$(shell basename $(URL))
+ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable-07.08-67153-LabBETA.image
 
 # Keep original rootfs for diff?
 # sudo dirdiff arm/orig/ arm/squashfs-root/
@@ -31,8 +31,10 @@ ORIG=$(TOPDIR)/../$(shell basename $(URL))
 KEEP_ORIG = 1
 
 # The optional arm package contains some none-essential binaries for the
-# arm core (tcpdump, gdb, ...)
+# arm core (tcpdump, gdb, ...).
+# DOWNLOAD to fetch binary package
 #
+#FFRITZ_ARM_PACKAGE=DOWNLOAD
 #FFRITZ_ARM_PACKAGE=../ffritz-arm-0.6-fos7.tar.gz
 
 
@@ -63,9 +65,12 @@ $(error Could not determine firmware version ($(ORIG) missing?))
 endif
 
 DFL_ARM_PACKAGE=packages/arm/ffritz/ffritz-arm-$(ARM_VER)-fos7.tar.gz
-ifeq ($(FFRITZ_ARM_PACKAGE),)
+ifeq ($(FFRITZ_ARM_PACKAGE),DOWNLOAD)
 FFRITZ_ARM_PACKAGE=$(DFL_ARM_PACKAGE)
+else
+FFRITZ_ARM_PACKAGE=
 endif
+
 
 BUSYBOX	= $(shell which busybox)
 RSYNC	= $(shell which rsync)
@@ -86,8 +91,11 @@ all: release
 $(ORIG):
 	wget $(URL) -O $(ORIG)
 
+
+ifneq ($(FFRITZ_ARM_PACKAGE),)
 $(FFRITZ_ARM_PACKAGE):
-	wget https://bitbucket.org/fesc2000/ffritz/downloads/$(shell basename $(FFRITZ_ARM_PACKAGE)) -O $(FFRITZ_ARM_PACKAGE) || true
+	wget ftp://ftp.ffesh.de/pub/ffritz/arm/$(shell basename $(FFRITZ_ARM_PACKAGE)) -O $(FFRITZ_ARM_PACKAGE) || true
+endif
 
 ###############################################################################################
 ## Unpack, patch and repack ARM FS

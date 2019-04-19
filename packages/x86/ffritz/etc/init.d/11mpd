@@ -3,13 +3,20 @@
 # Wrapper to call mpd with the proper libraries and config file
 # Never returns, should be called with nohup
 #
-. `dirname $0`/../etc/ffritz-env.sh || exit 1
+. /usr/local/etc/ffritz-env.sh || exit 1
+
+if [ "x$1" = "xstop" ]; then
+    $FFINSTDIR/bin/ffdaemon -K mpd
+    exit
+fi
 
 $FFINSTDIR/etc/mkusers || exit 1
+mkdir -p /var/run/mpd
+chown ffritz /var/run/mpd
 
 # Make sure usbplayd runs
 #
-$FFINSTDIR/etc/run_usbplay
+$FFINSTDIR/etc/init.d/usbplay start
 
 # generate mpd.conf from template
 #
