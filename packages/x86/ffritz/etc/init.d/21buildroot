@@ -37,7 +37,7 @@ mount -t usbfs none $DEV_OVERLAY/proc/bus/usb
 mkdir -p $DEV_OVERLAY/dev
 mount -t devtmpfs none $DEV_OVERLAY/dev
 mkdir -p $DEV_OVERLAY/sys
-mount -t sysfs none $DEV_OVERLAY/syso
+mount -t sysfs none $DEV_OVERLAY/sys
 
 unionfs -o cow,dev,suid,allow_other $BR_OVERLAY=RW:$DEV_OVERLAY=RW:$BR_ROOT=RO $BR_DIR
 
