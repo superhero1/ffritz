@@ -1,32 +1,84 @@
 Introduction 
 ============
-This image provides some additional software packages for the atom core
-which i have implemented, mainly for the purpose of operating the
-FritzBox as media player for my amplifier.
-
-Refer to README.md for information how to install it.
+This image provides some additional software packages for the atom core,
+which i have implemented/ported mainly for the purpose of operating the
+FritzBox as media player for my dumb old amplifier.
 
 Features
 ========
 
-Music Player Daemon
--------------------
+All services provided by the application package are invoked at startup
+via rc scripts in 
+
+	/tmp/ffnvram/etc/rc.d
+
+which in turn are symlinks to 
+
+	/tmp/ffnvram/etc/init.d
+
+The service name is preceded by two digits controlling the initialization
+order.
+To (de)activate them just add(remove) symlinks in rc.d and make the changes
+persistent by calling nvsync. The service name is preceded by two digits
+controlling the initialization order.
+
+Most user editable configuration files for these services are located
+below
+
+	/var/media/ftp/ffritz
+
+Following is a list of services (service name in brackets).
+
+Buildroot environment (buildroot) - experimental
+------------------------------------------------
+
+The application package contains the complete buildroot root-filesystem
+that was used to build the ffritz application package (in
+/usr/local/buildroot).
+
+The buildroot startup service will prepare a fully operational filesystem
+below /tmp/br. All required special filesystems are mounted (dev, sys, proc).
+
+In addition a ramdisc overlay is mounted "over" the filesystem using
+uinionfs so that the filesystem is writeable.
+Since the ramdisc overlay is located in /etc/ffnvram/buildroot
+any change made there can be made persistent by calling nvsync.
+
+To use this overlay just use chroot:
+
+	chroot /tmp/br
+
+or just "br" as alias.
+
+NOTE: The ramdisc overlay is meant to store configuration files only.
+Bigger data (incl. log files) would easily exceed the available RAM
+size (which is ca. 100MB).
+
+Note that all binaries and libraries from the buildroot directory (usr/bin,
+usr/lib) are available to FritzOS via symlinks in /usr/local/bin,
+/usr/local/lib.
+Specific tools and services might require executing them in the chroot
+environment.
+
+User space player for USB DACs (usbplayd)
+-----------------------------------------
+- Accepts inputs from mpd, shairport and bluetooth.
+- Details in MPD.md
+
+Music Player Daemon (mpd)
+-------------------------
 - Uses user space audio tool (via libusb/libmaru) to access an USB audio DAC
 - Refer to MPD.md for details
-- Startup can be inhibited by creating /var/media/ftp/.skip_mpd
 
-ShairPort Daemon
-----------------
+ShairPort Daemon (shairport)
+----------------------------
 - Acts as AirPort receiver
 - Refer to MPD.txt for details
-- Startup can be inhibited by creating /var/media/ftp/.skip_shairport
 
-Bluetooth a2dp sink
--------------------
+Bluetooth a2dp sink (a2dp_sink_demo)
+------------------------------------
 - Reports itself as "FritzBox"
 - Tested with Logitech BT stick (CSR chipset)
-- Output has precedence over mpd and shairport
-- Startup can be inhibited by creating /var/media/ftp/.skip_bluetooth
 
 nfs mounter
 -----------
@@ -42,10 +94,10 @@ For example, to mount the music database from an external NAS:
 
 	MOUNT Musik/NAS nfs://nas/Multimedia/Music --allow_other
 
-lirc
-----
+lirc (lircd)
+------------
 lirc can be used to operate an IR transceiver connected to the fritzbox
-(im using an irdroid module).
+(i am using an irdroid module).
 
 - General configuration settings (used driver, network port, ...) can be
   modified in
@@ -58,40 +110,25 @@ lirc can be used to operate an IR transceiver connected to the fritzbox
 
 - To restart lirc after doing this:
 
-	killall lircd
+	ffdaemon -R lircd
 
 - For irdroid/irtoy the cdc-acm kernel module is packaged and installed.
 
-- lircd execution can be prevented by creating /var/media/ftp/.skip_lircd
-
-OpenVPN
--------
+OpenVPN (openvpn)
+-----------------
 
 See OPENVPN.md
 
-DVB-C Transport Stream Forwarding
----------------------------------
+Enhanced DVB-C Transport Stream Forwarding (cableinfo)
+------------------------------------------------------
 
 THIS IS EXPERIMENTAL FOR FRITZOS 7. In the current state it can crash the box!
-
 
 To enhance DVB-C streaming performance the DVB-C transport stream can be 
 forwarded to an external service which generates the RTP packets.
 
 For this the cableinfo daemon is executed with a wrapper library. For details
 refer to packages/x86/libdvbfi/README.txt.
-
-Miscellaneous tools
--------------------
-- ldd
-- su
-- strace
-- tcpdump
-- tcpreplay
-- mpc
-- curl
-- rsync
-- socat
 
 Packet counters
 ---------------
@@ -166,6 +203,70 @@ For example when creating a "pcount_arm" sensor:
 
 This will create a sensor that monitors packets forwarded to ARM due to LUT miss,
 which is an indication for a DOS attack ;-).
+
+Building application image
+==========================
+
+You can either use the pre-built images from the download section
+(https://bitbucket.org/fesc2000/ffritz/downloads/) or build it
+by yourself:
+
+	make package-atom
+
+This will rebuild the image in packages/x86/ffritz.
+
+At the moment there are no configuration options, but you can configure the
+contents of the buildroot package.
+
+	make atom-brconfig
+
+This will call menuconfig for the buildroot package, and store the user configuration 
+in packages/x86/buildroot/config.user. A subsequent "make package-atom" will apply
+the changes to the application image package.
+If successfull the new features are available in the chroot environment (see above).
+
+Installation
+============
+
+The image is distributed as ffritz-app-VERSION.tar. To install it,
+
+- Copy it to the box NAS directory 
+
+	scp ffritz-app-VERSION.tar root@192.168.178.1:/var/media/ftp
+
+- Log in and install it
+
+	ffinstall /var/media/ftp/ffritz-app-VERSION.tar CHECKSUM
+
+  The checksum is the sha256sum listed on the download page, or
+  generated by the build (packages/x86/ffritz/ffritz-app-VERSION.sha256sum). 
+  It is also contained in the file ffimage.sha256sum within the release
+  .tar archive.
+
+- After the success message, restart the box (or read the next chapter)
+
+Steps performed by the startup script:
+
+- check if /var/media/ftp/ffritz/data/ffimage.bin exists
+- compare its SHA256 checksum against the checksum that was given at installation.
+- if it matches, ffimage.bin is mounted to /usr/local
+- The target checksum is saved in the encrypted persistent storage.
+- Execute /usr/local/etc/ff_atom_startup
+
+Restart services without box reboot
+-----------------------------------
+If you do nott want to restart the box after installing a new image:
+- Stop all ffritz services:
+
+	/usr/local/etc/ffshutdown
+
+- If prompted, kill processes still using /usr/local, and re-run ffshutdown
+- Run mount script for new image: /etc/init.d/S93-ffimage
+- Start services: /etc/init.d/S94-ffstart
+
+Current core image supports -r switch as first parameter, which does all this:
+
+	ffinstall -r ffritz-app-VERSION.tar CHECKSUM
 
 Notes
 =====

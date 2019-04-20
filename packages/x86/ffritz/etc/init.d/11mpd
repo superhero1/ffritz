@@ -16,7 +16,7 @@ chown ffritz /var/run/mpd
 
 # Make sure usbplayd runs
 #
-$FFINSTDIR/etc/init.d/usbplay start
+$FFINSTDIR/etc/init.d/*usbplayd start
 
 # generate mpd.conf from template
 #

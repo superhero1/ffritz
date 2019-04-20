@@ -1,3 +1,6 @@
+#!/bin/sh
+#
+. /usr/local/etc/ffritz-env.sh || exit 1
 
 if [ -f /var/media/ftp/ffritz/.mtab ]; then
 	if [ "x$1" = "xstop" ]; then

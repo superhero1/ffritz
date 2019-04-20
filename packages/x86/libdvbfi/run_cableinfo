@@ -3,7 +3,7 @@
 rc=/var/media/ftp/ffritz/libdvb.rc
 
 if [ "x$1" = "xstop" ]; then
-    	killall cableinfo
+	busybox lsof -p `pidof cableinfo`|grep libdvbfi > /dev/null && killall cableinfo
 	exit 0
 fi
 

@@ -10,6 +10,10 @@ if [ "x$1" = "xstop" ]; then
 	exit 0
 fi
 
+# Make sure usbplayd runs
+#
+$FFINSTDIR/etc/init.d/*usbplayd start
+
 # where to store pairing data
 #
 DBDIR=$FFRITZ_HOME/bt

@@ -23,7 +23,7 @@ URL=https://download.avm.de/firmware/6490/59088767/FRITZ.Box_6490_Cable.de-en-es
 # where to store/fetch from
 #
 ORIG=$(TOPDIR)/../$(shell basename $(URL))
-ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable-07.08-67153-LabBETA.image
+#ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable-07.08-67153-LabBETA.image
 
 # Keep original rootfs for diff?
 # sudo dirdiff arm/orig/ arm/squashfs-root/
@@ -230,6 +230,9 @@ package-arm:
 package-atom:	atom/squashfs-root
 	make -C packages/x86
 
+atom-brconfig:
+	make -C packages/x86/buildroot userconfig
+
 rebuild:
 	make -C packages base-install
 
@@ -241,6 +244,7 @@ help:
 	@echo 'package          : Rebuild optional packages'
 	@echo 'package-arm      : Rebuild optional package for arm'
 	@echo 'package-atom     : Rebuild optional package for atom'
+	@echo 'atom-brconfig    : Change buildroot configuration for atom'
 	@echo 'squashfstools-be : Download freetz and build big endian squashfs tools for host'
 
 

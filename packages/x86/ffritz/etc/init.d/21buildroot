@@ -8,6 +8,10 @@ BR_ROOT=/usr/local/buildroot
 
 if [ "x$1" = "xstop" ]; then
 	umount $BR_DIR
+	umount $DEV_OVERLAY/proc/bus/usb
+	umount $DEV_OVERLAY/proc
+	umount $DEV_OVERLAY/dev
+	umount $DEV_OVERLAY/sys
 	exit 0
 fi
 

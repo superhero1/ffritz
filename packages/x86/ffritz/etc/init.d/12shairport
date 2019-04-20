@@ -10,7 +10,7 @@ fi
 
 # Make sure usbplayd runs
 #
-$FFINSTDIR/etc/init.d/usbplay start
+$FFINSTDIR/etc/init.d/*usbplayd start
 
 ####################################################################################
 # Shairport Daemon options

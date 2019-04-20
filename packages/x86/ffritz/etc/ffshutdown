@@ -7,21 +7,17 @@ if [ `readlink -f $0` != /var/tmp/ffshutdown ]; then
 	exec /var/tmp/ffshutdown
 fi
 
-ffdaemon -K %all
-busybox lsof -p `pidof cableinfo`|grep libdvbfi > /dev/null && killall cableinfo
+/usr/local/etc/ffservices stop
 
-if [ -f /var/media/ftp/ffritz/.mtab ]; then
-	/usr/local/etc/usrmount -u /var/media/ftp/ffritz/.mtab >/dev/null 2>&1
-fi
 sleep 2
 
 pids=`busybox lsof | grep /usr/local | sort -u |sed -e 's/[^0-9].*//'`
 if [ "$pids" != "" ]; then
 	echo +++ stopping PIDs $pids
 	kill $pids
+	sleep 2
 fi
 
-sleep 2
 pids=`busybox lsof | grep /usr/local | sort -u |sed -e 's/[^0-9].*//'`
 if [ "$pids" != "" ]; then
 	echo killing PIDs $pids

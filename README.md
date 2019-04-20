@@ -28,8 +28,16 @@ NOTE: This is the main branch which only supports FrizOS 7. Older versions
 Usage
 =====
 
-Creating an install/update image
---------------------------------
+The modification consists of two parts:
+1. Adding basic services (like ssh) to the AVM firmware.
+2. An additional application package, consisting of various system tools,
+   but is mainly intended to use the Box as audio player.
+
+This README covers the first topic. For information on the application
+image see README-APP.md.
+
+Creating an install/update firmware image
+-----------------------------------------
 
 - Clone repository (master branch) in the directory where the original
   install image is located:
@@ -40,15 +48,16 @@ Creating an install/update image
 
     `git clone https://fesc2000@bitbucket.org/fesc2000/ffritz.git -b fritzos6`
 
-- Go to ffritz directory and run make (sudo required).
+- Go to ffritz directory and run "make clean; make" (sudo is required).
 
 Note that this will use pre-built binaries checked into the git repository.
 To rebuild these binaries:
 
 	make rebuild
 
-If you want to build an image base on a different original firmware, edit
-the ORIG definition in the Makefile.
+If you want to build an image based on a different original firmware, select
+the URL definition in the Makefile (by commenting out the one you want).
+Or redeine ORIG to point to the image file (e.g. for Labor images).
 
 The same applies for building an image for FritzBox 6590, edit the Makefile.
 
@@ -56,7 +65,7 @@ IMPORTANT NOTE
 --------------
 
 Before starting to modify the Box it is always recommended
-to generate extended support data (<http://192.168.178.1/support.lua>)
+to generate (extended) support data (<http://192.168.178.1/support.lua>)
 and save it. It might become (very) useful to "unbrick" your Box ...
 
 Installing the image from the Boot Loader (if box has no telnet/ssh login)
@@ -106,14 +115,13 @@ If the return code is not 1, check the console messages. Known errors are
 First use
 ---------
 
-After first installation there is no login password for ssh. To assign one:
+After first installation, ssh login needs to be set up:
 
 - Log in to the box using telnet and the web password within the first 10
   minutes after startup.
-- Call "passwd" to change the root password
+- For password authentication, call "passwd" to change the root password
+- For pubkey authentication, put public keys to /.ssh/authorized_keys
 - Call "nvsync" to make the change persistent
-- Consider doing this again using ssh, and change the web gui password
-  afterwards if you are paranoid regarding telnet.
 
 Firmware 6.8 onwards:
 To be able to log in to the arm core (address 169.254.1.2 from atom) you might
@@ -131,20 +139,16 @@ Various data is stored persistently in an encrypted tar archive
 storage is also stored here persistenty (key.enc), but it is
 encrypted.
 
-ffstore.dat is basically a tar image of everything below /var/tmp/ffnvram.
+ffstore.dat is basically a tar image of everything below /tmp/ffnvram.
 By default this is
 
-- the password database (shadow file)
+- the password database (/etc/shadow file)
 - dropbear data (dropbear directory)
 - the roots .ssh directory (root_ssh directory), which also contains a subfolder
   with the data for OpenVPN (root_ssh/openvpn).
 
-If no ffstore.dat or key.enc is present, or can't be loaded for some reason,
-an attempt is made to get the data from the /nvram partition of the SPI
-flash (as it was done in previous versions).
-
 The nvsync tool re-generates the persistent storage with the contents of 
-/var/tmp/ffnvram.
+/tmp/ffnvram.
 
 telnet (Atom)
 -------------
@@ -173,11 +177,6 @@ openssl (Atom)
 ---------------------------
 - /usr/bin/openssl is a wrapper to make sure openssl uses the correct libraries.
 
-IPv6 (Arm)
-----------
-For firmware < 6.63 selection of native IPv6 is forced to be enabled in
-the GUI together with the general IPv6 availability.
-
 pswtool: Switch tools (Arm)
 ---------------------------
 A tool i have written to access the internal switch (in the Puma6 SoC). 
@@ -197,54 +196,18 @@ NOTES:
 - pswtool is based on some API calls provided by libticc. It is therefore 
   limited to the few calls i could more or less re-engineer.
 
+User defined startup script
+---------------------------
+The file /tmp/ffnvram/etc/init.d/rc.user can be used to add your own startup
+commands.
+
+Don't forget to save with "nvstore".
+
 Software Packages
 =================
 
 In addition to the core features it is possible to install an application image
 to the Atom core (see README-APP.md).
-
-You can either use the pre-built image from the download section or build it
-by yourself:
-
-	make package-atom
-
-The image is distributed as ffritz-app-VERSION.tar. To install it,
-
-- Copy it to the box NAS directory 
-
-	scp ffritz-app-VERSION.tar root@192.168.178.1:/var/media/ftp
-
-- Log in and install it
-
-	ffinstall ffritz-app-VERSION.tar CHECKSUM
-
-  The checksum is the sha256sum listed on the download page. It is also contained
-  in the file ffimage.sha256sum within the release .tar archive.
-
-- After the success message, restart the box (or read the next chapter)
-
-Steps performed by the startup script:
-
-- check if /var/media/ftp/ffritz/data/ffimage.bin exists
-- compare its SHA256 checksum against the checksum that was given at installation.
-- if it matches, ffimage.bin is mounted to /usr/local
-- The target checksum is saved in the encrypted persistent storage.
-- Execute /usr/local/etc/ff_atom_startup
-
-Restart services without box reboot
------------------------------------
-If you don't want to restart the box after installing a new image:
-- Stop all ffritz services:
-
-	/usr/local/etc/ffshutdown
-
-- If prompted, kill processes still using /usr/local, and re-run ffshutdown
-- Run mount script for new image: /etc/init.d/S93-ffimage
-- Start services: /etc/init.d/S94-ffstart
-
-Current core image supports -r switch as first parameter, which does all this:
-
-	ffinstall -r ffritz-app-VERSION.tar CHECKSUM
 
 Optional Arm package
 --------------------
@@ -257,6 +220,9 @@ To build this package by yourself:
 
 	make package-arm
 
+Or download it from https://bitbucket.org/fesc2000/ffritz/downloads/ and copy it to
+packages/arm/ffritz.
+
 Notes
 =====
 
@@ -268,13 +234,12 @@ It is installed in packages/(arm|x86)/buildroot (just do a make there).
 Build Host
 ----------
 
-Tested: Debian 7, Debian 8, CentOS 7, ubuntu 14.04 (preferred)
+Tested: Debian 7, Debian 8, CentOS 7, Ubuntu 14.04, Ubuntu 16.04 (preferred)
 
 Used disk space is ca. 10G.
 
 Required (debian) packages are:
 gcc g++ make bison libreadline-dev gawk libtool realpath pkg-config zlibc gnulib libcap-dev rsync busybox curl wget squashfs-tools flex python perl zip unzip tcl bzip2 locales git xsltproc libncurses-dev gettext sudo bc subversion
-
 
 Big endian squashfs tools
 -------------------------
@@ -282,7 +247,7 @@ Big endian squashfs tools
 Binaries are provided in the "hosts" directory. If they dont work, try cloning
 freetz and build them using "make squashfstools-be".
 
-There is a make rule squashfstools-be that does this.
+There is a make rule "squashfstools-be" that does this.
 
 Required (debian) packages are:
 apt-get install gawk libtool realpath pkg-config zlibc gnulib libcap-dev

@@ -14,10 +14,10 @@ chmod 666 $FFLOG
 # Prepare etc directory in nvram
 # This contains all persistent data in /etc, including rc scripts
 #
-# It will be used as unionfs overlay to /etc for the buildroot directory
+# /etc/rootfs-overlay will be used as unionfs overlay to / for the buildroot directory
 #
 # This function is intended for first-time initialization after updating
-# to this ff image version. Make sure to stay compatible with a system
+# to this ff image version. Makes sure to stay compatible with a system
 # that does not have a ffimage overlay.
 #
 # shadow:   moves to  rootfs-overlay/etc
@@ -30,12 +30,9 @@ prep_etcdir()
 	# check/reate /tmp/ffnvram/rootfs-overlay
 	if [ ! -d $OVERLAY ]; then
 		mod=1
-		mkdir -p $OVERLAY/etc/init.d
-		mkdir -p $OVERLAY/etc/rc.d
-		mkdir -p $NVRAM/etc
-		cd $NVRAM/etc
-		mv rc.d rc.d.old
-		ln -s ../rootfs-overlay/etc/rc.d .
+		mkdir -p $NVRAM/etc/init.d
+		mkdir -p $NVRAM/etc/rc.d
+		mkdir -p $OVERLAY/etc
 	fi
 
 	# move/link etc/shadow
@@ -55,22 +52,37 @@ prep_etcdir()
 	fi
 
 	# check/install all services
-	# XXX should take old .keep files into account...
 	for svc in `cd $FFINSTDIR/etc/init.d; ls`; do
-		if [ ! -f $OVERLAY/etc/rc.d/$svc -a ! -f $OVERLAY/etc/init.d/$svc ]; then
+		if [ ! -f $NVRAM/etc/rc.d/$svc -a ! -f $NVRAM/etc/init.d/$svc ]; then
 			mod=1
-			cp $FFINSTDIR/etc/init.d/$svc $OVERLAY/etc/init.d/$svc
-			chmod +x $OVERLAY/etc/init.d/$svc
-			cd $OVERLAY/etc/rc.d/
+			cp $FFINSTDIR/etc/init.d/$svc $NVRAM/etc/init.d/$svc
+			chmod +x $NVRAM/etc/init.d/$svc
+			cd $NVRAM/etc/rc.d/
 			ln -s ../init.d/$svc .
 		fi
 	done
+
+	[ -f /var/media/ftp/.skip_bluetooth ] || rm -f /var/media/ftp/.skip_bluetooth $OVERLAY/etc/rc.d/*bluetooth
+	[ -f /var/media/ftp/.skip_shairport ] || rm -f /var/media/ftp/.skip_bluetooth $OVERLAY/etc/rc.d/*shairport
+	h
+	[ -f /var/media/ftp/.skip_mpd ] || rm -f /var/media/ftp/.skip_bluetooth $OVERLAY/etc/rc.d/*mpd
+	h
+	[ -f /var/media/ftp/.skip_lircd ] || rm -f /var/media/ftp/.skip_bluetooth $OVERLAY/etc/rc.d/*lircd
+	h
 
 	# make changes persistent
 	if [ $mod -ne 0 ]; then
 		nvsync
 	fi
 }
+
+if [ "x$1" = "xstop" ]; then
+    cd $NVRAM/etc/rc.d && for svc in `ls|sort -r`; do
+	echo stopping $svc
+    	sh $svc stop
+    done
+    exit 0
+fi
 
 
 # Start services
@@ -88,7 +100,7 @@ fi
 #
 $FFINSTDIR/etc/mkusers
 
-# Adjust rootfs-overlay if requires
+# Adjust etc / rootfs-overlay if required
 #
 prep_etcdir
 
