@@ -1,0 +1,32 @@
+#!/bin/sh
+#
+# Simple service management
+#
+
+op=$1
+service=$2
+
+if [ -z "$op" -o -z "$service" ]; then
+    echo "usage: $0 start|stop|enable|disable|list service"
+    exit 1
+fi
+
+service_file=`ls /tmp/ffnvram/etc/init.d/*$service 2>/dev/null`
+
+if [ ! -f $service_file ]; then
+    echo no such service: $service
+    exit 1
+fi
+
+service_fname=`basename $service_file`
+
+cd /tmp/ffnvram/etc/rc.d || exit 1
+
+case $op in
+	start)	$service_file start || echo $service started;;
+	stop)   $service_file stop  || echo $service stopped;;
+	enable) ln -sfv ../init.d/$service_fname .; nvsync;;
+	disable) rm -fv /tmp/ffnvram/etc/rc.d/$service_fname; nvsync;; 
+	*)	echo "usage: $0 start|stop|enable|disable service";;
+esac
+
