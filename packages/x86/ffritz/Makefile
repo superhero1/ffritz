@@ -17,18 +17,8 @@ BR_TGT_BIN  = $(BR_TGT)/usr/bin
 BR_TGT_SBIN = $(BR_TGT)/usr/sbin
 
 BINFILES    = src/sndlist src/usbplay src/usbplayd src/ffdaemon
-#BINFILES   += $(BR_TGT_BIN)/strace $(BR_TGT_BIN)/ldd $(BR_TGT_SBIN)/tcpdump 
-#BINFILES   += $(BR_TGT_BIN)/ltrace
-#BINFILES   += $(BR_TGT_BIN)/tcpbridge $(BR_TGT_BIN)/tcpprep $(BR_TGT_BIN)/tcpreplay $(BR_TGT_BIN)/tcpreplay-edit $(BR_TGT_BIN)/tcprewrite
-#BINFILES   += $(BR_TGT_BIN)/rsync $(BR_TGT_BIN)/socat 
-#BINFILES   += $(BR_TGT_BIN)/fusermount
-#BINFILES   += $(BR_TGT)/../host/usr/i686-buildroot-linux-uclibc/sysroot/usr/bin/curl
-#BINFILES   += $(BR_TGT_SBIN)/openvpn
-#BINFILES   += $(BR_TGT_BIN)/gdbserver
-#BINFILES   += $(BR_TGT_BIN)/setpci $(BR_TGT_BIN)/lspci
-#BINFILES   += $(BR_TGT_SBIN)/snmpd
-#BINFILES   += $(BR_TGT_BIN)/nmap
 BINFILES   += ../shairport/build/shairport
+BINFILES   += $(wildcard bin/*)
 ETCFILES    = etc/ffritz-env.sh etc/mpd.conf etc/ff_atom_startup etc/ffservices etc/mkusers
 ETCFILES   += etc/lirc_options_dfl.conf etc/upmpdcli.conf-dist
 ETCFILES   += etc/usrmount etc/fflogrotate etc/ffshutdown
@@ -148,7 +138,7 @@ install: $(BINFILES) $(ETCFILES) $(INSTDIRS) modules $(shell test -d $(BR_TGT_LI
 	cd $(INSTDIR)/bin/exec; ln -s ../../buildroot/usr/bin/* . || true
 	cd $(INSTDIR)/lib; ln -s ../buildroot/usr/lib/* . || true
 	cd $(INSTDIR)/lib; ln -s ../buildroot/lib/libutil* . || true
-	cp -a bin/ffwrap $(INSTDIR)/bin/exec
+	mv $(INSTDIR)/bin/ffwrap $(INSTDIR)/bin/exec
 #	test -d $(INSTDIR)/sbin && mv $(INSTDIR)/sbin/* $(INSTDIR)/bin
 	@cd $(INSTDIR)/bin; \
 	    for f in `ls | xargs file | grep ELF | grep -v cash_wrap.so | sed -e 's/:.*//'`; do\
@@ -164,6 +154,7 @@ install: $(BINFILES) $(ETCFILES) $(INSTDIRS) modules $(shell test -d $(BR_TGT_LI
 	    for l in `ls | xargs file | grep ELF | sed -e 's/:.*//'`; do\
 		strip $$l;\
 	    done; fi
+	rm -f $(INSTDIR)/bin/avahi*
 	cp -ar $(BR_TGT)/usr/share/terminfo $(INSTDIR)/share
 	cp -ar $(BR_TGT)/usr/share/snmp $(INSTDIR)/share
 	cp -ar $(BR_TGT)/usr/share/nmap $(INSTDIR)/share

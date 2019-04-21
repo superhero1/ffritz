@@ -22,10 +22,23 @@ To (de)activate them just add(remove) symlinks in rc.d and make the changes
 persistent by calling nvsync. The service name is preceded by two digits
 controlling the initialization order.
 
+The tool "ffservice" provides a simple script to operate services:
+
+	ffservice start _servicename_
+	ffservice stop _servicename_
+	ffservice enable _servicename_
+	ffservice disable _servicename_
+
 Most user editable configuration files for these services are located
 below
 
 	/var/media/ftp/ffritz
+
+The script /usr/local/etc/ffshutdown attempts to unmount the application
+package by
+- stopping all services
+- killing all remaining PIDs that access the image
+- umnounting /usr/local
 
 Following is a list of services (service name in brackets).
 
@@ -33,14 +46,13 @@ Buildroot environment (buildroot) - experimental
 ------------------------------------------------
 
 The application package contains the complete buildroot root-filesystem
-that was used to build the ffritz application package (in
-/usr/local/buildroot).
+that was used to build the ffritz application package in /usr/local/buildroot.
 
-The buildroot startup service will prepare a fully operational filesystem
+The buildroot service will prepare a fully operational filesystem
 below /tmp/br. All required special filesystems are mounted (dev, sys, proc).
 
-In addition a ramdisc overlay is mounted "over" the filesystem using
-uinionfs so that the filesystem is writeable.
+In addition a ramdisc overlay is mounted over parts the filesystem using
+unionfs (/etc, /var, /root) so that the filesystem is writeable there.
 Since the ramdisc overlay is located in /etc/ffnvram/buildroot
 any change made there can be made persistent by calling nvsync.
 
@@ -48,17 +60,26 @@ To use this overlay just use chroot:
 
 	chroot /tmp/br
 
-or just "br" as alias.
+or just "br" as an alias.
 
 NOTE: The ramdisc overlay is meant to store configuration files only.
 Bigger data (incl. log files) would easily exceed the available RAM
 size (which is ca. 100MB).
 
-Note that all binaries and libraries from the buildroot directory (usr/bin,
+All binaries and libraries from the buildroot directory (usr/bin,
 usr/lib) are available to FritzOS via symlinks in /usr/local/bin,
 /usr/local/lib.
 Specific tools and services might require executing them in the chroot
 environment.
+
+For example, to start a http server on port 81:
+- run "make atom-brconfig" and add lighttpd
+- run "make package-atom" to rebuild the application package
+- install it to the box as described (ffinstall -r package checksum)
+- edit /tmp/br/etc/lighttpd/lighttpd.conf and set the port to 81
+- edit /tmp/br/var/www/index.html
+- call nvsync to make configuration persistent
+- Start the http server: br /etc/init.d/S50lighttpd start
 
 User space player for USB DACs (usbplayd)
 -----------------------------------------

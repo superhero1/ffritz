@@ -17,46 +17,39 @@ chmod 666 $FFLOG
 # /etc/rootfs-overlay will be used as unionfs overlay to / for the buildroot directory
 #
 # This function is intended for first-time initialization after updating
-# to this ff image version. Makes sure to stay compatible with a system
-# that does not have a ffimage overlay.
+# to this ff image version.
 #
-# shadow:   moves to  rootfs-overlay/etc
-# root-ssh: moves to rootfs-overlay/.ssh
+# - create/populate etc/init.d, rc.d
+# - root-ssh: moves to rootfs-overlay/root/.ssh
 #
 prep_etcdir()
 {
 	mod=0
 
-	# check/reate /tmp/ffnvram/rootfs-overlay
-	if [ ! -d $OVERLAY ]; then
+	if [ ! -d $NVRAM/etc/init.d ]; then
 		mod=1
 		mkdir -p $NVRAM/etc/init.d
-		mkdir -p $NVRAM/etc/rc.d
-		mkdir -p $OVERLAY/etc
 	fi
 
-	# move/link etc/shadow
-	if [ ! -f $OVERLAY/etc/shadow ]; then
+	if [ ! -d $NVRAM/etc/rc.d ]; then
 		mod=1
-		cd $NVRAM
-		mv shadow rootfs-overlay/etc/shadow
-		ln -s rootfs-overlay/etc/shadow .
+		mkdir -p $NVRAM/etc/rc.d
 	fi
 
 	# move/link roots .ssh
-	if [ ! -d $OVERLAY/.ssh ]; then
+	if [ ! -d $OVERLAY/root/.ssh ]; then
 		mod=1
-		mv $NVRAM/root-ssh $OVERLAY/.ssh
+		mkdir -p $OVERLAY/root
+		mv $NVRAM/root-ssh $OVERLAY/root/.ssh
 		cd $NVRAM
-		ln -s rootfs-overlay/.ssh root-ssh
+		ln -s rootfs-overlay/root/.ssh root-ssh
 	fi
 
 	# check/install all services
 	for svc in `cd $FFINSTDIR/etc/init.d; ls`; do
-		if [ ! -f $NVRAM/etc/rc.d/$svc -a ! -f $NVRAM/etc/init.d/$svc ]; then
+		if [ ! -r $NVRAM/etc/rc.d/$svc -a ! -r $NVRAM/etc/init.d/$svc ]; then
 			mod=1
-			cp $FFINSTDIR/etc/init.d/$svc $NVRAM/etc/init.d/$svc
-			chmod +x $NVRAM/etc/init.d/$svc
+			ln -s $FFINSTDIR/etc/init.d/$svc $NVRAM/etc/init.d/$svc
 			cd $NVRAM/etc/rc.d/
 			ln -s ../init.d/$svc .
 		fi
@@ -64,11 +57,8 @@ prep_etcdir()
 
 	[ -f /var/media/ftp/.skip_bluetooth ] || rm -f /var/media/ftp/.skip_bluetooth $OVERLAY/etc/rc.d/*bluetooth
 	[ -f /var/media/ftp/.skip_shairport ] || rm -f /var/media/ftp/.skip_bluetooth $OVERLAY/etc/rc.d/*shairport
-	h
 	[ -f /var/media/ftp/.skip_mpd ] || rm -f /var/media/ftp/.skip_bluetooth $OVERLAY/etc/rc.d/*mpd
-	h
 	[ -f /var/media/ftp/.skip_lircd ] || rm -f /var/media/ftp/.skip_bluetooth $OVERLAY/etc/rc.d/*lircd
-	h
 
 	# make changes persistent
 	if [ $mod -ne 0 ]; then
@@ -106,7 +96,8 @@ prep_etcdir
 
 # Start services
 #
-cd $NVRAM/etc/rc.d && for svc in `ls|sort`; do
+cd $NVRAM/etc/rc.d || exit 1
+for svc in `ls|sort`; do
     echo starting $svc
     sh $svc start
 done

@@ -1,17 +1,51 @@
 #!/bin/sh
 #
+# (de)construct a chroot'able filesystem out of a buildroot
+#
 
 BR_DIR=/tmp/br
 BR_OVERLAY=/tmp/ffnvram/rootfs-overlay
-DEV_OVERLAY=/tmp/br-dev
 BR_ROOT=/usr/local/buildroot
 
-if [ "x$1" = "xstop" ]; then
+# Mount table for rootfs
+mtab()
+{
+	echo /dev devtmpfs
+	echo /etc NVRAM
+	echo /proc proc
+	echo /root NVRAM
+	echo /run tmpfs
+	echo /sys sysfs
+	echo /tmp tmpfs
+	echo /run tmpfs
+	echo /var NVRAM
+}
+
+# Reverse mount table
+mtab_r()
+{
+	mtab | grep -n "" |sort -nr|sed -e 's/^[0-9]*://'
+}
+
+umount_all()
+{
+	mtab | while read line; do
+		set $line
+		umount $BR_DIR/$1
+	done
 	umount $BR_DIR
-	umount $DEV_OVERLAY/proc/bus/usb
-	umount $DEV_OVERLAY/proc
-	umount $DEV_OVERLAY/dev
-	umount $DEV_OVERLAY/sys
+}
+
+abort()
+{
+	echo $*
+	umount_all
+	exit 1
+}
+
+
+if [ "x$1" = "xstop" ]; then
+	umount_all
 	exit 0
 fi
 
@@ -30,19 +64,15 @@ if [ -d $BR_OVERLAY/proc/self ]; then
 	exit 1
 fi
 
-# create an intermediate layer for all special filesystems
-# can't create it in rootfs-overlay, otherwise nvsync will attempt
-# to save them
-#
 mkdir -p $BR_DIR
-mkdir -p $DEV_OVERLAY/proc
-mount -t proc none $DEV_OVERLAY/proc
-mount -t usbfs none $DEV_OVERLAY/proc/bus/usb
-mkdir -p $DEV_OVERLAY/dev
-mount -t devtmpfs none $DEV_OVERLAY/dev
-mkdir -p $DEV_OVERLAY/sys
-mount -t sysfs none $DEV_OVERLAY/sys
+mount --redir $BR_ROOT $BR_DIR || exit 1
 
-unionfs -o cow,dev,suid,allow_other $BR_OVERLAY=RW:$DEV_OVERLAY=RW:$BR_ROOT=RO $BR_DIR
-
-exit $?
+mtab | while read line; do
+	set $line
+	if [ "$2" = "NVRAM" ]; then
+		mkdir -p /tmp/ffnvram/rootfs-overlay/$1 || abort
+		unionfs -o cow,dev,suid,allow_other,nonempty $BR_OVERLAY/$1=RW:$BR_ROOT/$1=RO $BR_DIR/$1 || abort
+	else
+		mount -t $2 none $BR_DIR/$1 || abort
+	fi
+done
