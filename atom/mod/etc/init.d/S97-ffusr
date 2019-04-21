@@ -7,7 +7,7 @@ if [ -x /usr/local/etc/init.d/rc.user ]; then
 	/usr/local/etc/init.d/rc.user >> $FFLOG
 fi
 
-if [ -x /var/tmp/ffnvram/etc/init.d/rc.user ]; then
-    	echo executing /var/tmp/ffnvram/etc/init.d/rc.user >> $FFLOG
-	/var/tmp/ffnvram/etc/init.d/rc.user >> $FFLOG
+if [ -x /var/tmp/ffnvram/etc/rc.user ]; then
+    	echo executing /var/tmp/ffnvram/etc/rc.user >> $FFLOG
+	/var/tmp/ffnvram/etc/rc.user >> $FFLOG
 fi

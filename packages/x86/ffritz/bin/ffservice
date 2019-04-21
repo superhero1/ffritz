@@ -6,14 +6,20 @@
 op=$1
 service=$2
 
+if [ "$op" = "list" ]; then
+	cd /tmp/ffnvram/etc/init.d || exit 0
+	ls | sed -e 's/^[0-9]*//'
+	exit 0
+fi
+
 if [ -z "$op" -o -z "$service" ]; then
     echo "usage: $0 start|stop|enable|disable|list service"
     exit 1
 fi
 
-service_file=`ls /tmp/ffnvram/etc/init.d/*$service 2>/dev/null`
+service_file=`ls /tmp/ffnvram/etc/init.d/[0-9]*$service 2>/dev/null`
 
-if [ ! -f $service_file ]; then
+if [ ! -f "$service_file" ]; then
     echo no such service: $service
     exit 1
 fi
@@ -29,4 +35,3 @@ case $op in
 	disable) rm -fv /tmp/ffnvram/etc/rc.d/$service_fname; nvsync;; 
 	*)	echo "usage: $0 start|stop|enable|disable service";;
 esac
-

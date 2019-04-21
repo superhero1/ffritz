@@ -1,9 +1,17 @@
 Change history of application package
 =====================================
 
-NEXT
--------------------------
+Release 9
+---------
 - Application package
+	- Added basic service mechanism (See README-APP.md)
+	- Added "buildroot" service to have buildroot available as chroot
+	  environment.
+		- in /usr/local/buildroot
+		- init script will make chroot-able fs in /tmp/br
+		- ramdisc overlay with unionfs-fuse
+		- experimental, far goal is to use buildroot for all
+		  services
 	- mpd: Enhanced Recorder plugin
 		- "parent" property will create a recorder instance
 		  which just tells named instance to copy current
@@ -22,12 +30,11 @@ NEXT
 		- now in /tmp/ffnvram/etc/inid.d, linked to etc/rc.d
 		  for execution
 		- can be changed and saved with nvstore
-	- Package complete buildroot root:
-		- in /usr/local/buildroot
-		- init script will make chroot-able fs in /tmp/br
-		- ramdisc overlay with unionfs-fuse
-		- experimental, far goal is to use buildroot for all
-		  services, maybe even root
+
+ - TODO
+ 	- libdvbfi: sometimes stops working after closing stream
+		- FOS 7.02: MIGHT CRASH THE BOX!
+		- FOS 7.08 Labor: Seems stable
 
 Release 8 (FritzOS7 only)
 -------------------------
@@ -39,11 +46,6 @@ Release 8 (FritzOS7 only)
 	- Added unionfs-fuse
 	- Added athtool (ext. switch config)
 	- Updated btstack repository
-
- - TODO
- 	- libdvbfi: sometimes stops working after closing stream
-   		- MIGHT CRASH THE BOX!
-	- start/configure snmpd, get if-mib working
 
 Release 7b(eta)
 ---------------
@@ -115,13 +117,15 @@ TODO
 Change history of ffritz core integration:
 ==========================================
 
-NEXT
-----
+release 20
+----------
 - Fix startup issue on FRITZOS 7.02 when previously no ffritz was installed.
 - Do not download ARM extension package by default
+- Init script /etc/init.d/S97-ffusr executes /tmp/ffnvram/etc/rc.user, if
+  it exists.
 
 release 19
-------------------------------
+----------
 - Support for FritzOS 7 (only)
 	- New buildroot toolchain -> new uClibc etc. ->
 		all binaries incompatible to previous versions

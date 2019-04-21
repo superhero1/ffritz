@@ -150,6 +150,9 @@ By default this is
 The nvsync tool re-generates the persistent storage with the contents of 
 /tmp/ffnvram.
 
+The executable script /tmp/ffnvram/etc/rc.user, if it exists, is executed at
+the end of system startup.
+
 telnet (Atom)
 -------------
 - A telnetd service is started at boot time and killed after 600 seconds.
