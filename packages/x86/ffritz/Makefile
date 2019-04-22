@@ -10,7 +10,7 @@ PKGDIR	    = $(shell cd ..; pwd)
 
 SQ_ROOT     = ../../../atom/squashfs-root
 
-BR_TGT	    = ../buildroot/build/output/target
+BR_TGT	    = $(shell cd ../buildroot/build/output/target; pwd)
 BR_TGT_LIB1 = $(BR_TGT)/lib
 BR_TGT_LIB  = $(BR_TGT)/usr/lib
 BR_TGT_BIN  = $(BR_TGT)/usr/bin
@@ -27,6 +27,8 @@ MODFILES    = lib/modules/cdc-acm.ko
 
 STAGEDIR    = $(TOPDIR)/output/ffritz
 
+BRCOPY       = $(STAGEDIR)/buildroot
+
 VERSION     = $(shell cat version)
 
 IMAGE       = ffritz-app-$(VERSION)-fos7.tar
@@ -38,7 +40,6 @@ endif
 
 ## Packages
 #
-SUBDIRS	    = ../buildroot
 SUBDIRS    += ../libmaru
 SUBDIRS    += ../shairport 
 SUBDIRS    += ../libmpdclient 
@@ -84,9 +85,22 @@ ifeq ($(NOSTRIP),)
 NOSTRIP	    = 0
 endif
 
-.PHONY:	$(SUBDIRS) $(INSTDIRS) $(IMAGE)
+.PHONY:	$(SUBDIRS) $(INSTDIRS) $(IMAGE) $(INSTDIR)
 
-all:	$(SUBDIRS) $(IMAGE)
+all:	buildroot $(INSTDIR) $(SUBDIRS) $(IMAGE)
+
+buildroot:
+	make -C ../buildroot
+
+$(INSTDIR):
+	mkdir -p $(INSTDIR)
+	rm -rf $(INSTDIR)/*
+	mkdir -p $(INSTDIR)/etc
+	mkdir -p $(INSTDIR)/bin
+	mkdir -p $(INSTDIR)/share
+	rsync -a $(BR_TGT)/ $(BRCOPY)
+	cd $(INSTDIR); ln -s buildroot/usr/lib .
+	mkdir -p $(INSTDIR)/lib/modules
 
 modules:
 	mkdir -p lib/modules
@@ -97,7 +111,7 @@ $(SUBDIRS):
 	make -C $@
 
 $(INSTDIRS):
-	make -C `dirname $@` install DESTDIR=$(INSTDIR)
+	make -C `dirname $@` install DESTDIR=$(STAGEDIR) INSTDIR=$(STAGEDIR)
 
 $(IMAGE): ffimage.bin
 	sha256sum ffimage.bin | sed -e 's/ .*//' > $(CSUM)
@@ -112,11 +126,8 @@ $(IMAGE): ffimage.bin
 	@echo "Atom image file: $(TOPDIR)/$(IMAGE)"
 	@echo "Image checksum:  `cat $(CSUM)`"
 	@echo
-	
 
-ffimage.bin: $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_LIB)/lib*so*)
-	rm -rf $(STAGEDIR)
-	make install INSTDIR=$(STAGEDIR)
+ffimage.bin: $(BINFILES) $(ETCFILES) stage
 	rm -f $@
 	cd output; mksquashfs ffritz ../$@ -all-root -no-progress -no-exports -no-sparse -b 65536 
 
@@ -125,29 +136,27 @@ ffimage.bin: $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TG
 # which is linked to for each binary. This makes the package position independent, i.e.
 # it can be installed to /var/media/ftp, or integrated into the atom squashfs (to /usr/local).
 #
-install: $(BINFILES) $(ETCFILES) $(INSTDIRS) modules $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_LIB)/lib*so*)
-	mkdir -p $(INSTDIR)/bin/exec
-	mkdir -p $(INSTDIR)/lib/modules
-	mkdir -p $(INSTDIR)/etc
+stage: $(BINFILES) $(ETCFILES) $(INSTDIRS) modules
 	cp -a $(BINFILES) $(INSTDIR)/bin
 	cp -a $(MODFILES) $(INSTDIR)/lib/modules
 	cp -r $(ETCFILES) $(INSTDIR)/etc
 	cp -ar etc/openvpn $(INSTDIR)/etc
 	sed -i -e 's@^rundir=.*@rundir=/var/media/ftp/ffritz@' $(INSTDIR)/etc/ff_atom_startup
-	rsync -a $(BR_TGT)/ $(INSTDIR)/buildroot 
-	cd $(INSTDIR)/bin/exec; ln -s ../../buildroot/usr/bin/* . || true
-	cd $(INSTDIR)/lib; ln -s ../buildroot/usr/lib/* . || true
-	cd $(INSTDIR)/lib; ln -s ../buildroot/lib/libutil* . || true
-	mv $(INSTDIR)/bin/ffwrap $(INSTDIR)/bin/exec
-#	test -d $(INSTDIR)/sbin && mv $(INSTDIR)/sbin/* $(INSTDIR)/bin
+	cd $(BRCOPY)/usr/lib; ln -s ../../lib/libutil* . || true
+	mv $(INSTDIR)/bin/ffwrap $(BRCOPY)/usr/bin
 	@cd $(INSTDIR)/bin; \
 	    for f in `ls | xargs file | grep ELF | grep -v cash_wrap.so | sed -e 's/:.*//'`; do\
 		test `basename $$f` != cash -a $(NOSTRIP) -eq 0 && strip $$f;\
-		mv $$f exec/$$f;\
+		mv $$f $(BRCOPY)/usr/bin/$$f;\
 	    done
-	@cd $(INSTDIR)/bin/exec; \
+	@cd $(BRCOPY)/usr/bin; \
 	    for f in `ls | xargs file -L | grep ELF | grep -v cash_wrap.so | sed -e 's/:.*//'`; do\
-		ln -sv exec/ffwrap ../$$f;\
+		ln -sv ../buildroot/usr/bin/ffwrap ../../../bin/$$f;\
+	    done
+	@cd $(BRCOPY)/usr/sbin; \
+	    cp ../bin/ffwrap .; \
+	    for f in `ls | xargs file -L | grep ELF | sed -e 's/:.*//'`; do\
+		ln -sv ../buildroot/usr/sbin/ffwrap ../../../bin/$$f;\
 	    done
 	@if [ $(NOSTRIP) -eq 0 ]; then \
 	    cd $(INSTDIR)/lib; \
@@ -158,13 +167,12 @@ install: $(BINFILES) $(ETCFILES) $(INSTDIRS) modules $(shell test -d $(BR_TGT_LI
 	cp -ar $(BR_TGT)/usr/share/terminfo $(INSTDIR)/share
 	cp -ar $(BR_TGT)/usr/share/snmp $(INSTDIR)/share
 	cp -ar $(BR_TGT)/usr/share/nmap $(INSTDIR)/share
-	cd $(INSTDIR)/bin/exec; ln -s ../../share/nmap/* .
+	cd $(BRCOPY)/usr/bin; ln -s ../share/nmap/* .
 	ls ${BR_TGT}/lib/libuClibc-* | sed -e 's/.*-\([0-9]\).*/\1/' > uclib-version || exit 1
-#	./mkbblinks bb-apps /usr/bin/busybox-i686 output/ffritz/bin $(SQ_ROOT)/sbin $(SQ_ROOT)/bin $(SQ_ROOT)/usr/sbin $(SQ_ROOT)/usr/bin $(SQ_ROOT)/usr/local/bin
 	
 clean: 
 	rm -rf output $(IMAGE) ffimage.bin
-	for d in $(SUBDIRS) $(INSTDIRS:%/install=%); do if [ $$d != ../buildroot ]; then make -k -C $$d clean || true; fi; done
+	for d in $(SUBDIRS) $(INSTDIRS:%/install=%); do make -k -C $$d clean || true; done
 
-cleanall:
-	for d in $(SUBDIRS) $(INSTDIRS:%/install=%); do make -k -C $${d} clean || true; done
+cleanall: clean
+	make -C ../buildroot clean

@@ -52,7 +52,7 @@ $(DFILE2):	$(DFILE1)
 	mkdir -p $(DESTDIR)
 	cp -arn output/$(PREFIX)/bin $(DESTDIR)
 	cp output/$(PREFIX)/sbin/* $(DESTDIR)/bin
-	cp -arn output/$(PREFIX)/lib $(DESTDIR)
+	cp -arn output/$(PREFIX)/lib/* $(DESTDIR)/lib/
 	rm -rf $(DESTDIR)/lib/python3
 	mkdir -p $(DESTDIR)/share
 	cp -arn output/$(PREFIX)/share/lirc $(DESTDIR)/share
