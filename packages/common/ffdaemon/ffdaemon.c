@@ -42,7 +42,7 @@ int service_status (char *service_name, int *cpid, int *cruns);
 //extern int daemon2 (char *pdfile, int delay, int loops, int nochdir, int noclose);
 
 const char *usage =
-"usage: %s [-nCL] [-r user] [-i interval] [-l loops] [-N|K|R service] command args ...\n"
+"usage: %s [-nCL] [-r user] [-i interval] [-l loops] [-N|K|R service] [-o dir] command args ...\n"
 "       -n : No daemon mode\n"
 "       -C : Do not close FDs\n"
 "       -r : run as user[:group]\n"
@@ -52,6 +52,7 @@ const char *usage =
 "       -L : List all services\n"
 "       -K : Kill named service (%%all for all)\n"
 "       -R : Restart named service (%%all for all)\n"
+"       -o : Run service after chroot to dir\n"
 ;
 
 static char *basename (char *path)
@@ -371,6 +372,7 @@ int main(int argc, char **argv)
     int loops = 0;
     int noclose = 0;
     char *service_name = NULL;
+    char *chroot_path = NULL;
 
     /* Until we have something better, only root and the shell can use su. */
     myuid = getuid();
@@ -458,6 +460,14 @@ int main(int argc, char **argv)
 		    break;
 		}
 		/* fall through */
+	    case 'o':
+	    	if (i < argc-1)
+		{
+		    i++;
+		    chroot_path = argv[i];
+		    break;
+		}
+		/* fall through */
 	    default:
 	        fprintf (stderr, usage, argv[0]);
 		exit (1);
@@ -502,11 +512,22 @@ int main(int argc, char **argv)
 
     /* now running as slave */
 
+    if (chroot_path)
+    {
+	if (chroot(chroot_path))
+	{
+	    perror("chroot");
+	    return 1;
+	}
+	chdir (getenv("HOME"));
+    }
+
     if (uid != -1) {
 	if(setgid(gid) || setuid(uid)) {
 	    fprintf(stderr,"su: permission denied\n");
 	    return 1;
 	}
+	chdir (getenv("HOME"));
     }
 
     nargs = argc - arg_id;
