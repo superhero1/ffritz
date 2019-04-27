@@ -2,7 +2,11 @@
 PKGTOP	= $(shell cd ../..; pwd)
 DLDIR	= $(PKGTOP)/dl
 
+ifeq ($(BUILDROOT_AVM),)
 URL	= $(shell cat $(PKGTOP)/url-buildroot)
+else
+URL	= $(shell cat $(PKGTOP)/url-buildroot-avm)
+endif
 FILE	= $(DLDIR)/$(shell basename $(URL))
 
 ## For some reason i need gcc-4.7, otherwise cross gcc does not compile ..

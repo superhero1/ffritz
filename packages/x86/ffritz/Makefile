@@ -108,7 +108,7 @@ $(INSTDIR):
 
 modules:
 	mkdir -p lib/modules
-#	make -C ../avm ff-modules-install DESTDIR=$(TOPDIR)/lib/modules
+	make -C ../avm ff-modules-install DESTDIR=$(TOPDIR)/lib/modules
 
 $(SUBDIRS):	
 	mkdir -p ../../dl

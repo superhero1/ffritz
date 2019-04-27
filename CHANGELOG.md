@@ -13,9 +13,16 @@ NEXT
 	  automatically (pcplisten) without having to define one in the 
 	  FritzOS GUI.
 
+	- INCOMPATIBILITIES
+		- OpenVPN : the OpenVPN.conf file needs to be changed:
+		  In /tmp/ffnvram/root-ssh/openvpn, change "local" from
+		  
+		  192.168.178.253   (or whatever was configured)
+
+		  to the main address of the box (e.g. 192.168.178.1)
+
 - TODO
-	- AVM kernel/module does not build with GCC7
-	- buildroot mpd: segfault
+	- ARM tools with new buildroot
 
 
 Release 9
@@ -133,6 +140,11 @@ TODO
 
 Change history of ffritz core integration:
 ==========================================
+
+NEXT
+====
+- Use latest buildroot over AVM version 
+	- UNTESTED!!
 
 release 20
 ----------

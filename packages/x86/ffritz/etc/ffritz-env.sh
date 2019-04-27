@@ -6,3 +6,4 @@ export FFRITZ_HOME=/var/media/ftp/ffritz
 PATH=$PATH:$FFINSTDIR/bin
 NVRAM=/tmp/ffnvram
 FFLOG=/var/log/ffritz.log
+BR_DIR=/tmp/br

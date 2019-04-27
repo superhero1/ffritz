@@ -1,4 +1,5 @@
 BUILDROOT_TARGETS   = 
+BUILDROOT_AVM	    = 1
 
 include ../../buildroot.mk
 

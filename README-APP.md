@@ -42,6 +42,19 @@ package by
 - killing all remaining PIDs that access the image
 - umnounting /usr/local
 
+A simple deamon manager is provided with ffdaemon.
+
+       -n : No daemon mode
+       -C : Do not close FDs
+       -r : run as user[:group]
+       -i : Restart delay after program terminates
+       -l : Number of loops to run (0 = default = endless)
+       -N : Name service rather than using the executable name
+       -L : List all services
+       -K : Kill named service (%all for all)
+       -R : Restart named service (%all for all)
+       -o : Run service after chroot to dir
+
 Following is a list of services (service name in brackets).
 
 Buildroot environment (buildroot) - experimental
