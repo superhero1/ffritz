@@ -10,17 +10,20 @@ PKGDIR	    = $(shell cd ..; pwd)
 
 SQ_ROOT     = ../../../atom/squashfs-root
 
-BR_TGT	    = $(shell cd ../buildroot/build/output/target; pwd)
+BR_TGT	    = $(shell readlink -f ../buildroot/build/output/target)
 BR_TGT_LIB1 = $(BR_TGT)/lib
 BR_TGT_LIB  = $(BR_TGT)/usr/lib
 BR_TGT_BIN  = $(BR_TGT)/usr/bin
 BR_TGT_SBIN = $(BR_TGT)/usr/sbin
 
+#BR2_TGT    = ../buildroot2/build/output/target
+
 BINFILES    = src/sndlist src/usbplay src/usbplayd src/ffdaemon
 BINFILES   += ../shairport/build/shairport
 BINFILES   += $(wildcard bin/*)
 ETCFILES    = etc/ffritz-env.sh etc/mpd.conf etc/ff_atom_startup etc/ffservices etc/mkusers
-ETCFILES   += etc/lirc_options_dfl.conf etc/upmpdcli.conf-dist
+ETCFILES   += etc/lirc_options_dfl.conf
+ETCFILES   += etc/upmpdcli.conf-dist
 ETCFILES   += etc/usrmount etc/fflogrotate etc/ffshutdown
 ETCFILES   += etc/init.d
 MODFILES    = lib/modules/cdc-acm.ko
@@ -42,26 +45,26 @@ endif
 #
 SUBDIRS    += ../libmaru
 SUBDIRS    += ../shairport 
-SUBDIRS    += ../libmpdclient 
+#SUBDIRS    += ../libmpdclient 
 SUBDIRS    += ../lirc 
-SUBDIRS    += ../jsoncpp 
-SUBDIRS    += ../libnfs 
-SUBDIRS    += ../nfs 
+#SUBDIRS    += ../jsoncpp 
+#SUBDIRS    += ../libnfs 
+#SUBDIRS    += ../nfs 
 SUBDIRS    += src
 
 ## Packages with (build/)install target
 #
 INSTDIRS   += ../lirc/install 
-INSTDIRS   += ../upmpdcli/install 
+#INSTDIRS   += ../upmpdcli/install 
 INSTDIRS   += ../nfs/install 
 INSTDIRS   += ../bt/install 
 INSTDIRS   += ../prtg/install 
 INSTDIRS   += ../athtool/install 
-INSTDIRS   += ../unionfs-fuse/install 
-INSTDIRS   += ../dnsmasq/install
+#INSTDIRS   += ../unionfs-fuse/install 
+#INSTDIRS   += ../dnsmasq/install
 INSTDIRS   += ../libdvbfi/install
-INSTDIRS   += ../mpc/install
-INSTDIRS   += ../mpd/install
+#INSTDIRS   += ../mpc/install
+#INSTDIRS   += ../mpd/install
 
 ifeq ($(CASH),)
 CASH=$(shell ls -d ../cash/build/.. 2>/dev/null)
@@ -99,12 +102,13 @@ $(INSTDIR):
 	mkdir -p $(INSTDIR)/bin
 	mkdir -p $(INSTDIR)/share
 	rsync -a $(BR_TGT)/ $(BRCOPY)
+#	if [ -d $(BR2_TGT) ]; then rsync -a $(BR2_TGT)/ $(BRCOPY)2; fi
 	cd $(INSTDIR); ln -s buildroot/usr/lib .
 	mkdir -p $(INSTDIR)/lib/modules
 
 modules:
 	mkdir -p lib/modules
-	make -C ../avm ff-modules-install DESTDIR=$(TOPDIR)/lib/modules
+#	make -C ../avm ff-modules-install DESTDIR=$(TOPDIR)/lib/modules
 
 $(SUBDIRS):	
 	mkdir -p ../../dl
@@ -165,9 +169,10 @@ stage: $(BINFILES) $(ETCFILES) $(INSTDIRS) modules
 	    done; fi
 	rm -f $(INSTDIR)/bin/avahi*
 	cp -ar $(BR_TGT)/usr/share/terminfo $(INSTDIR)/share
-	cp -ar $(BR_TGT)/usr/share/snmp $(INSTDIR)/share
-	cp -ar $(BR_TGT)/usr/share/nmap $(INSTDIR)/share
+#	cp -ar $(BR_TGT)/usr/share/snmp $(INSTDIR)/share
+#	cp -ar $(BR_TGT)/usr/share/nmap $(INSTDIR)/share
 	cd $(BRCOPY)/usr/bin; ln -s ../share/nmap/* .
+	cd $(BRCOPY)/usr/lib; ln -s ../../lib/libuClibc-1.0.*.so libc.so.0; ln -s ../../lib/libuClibc-1.0.*.so libc.so.1
 	ls ${BR_TGT}/lib/libuClibc-* | sed -e 's/.*-\([0-9]\).*/\1/' > uclib-version || exit 1
 	
 clean: 

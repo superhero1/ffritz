@@ -6,6 +6,7 @@ MODDIR		= $(shell cd ../../atom/mod; pwd)
 STAGEDIR	= $(shell pwd)/staging
 
 BASE_PACKAGES=buildroot dropbear privatekeypassword openssh unionfs-fuse
+BASE_PACKAGES=dropbear privatekeypassword openssh unionfs-fuse
 
 .PHONY:	$(BASE_PACKAGES)
 

@@ -1,6 +1,23 @@
 Change history of application package
 =====================================
 
+NEXT
+====
+- Use latest buildroot over AVM version
+
+- Application package
+	- Added ympd http frontend for mpd (port 82)
+	- Added list/restart options to ffservice
+	- Minor stuff for new buildroot
+	- Simplified OpenVPN setup. Forwarding rule is now applied
+	  automatically (pcplisten) without having to define one in the 
+	  FritzOS GUI.
+
+- TODO
+	- AVM kernel/module does not build with GCC7
+	- buildroot mpd: segfault
+
+
 Release 9
 ---------
 - Application package

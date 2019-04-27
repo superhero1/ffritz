@@ -1,24 +1,20 @@
-OpenVPN Integration (experimental)
-==================================
+OpenVPN Integration
+===================
 
 An OpenVPN server will be started on the Atom core if persistent configuration data
 has been generated (see below).
+
+Service file: /usr/local/etc/init.d/20openvpn
 
 This particluar sample configuration starts OpenVPN as server in bridge mode
 with TLS. A connecting client is integrated into the LAN side of the box 
 (192.168.178 network by default).
 
-For this to work the following steps are performed at startup:
+The UDP forwarding rule for port 1194 is enabled automatically via a pcplisten
+daemon.
 
-- Startup script (etc/run_openvpn)
-	- Executed at box startup. Terminates if no openvpn.conf present.
-	- Will assign an additional address to the Atom core so that it
-	  is possible to define a port forwarding rule in the FritzOS GUI
-	  (it is not possible to define a rule for the standard IP 192.168.178.254).
-	  The additional IP is one below the regular IP, e.g. 192.168.178.253.
-	- Starts the openvpn daemon listening at the default UDP port 1194
+OpenVPN configuration (openvpn.conf):
 
-- OpenVPN configuration (openvpn.conf)
 	- Configures the server in "server-bridge" mode.
 	- Default IP range assigned to clients is 192.168.178.200 .. 220. Change this
 	  if required.
@@ -29,7 +25,7 @@ For this to work the following steps are performed at startup:
 
 Installation steps required by the user (once)
 ----------------------------------------------
-- Create the directory /var/tmp/ffnvram/root-ssh/openvpn (permission 700).
+- Create the directory /tmp/ffnvram/root-ssh/openvpn (permission 700).
   All files mentioned below must be copied into this directory.
 - Create the daemon configuration file openvpn.conf.
   /usr/local/etc/openvpn/openvpn.conf.template can be used as template.
@@ -38,13 +34,12 @@ Installation steps required by the user (once)
 	- dh.pem 	- Diffie Hellman parameters
 	- machine.cert	- The certificate for the FritzBox
 	- machine.key	- The box private key
-- Make checges persistent by calling "nvsync"
-- Define an UDP forwarding rule in the FritzOS GUI for UDP port 1194 to some host 
-  in the local network (this host should not use this port).
-  This rule will be re-defined by the startup script so that it reaches port 1194
-  on the FritzBox.
+- Make changes persistent by calling "nvsync"
+- Enable/start service:
+	- ffservice enable openvpn
+	- ffservice stop openvpn
+	- ffservice start openvpn
 - Create keys/certificates for the clients as required.
-
 
 TLS using easy-rsa
 ==================
@@ -73,7 +68,6 @@ Use pki/ca.crt, private/myclient.key and issued/myclient.crt for client initiali
 TODO
 ====
 - Use Box DHCP server to assign addresses
-
 
 PERFORMANCE
 ===========

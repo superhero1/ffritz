@@ -6,6 +6,8 @@
 . /usr/local/etc/ffritz-env.sh || exit 1
 
 if [ "x$1" = "xstop" ]; then
+    $FFINSTDIR/bin/ffdaemon -K upmpdcli
+    $FFINSTDIR/bin/ffdaemon -K ympd
     $FFINSTDIR/bin/ffdaemon -K mpd
     exit
 fi
@@ -59,3 +61,8 @@ $FFINSTDIR/bin/ffdaemon -r ffritz $FFINSTDIR/bin/mpd --no-daemon $FFRITZ_HOME/mp
 #
 sleep 1
 $FFINSTDIR/bin/ffdaemon $FFINSTDIR/bin/upmpdcli -c $FFRITZ_HOME/upmpdcli.conf 
+
+# Run ympd (HTTP frontent to MPD)
+#
+sleep 1
+$FFINSTDIR/bin/ffdaemon $FFINSTDIR/bin/ympd -w 82 -u ffritz

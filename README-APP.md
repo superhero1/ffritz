@@ -26,8 +26,10 @@ The tool "ffservice" provides a simple script to operate services:
 
 	ffservice start _servicename_
 	ffservice stop _servicename_
+	ffservice restart _servicename_
 	ffservice enable _servicename_
 	ffservice disable _servicename_
+	ffservice list
 
 Most user editable configuration files for these services are located
 below
@@ -89,6 +91,9 @@ User space player for USB DACs (usbplayd)
 Music Player Daemon (mpd)
 -------------------------
 - Uses user space audio tool (via libusb/libmaru) to access an USB audio DAC
+- Additional services are
+	- upmpdcli (UPNP/DLNA renderer) 
+	- ympd (http frontend at port 82) 
 - Refer to MPD.md for details
 
 ShairPort Daemon (shairport)
@@ -281,13 +286,18 @@ If you do nott want to restart the box after installing a new image:
 
 	/usr/local/etc/ffshutdown
 
-- If prompted, kill processes still using /usr/local, and re-run ffshutdown
 - Run mount script for new image: /etc/init.d/S93-ffimage
 - Start services: /etc/init.d/S94-ffstart
 
 Current core image supports -r switch as first parameter, which does all this:
 
 	ffinstall -r ffritz-app-VERSION.tar CHECKSUM
+
+If ffshutdown fails to unmount /usr/local:
+
+- Try to localize processes still using /usr/local and terminate them
+- Terminate all login sessions, log in again and retry
+- If all fails, reboot the box
 
 Notes
 =====
@@ -298,7 +308,7 @@ Atom libraries
 - Espcially mpd requires a lot of additional shared libraries. Rather than
     integrating them into /lib / /usr/lib, they remain in their own lib
     directory (/usr/local/lib).
-    Also, the systemss `LD_LIBRARY_PATH` is not modified. This is to avoid any
+    Also, the systems `LD_LIBRARY_PATH` is not modified. This is to avoid any
     conflicts/incompatibilies with other box services.
 
     In order to be able to call these binaries they are invoked via a wrapper
