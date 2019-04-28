@@ -23,7 +23,7 @@ URL=https://download.avm.de/firmware/6490/59088767/FRITZ.Box_6490_Cable.de-en-es
 # where to store/fetch from
 #
 ORIG=$(TOPDIR)/../$(shell basename $(URL))
-#ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable-07.08-67153-LabBETA.image
+ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable-07.08-67153-LabBETA.image
 
 # Keep original rootfs for diff?
 # sudo dirdiff arm/orig/ arm/squashfs-root/

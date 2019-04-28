@@ -4,21 +4,22 @@ BASE_TARGETS   = openssl
 include ../../buildroot.mk
 
 arch-patches:	.patch.applied
-	@if [ -f config.user ]; then install -v config.user build/.config; make -C build olddefconfig; fi
+	@if [ -f user_defconfig ]; then install -v user_defconfig build/configs/user_defconfig; make -C build user_defconfig; fi
 	@if [ -f mod/busybox-config ]; then install -v mod/busybox-config build/package/busybox/busybox.config; fi
 	
 .patch.applied:
-#	@cd build; for p in `ls ../*.patch|sort`; do patch -p1 < $$p; done
 	for d in `cd package; ls -d *`; do \
 	    mkdir -p build/package/$$d; \
 	    install -v package/$$d/* build/package/$$d; \
 	    done
-	install -v mod/config build/.config
-	make -C build olddefconfig
+	cp mod/ffritz_atom_defconfig build/configs
+	make -C build ffritz_atom_defconfig
 	touch $@
 
 userconfig: .build.stamp arch-patches
+	@if [ ! -f build/configs/user_defconfig ]; then cp build/configs/ffritz_atom_defconfig build/configs/user_defconfig; fi
+	@make -C build user_defconfig 
 	@make -C build menuconfig
-	@cp build/.config config.user
-	@echo new config saved to `pwd`/config.user
+	@make -C build savedefconfig
+	@cp build/configs/user_defconfig user_defconfig; echo new config saved to `pwd`/user_defconfig; fi
 

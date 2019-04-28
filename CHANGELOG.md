@@ -1,9 +1,10 @@
 Change history of application package
 =====================================
 
-NEXT
-====
-- Use latest buildroot over AVM version
+Release 10
+==========
+- Use latest buildroot (2016.05 -> snapshot 20190428)
+	- Tons of new versions
 
 - Application package
 	- Added ympd http frontend for mpd (port 82)
@@ -23,7 +24,6 @@ NEXT
 
 - TODO
 	- ARM tools with new buildroot
-
 
 Release 9
 ---------
@@ -141,10 +141,15 @@ TODO
 Change history of ffritz core integration:
 ==========================================
 
-NEXT
-====
-- Use latest buildroot over AVM version 
-	- UNTESTED!!
+release 21
+==========
+- Use latest buildroot (2016.05 -> snapshot 20190428)
+  Tons of new versions ..
+  	- openssl changed to 1.1.0
+	  default message digest is changed here from md5 to sha256. To keep
+	  nvram accessible between version changes i still use md5 for now,
+	  but this might eventually change. 
+	  This image supports both for decrypting nvram.
 
 release 20
 ----------

@@ -260,9 +260,9 @@ contents of the buildroot package.
 	make atom-brconfig
 
 This will call menuconfig for the buildroot package, and store the user configuration 
-in packages/x86/buildroot/config.user. A subsequent "make package-atom" will apply
+in packages/x86/buildroot/user_defconfig. A subsequent "make package-atom" will apply
 the changes to the application image package.
-If successfull the new features are available in the chroot environment (see above).
+If successfull the new features are available in the application image.
 
 Installation
 ============

@@ -9,4 +9,5 @@ PKGCONF_URL	= $(shell cat ../../url-pkgconf)
 PKGCONF		= $(shell basename $(PKGCONF_URL))
 
 arch-patches:
-	@diff -qN mod/config build/.config || cp mod/config build/.config
+	cp mod/ffritz_arm_defconfig build/configs
+	make -C build ffritz_arm_defconfig

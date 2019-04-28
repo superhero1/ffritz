@@ -57,8 +57,18 @@ decrypt_nvram()
 	fi
 
 ### if found, try to decrypt it into ramfs using our private key
-	openssl enc -d -pass file:$KEY_PLAIN -aes-256-cbc -in $NVRAM_FILE -out $NVRAM_COPY/nv.tar
+	openssl enc -d -pass file:$KEY_PLAIN -pbkdf2 -iter 1000 -aes-256-cbc -in $NVRAM_FILE -out $NVRAM_COPY/nv.tar
 	rc=$?
+
+### if the first attempt fails, try again with md5 algorithm
+### (default message digest algorithm changed from md5 to sha256). So rety to re-encrypt.
+### nvsync still saves with md5, but i might changes this. For now i dont want to break
+### backwards compatibility ...
+
+	if [ $rc -ne 0 ]; then
+	    openssl enc -d -md md5 -pass file:$KEY_PLAIN -aes-256-cbc -in $NVRAM_FILE -out $NVRAM_COPY/nv.tar
+	    rc=$?
+	fi
 
 	rm -f $KEY_PLAIN
 

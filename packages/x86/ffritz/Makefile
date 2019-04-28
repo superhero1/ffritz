@@ -90,7 +90,8 @@ $(INSTDIR):
 	mkdir -p $(INSTDIR)/etc
 	mkdir -p $(INSTDIR)/bin
 	mkdir -p $(INSTDIR)/share
-	rsync -a $(BR_TGT)/ $(BRCOPY)
+	mkdir -p $(BRCOPY)
+	cd $(BRCOPY); tar xf $(BR_TGT)/../images/rootfs.tar 
 	cd $(INSTDIR); ln -s buildroot/usr/lib .
 	mkdir -p $(INSTDIR)/lib/modules
 
