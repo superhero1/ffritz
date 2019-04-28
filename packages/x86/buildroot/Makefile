@@ -4,7 +4,7 @@ BASE_TARGETS   = openssl
 include ../../buildroot.mk
 
 arch-patches:	.patch.applied
-	@if [ -f config.user ]; then install -v config.user build/.config; fi
+	@if [ -f config.user ]; then install -v config.user build/.config; make -C build olddefconfig; fi
 	@if [ -f mod/busybox-config ]; then install -v mod/busybox-config build/package/busybox/busybox.config; fi
 	
 .patch.applied:
@@ -14,6 +14,7 @@ arch-patches:	.patch.applied
 	    install -v package/$$d/* build/package/$$d; \
 	    done
 	install -v mod/config build/.config
+	make -C build olddefconfig
 	touch $@
 
 userconfig: .build.stamp arch-patches
