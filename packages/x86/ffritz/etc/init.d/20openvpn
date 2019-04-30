@@ -9,6 +9,7 @@ VPNDIR=/var/tmp/root-ssh/openvpn
 
 if [ "x$1" = "xstop" ]; then
 	$FFINSTDIR/bin/ffdaemon -K openvpn
+	$FFINSTDIR/bin/ffdaemon -K pcplisten
 	exit 0
 fi
 
@@ -17,62 +18,12 @@ if [ ! -f $VPNDIR/openvpn.conf ]; then
 	exit 0
 fi
 
-# Create lan:1 so that a forwarding rule for the Atom core can be set up
-# IP is one below the lan IP
-#
-# TODO this won't work for exotic netmasks
-#
 lanip=`/sbin/ifconfig lan|grep 'inet addr:'|sed -e 's/.*inet addr:\(.*\) B.*/\1/'`
-net=`echo $lanip | sed -e 's/\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/'`
-addr=`echo $lanip | sed -e 's/[0-9]*\.[0-9]*\.[0-9]*\.\(.*\)/\1/'`
-
 test -z $lanip && exit 1
-test -z $net && exit 1
-test -z $addr && exit 1
 
-# Firmware >= 6.83: Atom is .1 in lan
-# For now just use .253, which was the default calculation for older fw
+# run pcplisten periodically to add/renew a forward rule to openvpn
 #
-if [ $addr -eq 1 ]; then
-	naddr=253
-
-	# look for a forwarding rule from external port 1194
-	#
-	for i in 0 1 2 3 4 5 6 7 8 9; do
-		prule=`ctlmgr_ctl r forwardrules settings/rule${i}/port`
-		if [ "x$prule" = "x1194" ]; then
-			break;
-		fi
-	done
-
-	if [ "x$prule" != "x1194" ]; then
-		echo no forwarding rule for external port 1194 found
-		exit 1
-	fi
-
-	# Make sure our pseudo interface is down
-	#
-	/sbin/ifconfig lan:1 down
-	
-	# Redirect address of rule to the address of the interface we
-	# are going to create.
-	# If the interface already exists the operation failes since 
-	# ctlmgr detects that this is a local address of the box.
-	#
-	ctlmgr_ctl w forwardrules settings/rule${i}/fwip ${net}.${naddr}
-
-	if [ $? -ne 0 ]; then
-		echo Failed to redefine forwarding rule $i to ${net}.${naddr}
-		exit 1
-	fi
-else
-	naddr=`expr $addr - 1`
-fi
-
-nip=${net}.${naddr}
-
-/sbin/ifconfig lan:1 $nip || exit 1
-echo $0: $nip assigned to lan1:1 >> $FFLOG
+ffdaemon -i 90 pcplisten udp $lanip 1194 100 vpn
 
 ln -s $FFINSTDIR/etc/openvpn/tap-up $VPNDIR
 

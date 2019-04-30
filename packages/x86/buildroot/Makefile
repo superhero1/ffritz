@@ -3,27 +3,23 @@ BASE_TARGETS   = openssl
 
 include ../../buildroot.mk
 
-## This package can't be downloaded by buildroot properly
-##
-PKGCONF_URL	= $(shell cat ../../url-pkgconf)
-PKGCONF		= $(shell basename $(PKGCONF_URL))
-
 arch-patches:	.patch.applied
-	@if [ ! -f $(DLDIR)/$(PKGCONF) ]; then wget -O $(DLDIR)/$(PKGCONF) $(PKGCONF_URL); fi
-	@diff -qN mod/config build/.config || cp mod/config build/.config
-	@if [ -f config.user ]; then diff -qN config.user build/.config || cp config.user build/.config; fi
-	@diff -qN mod/busybox-config build/package/busybox/busybox.config || cp mod/busybox-config build/package/busybox/busybox.config
-	@cp mod/0001-gmp-disable-obstack-vprintf.patch build/package/gmp
+	@if [ -f user_defconfig ]; then install -v user_defconfig build/configs/user_defconfig; make -C build user_defconfig; fi
+	@if [ -f mod/busybox-config ]; then install -v mod/busybox-config build/package/busybox/busybox.config; fi
 	
 .patch.applied:
-	tar xf gcc-4.9.3.tar
-	cd build; for p in `ls ../*.patch|sort`; do patch -p1 < $$p; done
+	for d in `cd package; ls -d *`; do \
+	    mkdir -p build/package/$$d; \
+	    install -v package/$$d/* build/package/$$d; \
+	    done
+	cp mod/ffritz_atom_defconfig build/configs
+	make -C build ffritz_atom_defconfig
 	touch $@
 
 userconfig: .build.stamp arch-patches
+	@if [ ! -f build/configs/user_defconfig ]; then cp build/configs/ffritz_atom_defconfig build/configs/user_defconfig; fi
+	@make -C build user_defconfig 
 	@make -C build menuconfig
-	@cp build/.config config.user
-	@echo new config saved to `pwd`/config.user
+	@make -C build savedefconfig
+	@cp build/configs/user_defconfig user_defconfig; echo new config saved to `pwd`/user_defconfig; fi
 
-	
-	

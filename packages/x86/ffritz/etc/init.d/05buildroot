@@ -2,6 +2,7 @@
 #
 # (de)construct a chroot'able filesystem out of a buildroot
 #
+. /usr/local/etc/ffritz-env.sh || exit 1
 
 BR_DIR=/tmp/br
 BR_OVERLAY=/tmp/ffnvram/rootfs-overlay
@@ -95,3 +96,10 @@ mtab | while read line; do
 		mount -t $2 none $BR_DIR/$1 
 	fi
 done
+
+# prepare passwd for buildroot, preserving existing settings,
+# but make sure ffritz and upmpdcli users are identical to
+# host
+grep -v -e ffritz -e upmpdcli $BR_DIR/etc/passwd > /tmp/.pwd
+grep -e ffritz -e upmpdcli /etc/passwd >> /tmp/.pwd
+mv /tmp/.pwd $BR_DIR/etc/passwd

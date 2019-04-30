@@ -6,14 +6,18 @@
 op=$1
 service=$2
 
+cd /tmp/ffnvram/etc/rc.d || exit 1
+
 if [ "$op" = "list" ]; then
-	cd /tmp/ffnvram/etc/init.d || exit 0
-	ls | sed -e 's/^[0-9]*//'
+	echo Available:
+	cd ../init.d; ls | sort | sed -e 's/^[0-9]*/    /'
+	echo Enabled:
+	cd ../rc.d; ls | sort | sed -e 's/^[0-9]*/    /'
 	exit 0
 fi
 
 if [ -z "$op" -o -z "$service" ]; then
-    echo "usage: $0 start|stop|enable|disable|list service"
+    echo "usage: $0 start|stop|restart|enable|disable|list service"
     exit 1
 fi
 
@@ -26,12 +30,13 @@ fi
 
 service_fname=`basename $service_file`
 
-cd /tmp/ffnvram/etc/rc.d || exit 1
-
 case $op in
 	start)	$service_file start || echo $service started;;
 	stop)   $service_file stop  || echo $service stopped;;
 	enable) ln -sfv ../init.d/$service_fname .; nvsync;;
 	disable) rm -fv /tmp/ffnvram/etc/rc.d/$service_fname; nvsync;; 
-	*)	echo "usage: $0 start|stop|enable|disable service";;
+	restart) $service_file stop;
+		 sleep 3;
+		 $service_file start || echo $service restarted;;
+	*)	echo "usage: $0 start|stop|restart|enable|disable|list service";;
 esac

@@ -61,8 +61,9 @@ Add the `-c <algo-number>` switch to `USBPLAYD_ARGS` to change the default.
 MPD
 ===
 
-mpd is started via etc/runmpd. By default it will use the fifo output plugin
-to write data to /var/tmp/mpd.fifo at a sample rate of 44100Hz.
+mpd is started via the mpd service (/tmp/ffnvram/etc/rc.d).
+By default it will use the fifo output plugin to write data to
+/var/tmp/mpd.fifo at a sample rate of 44100Hz.
 
 The configuration file is /var/media/ftp/ffritz/mpd.conf.
 mpd runtime files (database, etc) are stored in var/media/ftp/ffritz/.mpd.
@@ -72,7 +73,10 @@ The default Music database is /var/media/ftp/Musik.
 mpd can be started manually with the etc/runmpd script. This script will also
 start usbplayd if required, as well as the UPNP/DLNA renderer upmpdcli.
 
-If you do not want to start mpd, create /var/media/ftp/.skip_mpd
+If you do not want to start mpd:
+
+	ffservice disable mpd
+	ffservice stop mpd
 
 The CLI client for mpd (mpc) is available on the atom core.
 
@@ -141,15 +145,18 @@ Shairport
 shairport will announce itself as "fFritz". It will output data to /var/tmp/shairport.fifo
 and has precedence over the MPD audio pipe.
 
-shairport can be manually started with the etc/run_shairport script. This script will also
-start usbplayd if required.
+shairport is started via the shairport service (/tmp/ffnvram/etc/rc.d).
+This script will also start the usbplayd service if required.
 
 The pipe output driver accepts a second parameter, which is the file where the volume 
 level is written to (/var/tmp/volume in this case).
 
 Tested with Android AirAudio app.
 
-If you do not want to start shairport, create /var/media/ftp/.skip_shairport
+If you do not want to start shairport:
+
+	ffservice disable shairport
+	ffservice stop shairport
 
 UPNP/DLNA Renderer (upmpdcli)
 =============================
@@ -158,6 +165,12 @@ The upmpdcli daemon is started together with mpd. It provides a DLNA renderer.
 The announced name is "fFritz".
 
 The configuration file is /var/media/ftp/ffritz/upmpdcli.conf.
+
+WEB interface
+=============
+The ympd http frontend is started at http port 82:
+
+	http://192.168.178.1:82
 
 Remote Control with lirc
 ========================
@@ -174,7 +187,7 @@ web radio stations via mpd/mpc:
   existing one.
 
 - Put the configuration file to /var/media/ftp/ffritz/etc/lirc/lircd.conf.d and 
-  restart lirc (`killall lircd`).
+  restart lirc (ffdaemon -R lircd).
 
 - Edit the irexec definition file (/var/media/ftp/ffritz/etc/lirc/irexec.lircrc) to
   assign keys on the remote controll to actions.
@@ -217,7 +230,7 @@ web radio stations via mpd/mpc:
 	end                                    
 ```
 
-- Restart irexec daemon (`killall irexec`)
+- Restart irexec daemon (ffdaemon -R irexec)
 
 Integration details
 ===================

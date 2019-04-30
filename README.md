@@ -257,3 +257,14 @@ apt-get install gawk libtool realpath pkg-config zlibc gnulib libcap-dev
 
 You might have to remove "composite" and "sys/acl.h" from the
 .build-prerequisites file
+
+Credits
+=======
+Thanks to
+
+- PeterPawn for his tools [https://github.com/PeterPawn], ideas and general contributions
+- Themaister for libmaru [https://github.com/Themaister/libmaru]
+- Bluekitchen for the user space bluetooth stack [https://github.com/bluekitchen]
+- Contributors (Flole), testers, ...
+- AVM, after all
+

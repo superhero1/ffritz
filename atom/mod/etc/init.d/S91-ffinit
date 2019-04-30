@@ -13,7 +13,14 @@ export FFINSTDIR=/usr/local
 export FFRITZ_HOME=/var/media/ftp/ffritz
 export FFLOG=/var/log/ffritz.log
 
-UCLIB_VERSION=`ls /lib/libuClibc-* | sed -e 's/.*-\([0-9]\).*/\1/'`
+if [ -f /lib/libc.so.1 ]; then
+    UCLIB_VERSION=`readlink -f /lib/libc.so.1 | sed -e 's/.*-\([0-9]\).*/\1/'`
+elif [ -f /lib/libc.so.0 ]; then
+    UCLIB_VERSION=`readlink -f /lib/libc.so.0 | sed -e 's/.*-\([0-9]\).*/\1/'`
+else
+    UCLIB_VERSION=1
+fi
+
 
 if [ $UCLIB_VERSION -gt 0 ]; then
         REL=-${UCLIB_VERSION}
@@ -57,8 +64,18 @@ decrypt_nvram()
 	fi
 
 ### if found, try to decrypt it into ramfs using our private key
-	openssl enc -d -pass file:$KEY_PLAIN -aes-256-cbc -in $NVRAM_FILE -out $NVRAM_COPY/nv.tar
+	openssl enc -d -pass file:$KEY_PLAIN -pbkdf2 -iter 1000 -aes-256-cbc -in $NVRAM_FILE -out $NVRAM_COPY/nv.tar
 	rc=$?
+
+### if the first attempt fails, try again with md5 algorithm
+### (default message digest algorithm changed from md5 to sha256). So rety to re-encrypt.
+### nvsync still saves with md5, but i might changes this. For now i dont want to break
+### backwards compatibility ...
+
+	if [ $rc -ne 0 ]; then
+	    openssl enc -d -md md5 -pass file:$KEY_PLAIN -aes-256-cbc -in $NVRAM_FILE -out $NVRAM_COPY/nv.tar
+	    rc=$?
+	fi
 
 	rm -f $KEY_PLAIN
 

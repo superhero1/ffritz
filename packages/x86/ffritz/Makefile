@@ -10,7 +10,7 @@ PKGDIR	    = $(shell cd ..; pwd)
 
 SQ_ROOT     = ../../../atom/squashfs-root
 
-BR_TGT	    = $(shell cd ../buildroot/build/output/target; pwd)
+BR_TGT	    = $(shell readlink -f ../buildroot/build/output/target)
 BR_TGT_LIB1 = $(BR_TGT)/lib
 BR_TGT_LIB  = $(BR_TGT)/usr/lib
 BR_TGT_BIN  = $(BR_TGT)/usr/bin
@@ -20,7 +20,8 @@ BINFILES    = src/sndlist src/usbplay src/usbplayd src/ffdaemon
 BINFILES   += ../shairport/build/shairport
 BINFILES   += $(wildcard bin/*)
 ETCFILES    = etc/ffritz-env.sh etc/mpd.conf etc/ff_atom_startup etc/ffservices etc/mkusers
-ETCFILES   += etc/lirc_options_dfl.conf etc/upmpdcli.conf-dist
+ETCFILES   += etc/lirc_options_dfl.conf
+ETCFILES   += etc/upmpdcli.conf-dist
 ETCFILES   += etc/usrmount etc/fflogrotate etc/ffshutdown
 ETCFILES   += etc/init.d
 MODFILES    = lib/modules/cdc-acm.ko
@@ -42,26 +43,17 @@ endif
 #
 SUBDIRS    += ../libmaru
 SUBDIRS    += ../shairport 
-SUBDIRS    += ../libmpdclient 
 SUBDIRS    += ../lirc 
-SUBDIRS    += ../jsoncpp 
-SUBDIRS    += ../libnfs 
-SUBDIRS    += ../nfs 
 SUBDIRS    += src
 
 ## Packages with (build/)install target
 #
 INSTDIRS   += ../lirc/install 
-INSTDIRS   += ../upmpdcli/install 
 INSTDIRS   += ../nfs/install 
 INSTDIRS   += ../bt/install 
 INSTDIRS   += ../prtg/install 
 INSTDIRS   += ../athtool/install 
-INSTDIRS   += ../unionfs-fuse/install 
-INSTDIRS   += ../dnsmasq/install
 INSTDIRS   += ../libdvbfi/install
-INSTDIRS   += ../mpc/install
-INSTDIRS   += ../mpd/install
 
 ifeq ($(CASH),)
 CASH=$(shell ls -d ../cash/build/.. 2>/dev/null)
@@ -98,7 +90,8 @@ $(INSTDIR):
 	mkdir -p $(INSTDIR)/etc
 	mkdir -p $(INSTDIR)/bin
 	mkdir -p $(INSTDIR)/share
-	rsync -a $(BR_TGT)/ $(BRCOPY)
+	mkdir -p $(BRCOPY)
+	cd $(BRCOPY); tar xf $(BR_TGT)/../images/rootfs.tar 
 	cd $(INSTDIR); ln -s buildroot/usr/lib .
 	mkdir -p $(INSTDIR)/lib/modules
 
@@ -144,11 +137,13 @@ stage: $(BINFILES) $(ETCFILES) $(INSTDIRS) modules
 	sed -i -e 's@^rundir=.*@rundir=/var/media/ftp/ffritz@' $(INSTDIR)/etc/ff_atom_startup
 	cd $(BRCOPY)/usr/lib; ln -s ../../lib/libutil* . || true
 	mv $(INSTDIR)/bin/ffwrap $(BRCOPY)/usr/bin
+	# Move our binaries to buildroot
 	@cd $(INSTDIR)/bin; \
 	    for f in `ls | xargs file | grep ELF | grep -v cash_wrap.so | sed -e 's/:.*//'`; do\
 		test `basename $$f` != cash -a $(NOSTRIP) -eq 0 && strip $$f;\
 		mv $$f $(BRCOPY)/usr/bin/$$f;\
 	    done
+	# Make buldroot usr/(s)bin available for host
 	@cd $(BRCOPY)/usr/bin; \
 	    for f in `ls | xargs file -L | grep ELF | grep -v cash_wrap.so | sed -e 's/:.*//'`; do\
 		ln -sv ../buildroot/usr/bin/ffwrap ../../../bin/$$f;\
@@ -158,16 +153,17 @@ stage: $(BINFILES) $(ETCFILES) $(INSTDIRS) modules
 	    for f in `ls | xargs file -L | grep ELF | sed -e 's/:.*//'`; do\
 		ln -sv ../buildroot/usr/sbin/ffwrap ../../../bin/$$f;\
 	    done
+	# strip libraries
 	@if [ $(NOSTRIP) -eq 0 ]; then \
 	    cd $(INSTDIR)/lib; \
 	    for l in `ls | xargs file | grep ELF | sed -e 's/:.*//'`; do\
 		strip $$l;\
 	    done; fi
+	# shairport does not like those
 	rm -f $(INSTDIR)/bin/avahi*
-	cp -ar $(BR_TGT)/usr/share/terminfo $(INSTDIR)/share
-	cp -ar $(BR_TGT)/usr/share/snmp $(INSTDIR)/share
-	cp -ar $(BR_TGT)/usr/share/nmap $(INSTDIR)/share
-	cd $(BRCOPY)/usr/bin; ln -s ../share/nmap/* .
+	cd $(INSTDIR)/share; ln -s ../buildroot/usr/share/terminfo .
+	# buildroot binaries link against /lib/libc.so.0
+	cd $(BRCOPY)/usr/lib; ln -s ../../lib/libuClibc-1.0.*.so libc.so.0; ln -s ../../lib/libuClibc-1.0.*.so libc.so.1
 	ls ${BR_TGT}/lib/libuClibc-* | sed -e 's/.*-\([0-9]\).*/\1/' > uclib-version || exit 1
 	
 clean: 

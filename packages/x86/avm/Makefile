@@ -78,6 +78,7 @@ avm-prep.stamp: $(FILE)
 	cp buildroot.config.x86 build
 	mkdir -p kernel
 	cd kernel; tar xf $(TOPDIR)/GPL/GPL-release_kernel.tar.gz
+	cp kernel/linux-2.6.39/include/linux/compiler-gcc4.h kernel/linux-2.6.39/include/linux/compiler-gcc7.h
 	touch avm-prep.stamp
 
 ff-modules: avm-prep.stamp

@@ -68,7 +68,7 @@ prep_etcdir()
 
 if [ "x$1" = "xstop" ]; then
     cd $NVRAM/etc/rc.d && for svc in `ls|sort -r`; do
-	echo stopping $svc
+	echo Stopping $svc
     	sh $svc stop
     done
     exit 0
@@ -98,7 +98,7 @@ prep_etcdir
 #
 cd $NVRAM/etc/rc.d || exit 1
 for svc in `ls|sort`; do
-    echo starting $svc
+    echo Starting $svc
     sh $svc start
 done
 

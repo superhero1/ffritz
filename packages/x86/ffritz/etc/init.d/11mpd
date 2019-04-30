@@ -5,7 +5,11 @@
 #
 . /usr/local/etc/ffritz-env.sh || exit 1
 
+BR_DIR=/tmp/br
+
 if [ "x$1" = "xstop" ]; then
+    $FFINSTDIR/bin/ffdaemon -K upmpdcli
+    $FFINSTDIR/bin/ffdaemon -K ympd
     $FFINSTDIR/bin/ffdaemon -K mpd
     exit
 fi
@@ -26,18 +30,6 @@ fi
 sed -i -e "s@\(.*\"\).*\(/bin/usbplay.*\)@\1$FFINSTDIR\2@" $FFRITZ_HOME/mpd.conf
 chown ffritz:ffritz $FFRITZ_HOME/mpd.conf
 
-# Create link for share/upmpdcli
-#
-dir=`readlink $FFRITZ_HOME/share/upmpdcli`
-if [ ! -d "$dir" ]; then
-    if [ -d $FFINSTDIR/share/upmpdcli ]; then
-	mkdir -p $FFRITZ_HOME/share
-	ln -s $FFINSTDIR/share/upmpdcli $FFRITZ_HOME/share
-    else
-	echo ERROR: $FFINSTDIR/share/upmpdcli not found
-    fi
-fi
-
 # create initial upmpdcli.conf from default
 #
 if [ ! -f $FFRITZ_HOME/upmpdcli.conf ]; then
@@ -57,5 +49,16 @@ $FFINSTDIR/bin/ffdaemon -r ffritz $FFINSTDIR/bin/mpd --no-daemon $FFRITZ_HOME/mp
 
 # Run upmpdcli (UPNP frontent to MPD)
 #
+# Use chroot environment from buildroot service
+#
+if [ -d $BR_DIR/usr/share/upmpdcli/ ]; then
+    sleep 1
+    $FFINSTDIR/bin/ffdaemon -o $BR_DIR upmpdcli -c $FFRITZ_HOME/upmpdcli.conf 
+else
+    echo upmpdcli not started, requires buildroot service
+fi
+
+# Run ympd (HTTP frontent to MPD)
+#
 sleep 1
-$FFINSTDIR/bin/ffdaemon $FFINSTDIR/bin/upmpdcli -c $FFRITZ_HOME/upmpdcli.conf 
+$FFINSTDIR/bin/ffdaemon $FFINSTDIR/bin/ympd -w 82 -u ffritz

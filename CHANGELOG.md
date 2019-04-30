@@ -1,6 +1,30 @@
 Change history of application package
 =====================================
 
+Release 10
+==========
+- Use latest buildroot (2016.05 -> snapshot 20190428)
+	- Tons of new versions
+
+- Application package
+	- Added ympd http frontend for mpd (port 82)
+	- Added list/restart options to ffservice
+	- Minor stuff for new buildroot
+	- Simplified OpenVPN setup. Forwarding rule is now applied
+	  automatically (pcplisten) without having to define one in the 
+	  FritzOS GUI.
+
+	- INCOMPATIBILITIES
+		- OpenVPN : the OpenVPN.conf file needs to be changed:
+		  In /tmp/ffnvram/root-ssh/openvpn, change "local" from
+		  
+		  192.168.178.253   (or whatever was configured)
+
+		  to the main address of the box (e.g. 192.168.178.1)
+
+- TODO
+	- ARM tools with new buildroot
+
 Release 9
 ---------
 - Application package
@@ -116,6 +140,16 @@ TODO
 
 Change history of ffritz core integration:
 ==========================================
+
+release 21
+==========
+- Use latest buildroot (2016.05 -> snapshot 20190428)
+  Tons of new versions ..
+  	- openssl changed to 1.1.0
+	  default message digest is changed here from md5 to sha256. To keep
+	  nvram accessible between version changes i still use md5 for now,
+	  but this might eventually change. 
+	  This image supports both for decrypting nvram.
 
 release 20
 ----------
