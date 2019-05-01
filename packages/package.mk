@@ -17,6 +17,7 @@
 # INSTALL_ETC: files/dirs to put in DESTDIR/etc
 # INSTALL_SHARE: files/dirs to put in DESTDIR/share
 # FORCE_MAKE_INSTALL: force make install even if INSTALL_XX is set
+# CUSTOM_DEP: Own dependencies for preparing build
 # 
 
 
@@ -144,8 +145,8 @@ build:	$(REPO)
 endif
 
 
-all-pkg:	$(ALL_DEP)
-	make -C build$(MAKE_SUBDIR) -j4 PATH=$(TOOLCHAIN):$(PATH) $(MAKE_OPTIONS)
+all-pkg:	$(ALL_DEP) $(CUSTOM_DEP)
+	PATH=$(TOOLCHAIN):$(PATH) make -C build$(MAKE_SUBDIR) $(MAKE_OPTIONS)
 
 build$(MAKE_SUBDIR)/Makefile:    build
 	@test -f build$(MAKE_SUBDIR)/Makefile && touch build$(MAKE_SUBDIR)/Makefile
@@ -156,10 +157,11 @@ build/config.status:	build/configure
 	cd build; export PATH=$(TOOLCHAIN):$(PATH); ./configure $(CONFIGURE_FLAGS) --build=x86_64-unknown-linux-gnu --prefix=/usr/local --exec-prefix=/usr --sysconfdir=/usr/local/etc --localstatedir=/var --program-prefix= --disable-doc --disable-docs --disable-documentation --disable-static --enable-shared $(PKG_CONFIGURE_FLAGS)
 	touch $@
 
-clean:	clean-pkg
+clean:	clean-pkg 
  
 clean-pkg:
 	rm -rf build
+	rm -f .*.stamp
 
 install: install-pkg
 

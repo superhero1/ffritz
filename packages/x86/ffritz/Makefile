@@ -24,7 +24,6 @@ ETCFILES   += etc/lirc_options_dfl.conf
 ETCFILES   += etc/upmpdcli.conf-dist
 ETCFILES   += etc/usrmount etc/fflogrotate etc/ffshutdown
 ETCFILES   += etc/init.d
-MODFILES    = lib/modules/cdc-acm.ko
 
 STAGEDIR    = $(TOPDIR)/output/ffritz
 
@@ -93,11 +92,11 @@ $(INSTDIR):
 	mkdir -p $(BRCOPY)
 	cd $(BRCOPY); tar xf $(BR_TGT)/../images/rootfs.tar 
 	cd $(INSTDIR); ln -s buildroot/usr/lib .
-	mkdir -p $(INSTDIR)/lib/modules
 
 modules:
-	mkdir -p lib/modules
-	make -C ../avm ff-modules-install DESTDIR=$(TOPDIR)/lib/modules
+	make -C ../modules install DESTDIR=$(STAGEDIR) INSTDIR=$(STAGEDIR)
+	mkdir -p $(STAGEDIR)/lib/modules
+	mv $(STAGEDIR)/lib/*.ko $(STAGEDIR)/lib/modules
 
 $(SUBDIRS):	
 	mkdir -p ../../dl
@@ -131,7 +130,6 @@ ffimage.bin: $(BINFILES) $(ETCFILES) stage
 #
 stage: $(BINFILES) $(ETCFILES) $(INSTDIRS) modules
 	cp -a $(BINFILES) $(INSTDIR)/bin
-	cp -a $(MODFILES) $(INSTDIR)/lib/modules
 	cp -r $(ETCFILES) $(INSTDIR)/etc
 	cp -ar etc/openvpn $(INSTDIR)/etc
 	sed -i -e 's@^rundir=.*@rundir=/var/media/ftp/ffritz@' $(INSTDIR)/etc/ff_atom_startup
