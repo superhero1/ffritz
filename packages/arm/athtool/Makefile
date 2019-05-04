@@ -12,11 +12,11 @@ CMN	    = ../../common/athtool
 
 export PATH := $(TOOLCHAIN):$(PATH)
 vpath %.c $(CMN)
-CFLAGS += -I$(CMN)
+CFLAGS += -I$(CMN) -fno-stack-protector
 
 ###############################################################################
 
-TARGETS	    = mdio-release pswtool pcount
+TARGETS	    = pswtool pcount
 
 ## No longer supported in 6.8
 #TARGETS    += athtool

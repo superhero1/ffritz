@@ -1,13 +1,23 @@
 BUILDROOT_TARGETS   = 
-BUILDROOT_AVM	    = 1
 
 include ../../buildroot.mk
 
-## This package can't be downloaded by buildroot properly
-##
-PKGCONF_URL	= $(shell cat ../../url-pkgconf)
-PKGCONF		= $(shell basename $(PKGCONF_URL))
-
-arch-patches:
+arch-patches:	.patch.applied
+	@if [ -f user_defconfig ]; then install -v user_defconfig build/configs/user_defconfig; make -C build user_defconfig; fi
+	
+.patch.applied:
+#	for d in `cd package; ls -d *`; do \
+#	    mkdir -p build/package/$$d; \
+#	    install -v package/$$d/* build/package/$$d; \
+#	    done
 	cp mod/ffritz_arm_defconfig build/configs
 	make -C build ffritz_arm_defconfig
+	touch $@
+
+userconfig: .build.stamp arch-patches
+	@if [ ! -f build/configs/user_defconfig ]; then cp build/configs/ffritz_arm_defconfig build/configs/user_defconfig; fi
+	@make -C build user_defconfig 
+	@make -C build menuconfig
+	@make -C build savedefconfig
+	@cp build/configs/user_defconfig user_defconfig; echo new config saved to `pwd`/user_defconfig; fi
+

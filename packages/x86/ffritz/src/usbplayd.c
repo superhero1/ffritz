@@ -520,7 +520,7 @@ int convert_samplerate (SRC_STATE *src_state,
     src_data.src_ratio = ratio;
     src_data.end_of_input = 0;
 
-    src_short_to_float_array ((const short*)buf, src_data.data_in, src_data.input_frames*2);
+    src_short_to_float_array ((const short*)buf, (float*)src_data.data_in, src_data.input_frames*2);
 
     if ((rc = src_process (src_state, &src_data)) != 0)
     {

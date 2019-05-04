@@ -21,13 +21,6 @@ BR_TGT_SBIN = $(BR_TGT)/usr/sbin
 BR_HOST	    =  $(BR_OUTPUT)/host
 BR_HOST_BIN =  $(BR_HOST)/usr/armeb-buildroot-linux-uclibcgnueabi/bin/
 
-BINFILES   += $(BR_TGT_BIN)/strace $(BR_TGT_BIN)/ldd $(BR_TGT_SBIN)/tcpdump 
-BINFILES   += $(BR_TGT_BIN)/tcpbridge $(BR_TGT_BIN)/tcpprep $(BR_TGT_BIN)/tcpreplay $(BR_TGT_BIN)/tcpreplay-edit $(BR_TGT_BIN)/tcprewrite
-BINFILES   += $(BR_TGT_BIN)/rsync $(BR_TGT_BIN)/gdbserver
-BINFILES   += $(BR_TGT)/../host/usr/armeb-buildroot-linux-uclibcgnueabi/sysroot/usr/bin/curl
-BINFILES   += src/ffdaemon
-ETCFILES    = etc/ffritz-env.sh 
-
 STAGEDIR    = $(TOPDIR)/output/ffritz-arm
 
 VERSION     = $(shell cat version)
@@ -39,18 +32,15 @@ ifeq ($(INSTDIR),)
 endif
 
 SUBDIRS	    = ../buildroot 
-SUBDIRS	   += ../athtool
-SUBDIRS	   += src
 
-.PHONY:	$(SUBDIRS)
+.PHONY:	$(SUBDIRS) output
 
 all:	$(SUBDIRS) $(IMAGE)
 
 $(SUBDIRS):	
-	mkdir -p ../../dl
 	make -C $@
 
-$(IMAGE): $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_LIB)/lib*so*)
+$(IMAGE): output
 	rm -rf $(STAGEDIR)
 	make install INSTDIR=$(STAGEDIR)
 	cp ../../../README.md output/
@@ -66,14 +56,13 @@ $(IMAGE): $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_L
 # which is linked to for each binary. This makes the package position independent, i.e.
 # it can be installed to /var/media/ftp, or integrated into the atom squashfs (to /usr/local).
 #
-install: $(SUBDIRS) $(BINFILES) $(ETCFILES) $(shell test -d $(BR_TGT_LIB) && ls $(BR_TGT_LIB)/lib*so*)
+install:
 	mkdir -p $(INSTDIR)/bin/exec
 	mkdir -p $(INSTDIR)/lib
 	mkdir -p $(INSTDIR)/etc
-	cp -a $(BINFILES) $(INSTDIR)/bin
-	cp -a  $(shell ls  $(BR_TGT_LIB)/lib*so*) $(INSTDIR)/lib
-	cp $(ETCFILES) $(INSTDIR)/etc
-	make -C ../athtool install INSTDIR=$(INSTDIR)
+	cp -a `find $(BR_TGT_BIN) -type f` $(INSTDIR)/bin
+	cp -a `find $(BR_TGT_SBIN) -type f` $(INSTDIR)/bin
+	cp -a $(BR_TGT_LIB)/* $(INSTDIR)/lib
 	cp -a bin/ffwrap $(INSTDIR)/bin/exec
 	cd $(INSTDIR)/bin; \
 	    for f in `ls | xargs file | grep ELF | sed -e 's/:.*//'`; do\

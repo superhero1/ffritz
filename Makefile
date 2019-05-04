@@ -3,14 +3,14 @@ TOPDIR	= $(shell pwd)
 VERSION = $(shell cat version)
 ARM_VER = $(shell cat packages/arm/ffritz/version)
 HOST    = $(shell uname -m)
-SUDO	= sudo
+SUDO	=
 
 
 ################################################################################
 # Configuration
 ################################################################################
 #
-# The original firmware tarball
+# The original firmware tarball URL
 #
 # 6590:
 #URL=http://download.avm.de/firmware/6590/96980342/FRITZ.Box_6590_Cable.de-en-es-it-fr-pl.148.07.00.image
@@ -20,9 +20,12 @@ SUDO	= sudo
 #URL=http://download.avm.de/firmware//6490/70988975/FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.07.01.image
 URL=https://download.avm.de/firmware/6490/59088767/FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.07.02.image
 
-# where to store/fetch from
+# where to store to/fetch from
 #
 ORIG=$(TOPDIR)/../$(shell basename $(URL))
+
+# for explicit image path (e.g. Labor)
+#
 #ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable-07.08-67153-LabBETA.image
 
 # Keep original rootfs for diff?
@@ -31,11 +34,11 @@ ORIG=$(TOPDIR)/../$(shell basename $(URL))
 KEEP_ORIG = 1
 
 # The optional arm package contains some none-essential binaries for the
-# arm core (tcpdump, gdb, ...).
+# arm core (not really required any more)
 # DOWNLOAD to fetch binary package
 #
 #FFRITZ_ARM_PACKAGE=DOWNLOAD
-#FFRITZ_ARM_PACKAGE=../ffritz-arm-0.6-fos7.tar.gz
+#FFRITZ_ARM_PACKAGE=../ffritz-arm-0.7-fos7.tar.gz
 
 
 ## Host tools (unsquashfs4-lzma-avm-be, mksquashfs4-lzma-avm-be) can either be built
@@ -130,14 +133,14 @@ arm/.applied.fs: $(ARM_MODFILES) arm/squashfs-root $(ARM_PATCHST) $(FFRITZ_ARM_P
 	    $(SUDO) mkdir -p arm/squashfs-root/usr/local; \
 	    $(SUDO) tar xfk $(FFRITZ_ARM_PACKAGE) --strip-components=2 -C arm/squashfs-root/usr/local ./ffritz-arm; \
 	fi
-	$(TOPDIR)/mklinks -f arm/squashfs-root/usr/bin ../local/bin $(SUDO); 
+	@if [ -d arm/mod/usr/local/bin ]; then  $(TOPDIR)/mklinks -f arm/squashfs-root/usr/bin ../local/bin; fi
 	@touch $@
 
 arm/filesystem.image: arm/.applied.fs
 	@rm -f arm/filesystem.image
 	@$(SUDO) chmod 755 arm/squashfs-root
 	@echo "PACK  arm/squashfs-root"
-	@cd arm; $(SUDO) $(HOSTTOOLS)/mksquashfs4-avm-be squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 >/dev/null
+	@cd arm; $(SUDO) $(HOSTTOOLS)/mksquashfs4-avm-be squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 -processors 1 >/dev/null
 
 arm-package: packages/arm/ffritz/ffritz-arm-$(ARM_VER).tar.gz
 
@@ -179,21 +182,23 @@ atom/filesystem.image: atom/.applied.fs
 	@rm -f atom/filesystem.image
 	@$(SUDO) chmod 755 atom/squashfs-root
 	@echo "PACK  atom/squashfs-root"
-	@cd atom; $(SUDO) mksquashfs squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 >/dev/null
+	@cd atom; $(SUDO) mksquashfs squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 -processors 1 >/dev/null
 
 #.PHONY:		$(RELDIR)
 
 ###############################################################################################
 FWFILE  = fb$(MODEL)_$(FWVER)-$(VERSION).tar
 
-release:    $(RELDIR)/$(FWFILE)
+release:
+	fakeroot make clean
+	fakeroot make $(RELDIR)/$(FWFILE)
 	
 $(RELDIR)/$(FWFILE): armfs atomfs $(RELDIR) 
 	@rm -rf $(RELDIR)/var
 	@cd $(RELDIR); tar xf $(ORIG)
 	@echo "PACK   $(RELDIR)/$(FWFILE)"
 	@cp arm/filesystem.image $(RELDIR)/var/remote/var/tmp/filesystem.image
-	@cp arm/mod/usr/local/etc/switch_bootbank $(RELDIR)/var
+	@cp arm/mod/usr/bin/switch_bootbank $(RELDIR)/var
 	@cp atom/filesystem.image $(RELDIR)/var/remote/var/tmp/x86/filesystem.image
 	@cd $(RELDIR); patch -p0 < ../install.p
 	@cd $(RELDIR); $(TAR) cf $(FWFILE) var
@@ -250,13 +255,13 @@ help:
 
 ###############################################################################################
 clean:
-	rm -rf tmp
-	$(SUDO) rm -rf arm/squashfs-root
-	$(SUDO) rm -rf arm/orig
-	rm -f arm/filesystem.image
-	rm -f arm/.applied*
-	$(SUDO) rm -rf atom/squashfs-root
-	$(SUDO) rm -rf atom/orig
-	rm -f atom/filesystem.image
-	rm -f atom/.applied*
-	rm -f .fwver.cache
+	@rm -rf tmp
+	@$(SUDO) rm -rf arm/squashfs-root
+	@$(SUDO) rm -rf arm/orig
+	@rm -f arm/filesystem.image
+	@rm -f arm/.applied*
+	@$(SUDO) rm -rf atom/squashfs-root
+	@$(SUDO) rm -rf atom/orig
+	@rm -f atom/filesystem.image
+	@rm -f atom/.applied*
+	@rm -f .fwver.cache

@@ -38,7 +38,7 @@ build/configure:    $(FILE)
 	@touch build/configure
 
 build/config.status:	build/configure
-	@cd build; ./configure --host=armeb-buildroot-linux-uclibcgnueabi --target=armeb-buildroot-linux-uclibcgnueabi --with-gnu-ld --disable-nls --disable-pam --disable-syslog --enable-shadow --disable-lastlog --disable-utmp --disable-utmpx --disable-wtmp --disable-wtmpx --disable-loginfunc --disable-pututline --disable-pututxline --enable-bundled-libtom --disable-largefile --disable-zlib --disable-openpty --disable-harden
+	@cd build; ./configure --host=armeb-buildroot-linux-uclibcgnueabi --target=armeb-buildroot-linux-uclibcgnueabi --with-gnu-ld --disable-nls --disable-pam --disable-syslog --enable-shadow --disable-lastlog --disable-utmp --disable-utmpx --disable-wtmp --disable-wtmpx --disable-loginfunc --disable-pututline --disable-pututxline --enable-bundled-libtom --disable-largefile --disable-zlib --disable-openpty --disable-harden --prefix=/usr
 
 clean:
 	rm -rf build

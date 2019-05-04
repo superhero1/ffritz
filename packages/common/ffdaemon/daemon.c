@@ -17,6 +17,10 @@
  */
 
 /*================================== INCLUDES ===============================*/
+#define _BSD_SOURCE
+#define _DEFAULT_SOURCE
+#define _POSIX_C_SOURCE 1
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -110,7 +114,7 @@ static int purge_service (char *service_name, char *pidfile)
 
 }
 
-static void stop_worker (void)
+static void stop_worker (int sig)
 {
     if (worker_pid > 0)
     {

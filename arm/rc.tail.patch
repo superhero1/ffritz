@@ -27,7 +27,7 @@
 +#   - Start the daemon. 
 +#   
 +#########################################################################
-+if [ -x /usr/local/sbin/dropbear ]; then
++if [ -x /usr/bin/dropbear ]; then
 +    if [ ! -f /nvram/shadow ]; then
 +	cp /etc/shadow /nvram/shadow
 +	chmod 600 /nvram/shadow
@@ -58,7 +58,7 @@
 +    rm -rf /var/tmp/root-ssh
 +    ln -sf /nvram/root-ssh /var/tmp/root-ssh
 +
-+    /usr/local/sbin/dropbear 
++    /usr/bin/dropbear 
 +fi
 +
  exit 0

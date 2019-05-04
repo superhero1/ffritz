@@ -141,8 +141,18 @@ TODO
 Change history of ffritz core integration:
 ==========================================
 
+release 22
+----------
+- Atom: Fix initial telnetd and ssh login with password authentication.
+- ARM: New binaries for buildroot snapshot 20190428
+- ARM: added more tools to base image:
+	tcpdump etc, gdb, gdbserver, ltrace, strace
+
 release 21
-==========
+----------
+
+!! broken, no telnetd, no ssh password auth
+
 - Use latest buildroot (2016.05 -> snapshot 20190428)
   Tons of new versions ..
   	- openssl changed to 1.1.0
