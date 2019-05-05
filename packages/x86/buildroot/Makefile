@@ -21,5 +21,8 @@ userconfig: .build.stamp arch-patches
 	@make -C build user_defconfig 
 	@make -C build menuconfig
 	@make -C build savedefconfig
-	@cp build/configs/user_defconfig user_defconfig; echo new config saved to `pwd`/user_defconfig; fi
+	@cp build/configs/user_defconfig user_defconfig;
+	@echo
+	@echo +++ new config saved to `pwd`/user_defconfig; fi
+	@echo 
 
