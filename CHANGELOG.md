@@ -1,6 +1,11 @@
 Change history of application package
 =====================================
 
+Release 11
+==========
+- Fix kernel header version for toolchain
+  (caused some issues in chroot environment)
+
 Release 10
 ==========
 - Use latest buildroot (2016.05 -> snapshot 20190428)
