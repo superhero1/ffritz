@@ -26,7 +26,7 @@ cd /var/tmp/root-ssh/openvpn
 # directly to an address owned by the fritzbox. See run_openvpn
 # script how this is handled.
 #
-local 192.168.178.253
+local 192.168.178.1
 
 # This option defines the IP or DNS name of the other side of your VPN
 # connection.  This option is needed if you are making client or P-t-P 

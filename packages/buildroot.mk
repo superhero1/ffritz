@@ -18,7 +18,7 @@ BR_FLAGS=DL_DIR=$(DLDIR)
 #GCCFLAGS=HOSTCC=gcc-4.7
 
 all:	.build.stamp arch-patches 
-	make -C build $(BR_FLAGS) $(GCCFLAGS) -j2 
+	make -C build $(BR_FLAGS) $(GCCFLAGS) 
 	if [ "$(BUILDROOT_TARGETS)" != "" ]; then make -C build $(BR_FLAGS) $(BUILDROOT_TARGETS) -j2; fi
 
 base:	.build.stamp arch-patches
