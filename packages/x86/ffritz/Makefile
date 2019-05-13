@@ -42,12 +42,10 @@ endif
 #
 SUBDIRS    += ../libmaru
 SUBDIRS    += ../shairport 
-SUBDIRS    += ../lirc 
 SUBDIRS    += src
 
 ## Packages with (build/)install target
 #
-INSTDIRS   += ../lirc/install 
 INSTDIRS   += ../nfs/install 
 INSTDIRS   += ../bt/install 
 INSTDIRS   += ../prtg/install 
