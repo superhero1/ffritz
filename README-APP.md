@@ -66,20 +66,46 @@ that was used to build the ffritz application package in /usr/local/buildroot.
 The buildroot service will prepare a fully operational filesystem
 below /tmp/br. All required special filesystems are mounted (dev, sys, proc).
 
-In addition a ramdisc overlay is mounted over parts the filesystem using
-unionfs (/etc, /var, /root) so that the filesystem is writeable there.
-Since the ramdisc overlay is located in /etc/ffnvram/buildroot
-any change made there can be made persistent by calling nvsync.
+To use this filesystem, just use chroot:
 
-To use this overlay just use chroot:
-
-	chroot /tmp/br
+        chroot /tmp/br
 
 or just "br" as an alias.
 
-NOTE: The ramdisc overlay is meant to store configuration files only.
-Bigger data (incl. log files) would easily exceed the available RAM
-size (which is ca. 100MB).
+There are two flavours for the constructed filesystem:
+
+1. Keeping most of the filesystem read-only
+2. Using a writeable overlay for the whole filesystem
+
+Option (1):
+
+-	A ramdisc overlay is mounted over parts the filesystem using
+	unionfs (/etc, /var, /root) so that the filesystem is writeable there.
+	Since the ramdisc overlay is located in /etc/ffnvram/buildroot
+	any change made there can be made persistent by calling nvsync.
+
+-	NOTE: The ramdisc overlay is meant to store configuration files only.
+	Bigger data (incl. log files) would easily exceed the available RAM
+	size (which is ca. 100MB).
+
+Option (2):
+
+-	Create/edit the file /tmp/ffnvram/ffbuildroot.conf
+-	Add the line BR_USER_OVERLAY=/var/media/ftp/my-root
+-	This option will use /var/media/ftp/my-root to store
+	new or changed contents of the buildroot filesystem
+	in a copy-on-write manner.
+-	Preferably, the storage should be located on a mounted
+	USB device.
+-	Dont forget nvsync to make the config-file persistent.
+-	NOTE: Be aware that storing files below /var/media/ftp
+	exposes them via the NAS service of the box, if enabled!!
+
+Option 1 is a lightweight mechanism to just start some tools or services that
+do not require write access to /usr or other locations which are read-only.
+
+Option 2 is useful when more sophisticated tools shall be used, e.g. when
+you want to use python or node.js and add your own modules.
 
 All binaries and libraries from the buildroot directory (usr/bin,
 usr/lib) are available to FritzOS via symlinks in /usr/local/bin,

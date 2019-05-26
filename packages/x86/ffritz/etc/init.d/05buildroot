@@ -4,9 +4,11 @@
 #
 . /usr/local/etc/ffritz-env.sh || exit 1
 
-BR_DIR=/tmp/br
+BR_DIR=/var/tmp/br
 BR_OVERLAY=/tmp/ffnvram/rootfs-overlay
 BR_ROOT=/usr/local/buildroot
+BR_CONF=$NVRAM/ffbuildroot.conf
+BR_CONF_ACTIVE=/tmp/ffbuildroot.conf
 
 ismounted()
 {
@@ -23,8 +25,10 @@ ismounted()
 }
 
 # Mount table for rootfs
-mtab()
+# (RAM version, rootfs is RO)
+mtab_ram()
 {
+	echo / REDIR $BR_ROOT
 	echo /dev devtmpfs
 	echo /etc NVRAM
 	echo /proc proc
@@ -37,6 +41,33 @@ mtab()
 	echo /var/media/ftp REDIR /var/media/ftp
 }
 
+# Mount table for rootfs, using (verified) USB storage $1 as overlay
+mtab_flash()
+{
+	echo / COW $1
+	echo /dev devtmpfs
+	echo /proc proc
+	echo /proc/bus/usb usbfs
+	echo /run tmpfs
+	echo /sys sysfs
+	echo /tmp tmpfs
+	echo /var/media/ftp REDIR /var/media/ftp
+}
+
+mtab()
+{
+	if [ "$BR_USER_OVERLAY" != "" ]; then
+		if [ -d $BR_USER_OVERLAY ]; then
+			mtab_flash $BR_USER_OVERLAY
+		else
+			echo user overlay $BR_USER_OVERLAY does not exist 1>&2
+			exit 1
+		fi
+	else
+		mtab_ram
+	fi
+}
+
 # Reverse mount table
 mtab_r()
 {
@@ -45,12 +76,13 @@ mtab_r()
 
 umount_all()
 {
-	mtab_r | while read line; do
-		set $line
+	for loop in 1 2; do
+		mtab_r | while read line; do
+			set $line
 
-		ismounted $BR_DIR/$1 && umount $BR_DIR/$1
+			ismounted $BR_DIR/$1 && umount $BR_DIR/$1
+		done
 	done
-	umount $BR_DIR
 }
 
 abort()
@@ -61,13 +93,72 @@ abort()
 	exit 1
 }
 
+# kill all chrooted processes
+# arguments passed to kill(2)
+#
+kill_all()
+{
+	sig=$1
+
+	cd /proc
+	pids=
+	for p in [0-9]*; do
+		ffd_service_name=
+		if [ -d $p/root -a "`readlink -f $p/root`" = $BR_DIR ]; then
+#			eval `grep ffd_service_name $p/environ`
+			pids="$pids $p"
+			
+#			if [ "$ffd_service_name" != "" ]; then
+#				ffdaemon -K $ffd_service_name
+#			fi
+		fi
+	done
+
+	if [ "$pids" != "" ]; then
+		echo "killing $sig PIDs using $BR_DIR: $pids"
+		kill $sig $pids
+		sleep 2
+	fi
+}
+
+######### Main
 
 if [ "x$1" = "xstop" ]; then
+
+	if [ -f $BR_CONF_ACTIVE ]; then
+		echo reading config from $BR_CONF_ACTIVE
+		. $BR_CONF_ACTIVE
+	elif [ -f $BR_CONF ]; then
+		echo reading config from $BR_CONF
+		. $BR_CONF
+	fi
+
+	sleep 2
+	kill_all
+	kill_all -9
+
 	umount_all
-	sleep 1
-	umount_all
+
+	rm -f $BR_CONF_ACTIVE
 	exit 0
 fi
+
+### Start
+
+if [ -f $BR_CONF_ACTIVE ]; then
+	echo Service is already running or could not be stopped 1>&2
+	exit 1
+fi
+
+# read configuration and store in active config so that stop
+# does not use intermittent changes
+#
+if [ -f $BR_CONF ]; then
+	echo reading config from $BR_CONF
+	. $BR_CONF
+	cp -f $BR_CONF $BR_CONF_ACTIVE
+fi
+touch $BR_CONF_ACTIVE
 
 if [ ! -d $BR_OVERLAY ]; then
 	echo buildroot overlay does not exist: $BR_OVERLAY
@@ -85,7 +176,6 @@ if [ -d $BR_OVERLAY/proc/self ]; then
 fi
 
 mkdir -p $BR_DIR
-mount --redir $BR_ROOT $BR_DIR || exit 1
 
 mtab | while read line; do
 	set $line
@@ -93,6 +183,8 @@ mtab | while read line; do
 	if [ "$2" = "NVRAM" ]; then
 		mkdir -p /tmp/ffnvram/rootfs-overlay/$1 || abort
 		unionfs -o cow,dev,suid,allow_other,nonempty $BR_OVERLAY/$1=RW:$BR_ROOT/$1=RO $BR_DIR/$1 || abort
+	elif [ "$2" = "COW" ]; then
+		unionfs -o cow,dev,suid,allow_other,nonempty $3=RW:$BR_ROOT/$1=RO $BR_DIR/$1 || abort
 	elif [ "$2" = "REDIR" ]; then
 		mount --redir $3 $BR_DIR/$1
 	else

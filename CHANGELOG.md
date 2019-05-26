@@ -1,6 +1,47 @@
 Change history of application package
 =====================================
 
+NEXT
+====
+- Add feature to buildroot to use FS overlay on flash
+	- Configuration file /tmp/ffnvram/ffbuildroot.conf
+	- Parameter BR_USER_OVERLAY
+		Specifies directory to be used as writable
+		overlay for the whome root filesystem /tmp/br
+- Buildroot service script kills all chrooted processes before
+  unmounting.
+- Bump buildroot version to buildroot-2019.05-rc2
+- Fix syntax error buildroot userconfig target
+- Added/changed some default buildroot settings:
+	- Python options and default packages:
+		PYTHON3_PY_PYC
+		PYTHON3_CURSES
+		PYTHON3_SSL
+		PYTHON_SETUPTOOLS
+		PYTHON_PIP
+
+	- Added
+		DOSFSTOOLS
+		DOSFSTOOLS_FATLABEL
+		DOSFSTOOLS_FSCK_FAT
+		DOSFSTOOLS_MKFS_FAT
+		E2FSPROGS
+		E2FSPROGS_RESIZE2FS
+		EXFAT
+		EXFAT_UTILS
+		F2FS_TOOLS
+		SSHFS
+		BWM_NG
+		ETHTOOL
+		FPING
+		NMAP_NMAP
+		SUDO
+		HTOP
+
+- TODO
+	Add (buildroot service) option to relocate a USB storage as
+	overlay so that it is not exposed via /var/media/ftp.
+
 Release 11
 ==========
 - Fix kernel header version for toolchain

@@ -1,21 +1,15 @@
-
---- shairport/audio_pipe.c	2016-10-26 08:35:09.599628069 +0200
-+++ build/audio_pipe.c	2016-10-26 08:42:04.093498896 +0200
-@@ -37,9 +37,12 @@
- 
+--- shairport-sync-3.2.1.o/audio_pipe.c	2018-07-13 04:30:42.000000000 -0400
++++ shairport-sync-3.2.1/audio_pipe.c	2019-05-10 17:15:34.159464470 -0400
+@@ -42,6 +42,7 @@
  static int fd = -1;
- static char *pipename = NULL;
-+static char *volfilename = NULL;
- static int Fs;
- static long long starttime, samples_played;
  
-+audio_output audio_pipe;
-+
- static void stop(void) {
-     close(fd);
-     fd = -1;
-@@ -100,10 +103,26 @@
-         stop();
+ char *pipename = NULL;
++static char *volfilename = NULL;
+ int warned = 0;
+ 
+ static void start(__attribute__((unused)) int sample_rate,
+@@ -81,6 +82,22 @@
+   //    close(fd);
  }
  
 +static void volume(double vol)
@@ -35,23 +29,25 @@
 +}
 +
  static int init(int argc, char **argv) {
-     struct stat sb;
+   debug(1, "pipe init");
+   //  const char *str;
+@@ -118,6 +135,11 @@
  
--    if (argc != 1)
-+    if (argc < 1)
-         die("bad argument(s) to pipe");
+   debug(1, "Pipename is \"%s\"", pipename);
  
-     pipename = strdup(argv[0]);
-@@ -114,6 +133,12 @@
-     if (!S_ISFIFO(sb.st_mode))
-         die("not a pipe");
- 
-+    if (argc == 2)
-+    {
-+	volfilename = strdup(argv[1]);
-+	audio_pipe.volume = volume;
-+    }
++  if (argc  == 2) {
++    volfilename = strdup(argv[1]);
++    debug(1, "Volumename is \"%s\"", volfilename);
++  }
 +
-     return 0;
+   return 0;
  }
  
+@@ -137,6 +159,6 @@
+                            .flush = NULL,
+                            .delay = NULL,
+                            .play = &play,
+-                           .volume = NULL,
++                           .volume = &volume,
+                            .parameters = NULL,
+                            .mute = NULL};

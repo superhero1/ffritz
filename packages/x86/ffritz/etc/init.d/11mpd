@@ -53,7 +53,7 @@ $FFINSTDIR/bin/ffdaemon -r ffritz $FFINSTDIR/bin/mpd --no-daemon $FFRITZ_HOME/mp
 #
 if [ -d $BR_DIR/usr/share/upmpdcli/ ]; then
     sleep 1
-    $FFINSTDIR/bin/ffdaemon -o $BR_DIR upmpdcli -c $FFRITZ_HOME/upmpdcli.conf 
+    $FFINSTDIR/bin/ffdaemon -i 10 -o $BR_DIR upmpdcli -c $FFRITZ_HOME/upmpdcli.conf 
 else
     echo upmpdcli not started, requires buildroot service
 fi
