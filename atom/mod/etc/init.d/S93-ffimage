@@ -7,16 +7,16 @@ export FFINSTDIR=/usr/local
 export FFRITZ_HOME=/var/media/ftp/ffritz
 export FFLOG=/var/log/ffritz.log
 
-UCLIB_VERSION=1
-if [ -f /lib/libc.so.0 ]; then
-	UCLIB_VERSION=`readlink -f /lib/libc.so.0 | sed -e 's/.*-\([0-9]\).*/\1/'`
-elif [ -f /lib/libc.so.1 ]; then
-	UCLIB_VERSION=`readlink -f /lib/libc.so.1 | sed -e 's/.*-\([0-9]\).*/\1/'`
-fi
+#UCLIB_VERSION=1
+#if [ -f /lib/libc.so.0 ]; then
+#	UCLIB_VERSION=`readlink -f /lib/libc.so.0 | sed -e 's/.*-\([0-9]\).*/\1/'`
+#elif [ -f /lib/libc.so.1 ]; then
+#	UCLIB_VERSION=`readlink -f /lib/libc.so.1 | sed -e 's/.*-\([0-9]\).*/\1/'`
+#fi
 
-if [ $UCLIB_VERSION -gt 0 ]; then
-	REL=-${UCLIB_VERSION}
-fi
+#if [ $UCLIB_VERSION -gt 0 ]; then
+#	REL=-${UCLIB_VERSION}
+#fi
 
 DATADIR=$FFRITZ_HOME/data
 

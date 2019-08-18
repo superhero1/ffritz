@@ -31,7 +31,7 @@ DLDIR	= $(PKGTOP)/dl
 TOPDIR	    = $(shell pwd)
 BUILDROOT   = $(shell cd ../buildroot/build; pwd)
 TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
-SYSROOT	    = $(BUILDROOT)/output/host/usr/i686-buildroot-linux-uclibc/sysroot
+SYSROOT	    = $(BUILDROOT)/output/host/usr/$(HOST)/sysroot
 TGTDIR	    = $(BUILDROOT)/output/target
 
 

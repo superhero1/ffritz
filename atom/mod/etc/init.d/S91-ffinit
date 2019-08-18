@@ -13,18 +13,18 @@ export FFINSTDIR=/usr/local
 export FFRITZ_HOME=/var/media/ftp/ffritz
 export FFLOG=/var/log/ffritz.log
 
-if [ -f /lib/libc.so.1 ]; then
-    UCLIB_VERSION=`readlink -f /lib/libc.so.1 | sed -e 's/.*-\([0-9]\).*/\1/'`
-elif [ -f /lib/libc.so.0 ]; then
-    UCLIB_VERSION=`readlink -f /lib/libc.so.0 | sed -e 's/.*-\([0-9]\).*/\1/'`
-else
-    UCLIB_VERSION=1
-fi
+#if [ -f /lib/libc.so.1 ]; then
+#    UCLIB_VERSION=`readlink -f /lib/libc.so.1 | sed -e 's/.*-\([0-9]\).*/\1/'`
+#elif [ -f /lib/libc.so.0 ]; then
+#    UCLIB_VERSION=`readlink -f /lib/libc.so.0 | sed -e 's/.*-\([0-9]\).*/\1/'`
+#else
+#    UCLIB_VERSION=1
+#fi
 
 
-if [ $UCLIB_VERSION -gt 0 ]; then
-        REL=-${UCLIB_VERSION}
-fi
+#if [ $UCLIB_VERSION -gt 0 ]; then
+#        REL=-${UCLIB_VERSION}
+#fi
 
 DATADIR=$FFRITZ_HOME/data
 
@@ -72,10 +72,10 @@ decrypt_nvram()
 ### nvsync still saves with md5, but i might changes this. For now i dont want to break
 ### backwards compatibility ...
 
-	if [ $rc -ne 0 ]; then
-	    openssl enc -d -md md5 -pass file:$KEY_PLAIN -aes-256-cbc -in $NVRAM_FILE -out $NVRAM_COPY/nv.tar
-	    rc=$?
-	fi
+#	if [ $rc -ne 0 ]; then
+#	    openssl enc -d -md md5 -pass file:$KEY_PLAIN -aes-256-cbc -in $NVRAM_FILE -out $NVRAM_COPY/nv.tar
+#	    rc=$?
+#	fi
 
 	rm -f $KEY_PLAIN
 
@@ -128,20 +128,6 @@ chmod 700 $NVRAM_COPY
 touch /var/tmp/openssl.cnf
 
 decrypt_nvram
-
-## If something went wrong with decrypting nvram storage, try legacy mode
-## (copy from /nvram on ARM)
-#
-# XXX Dont do this any more, rpc issues might cause boot hang/reset
-#
-#if [ $? -ne 0 ]; then
-#	echo failed to decrypt nvram image, copying /nvram data >>$FFLOG
-#	rpc tar cf - nvram/shadow nvram/root-ssh_x86 nvram/dropbear_x86 | (cd $NVRAM_COPY; tar xf -)
-#	mv $NVRAM_COPY/nvram/shadow $NVRAM_COPY
-#	mv $NVRAM_COPY/nvram/root-ssh_x86 $NVRAM_COPY/root-ssh
-#	mv $NVRAM_COPY/nvram/dropbear_x86 $NVRAM_COPY/dropbear
-#	rmdir $NVRAM_COPY/nvram
-#fi
 
 # by default, /var/tmp/shadow is the default from var.tar, use it if we don't have one
 #

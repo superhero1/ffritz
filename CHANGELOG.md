@@ -1,3 +1,32 @@
+6591 (all)
+==========
+- Toolchain
+	- buildroot
+		- Use Release 2019.05
+		- change to glibc from uClibc.
+			- Use same as AVM (2.23) to avoid two different
+			  libc's (LD_LIBRARY_PATH does not work for libc).
+- privatekeypassword
+	- remove check for uClibc
+- linux kernel modules
+	- no longer required (cdc-acm part of FritzOS)
+- Remove athtool
+- Adapt rc scripts
+	- still use encrypted ffnvram (/nvram quite small, 5MB)
+	- dont use md5 hash any more
+- Adapt switch_bootbank script
+- Statically linked busybox/telnetd for now
+- Change atom squashfs options: set xz compression, bfs export, no xattrs
+- application package must contain glibc-version file to distinct from uclibc image
+- use AVM kernel defconfig (from rootfs) for building modules
+
+TODO
+	- Find better way for ffnvram
+	- Redesign repository to support both 6x90 and 6591 in one tree
+	- write own update script
+	- switch_bootbank: changing via /proc/sys/urlader does not work
+	- test committed build environment
+
 Change history of application package
 =====================================
 
@@ -7,7 +36,7 @@ NEXT
 	- Configuration file /tmp/ffnvram/ffbuildroot.conf
 	- Parameter BR_USER_OVERLAY
 		Specifies directory to be used as writable
-		overlay for the whome root filesystem /tmp/br
+		overlay for the whole root filesystem /tmp/br
 - Buildroot service script kills all chrooted processes before
   unmounting.
 - Bump buildroot version to buildroot-2019.05-rc2

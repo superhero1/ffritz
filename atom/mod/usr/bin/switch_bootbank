@@ -1,5 +1,10 @@
 #!/bin/sh
 #
+if [ "x$1" = "x-h" ]; then
+	echo "usage: $0 [-e|h]"
+	exit 0
+fi
+
 linux_fs_start=`grep linux_fs_start ${CONFIG_ENVIRONMENT_PATH}/environment`
 if [ -z "$linux_fs_start" ]; then
     current=0
@@ -10,29 +15,41 @@ else
     if [ $linux_fs_start = 0 ]; then
 	current=0
 	linux_fs_start=1
+	this=/dev/mmcblk0p3
+	other=/dev/mmcblk0p9
     else
 	current=1
 	linux_fs_start=0
+	this=/dev/mmcblk0p9
+	other=/dev/mmcblk0p3
     fi
 fi
 
 echo "SELECTED boot bank        $current"
 
 if [ -f /etc/version ]; then
+	mod=
+	if [ -d /usr/lib/ff ]; then
+		mod=modified
+	fi
 	eval `grep CONFIG_VERSION_MAJOR= /etc/version`
 	eval `grep FIRMWARE_VERSION= /etc/version`
-	echo "RUNNING firmware version: $FIRMWARE_VERSION"
+	echo "RUNNING firmware version: $FIRMWARE_VERSION  [$this]  $mod"
 else
-	echo "RUNNING firmware version: unknown"
+	echo "RUNNING firmware version: unknown  [$this]"
 fi
 
-mount /dev/mmcblk0p7 /mnt >/dev/null 2>&1
+mount $other /mnt >/dev/null 2>&1
 if [ -f /mnt/etc/version ]; then
+	mod=
+	if [ -d /mnt/usr/lib/ff ]; then
+		mod=modified
+	fi
 	eval `grep CONFIG_VERSION_MAJOR= /mnt/etc/version`
 	eval `grep FIRMWARE_VERSION= /mnt/etc/version`
-	echo "BACKUP firmware version:  $FIRMWARE_VERSION"
+	echo "BACKUP firmware version:  $FIRMWARE_VERSION  [$other]  $mod"
 else
-	echo "BACKUP firmware version:  unknown"
+	echo "BACKUP firmware version:  unknown  [$other]"
 fi
 umount /mnt >/dev/null 2>&1
 

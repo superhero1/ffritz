@@ -28,7 +28,7 @@ ORIG=$(TOPDIR)/../$(shell basename $(URL))
 
 # for explicit image path (e.g. Labor)
 #
-#ORIG=$(TOPDIR)/../FRITZ.Box_6490_Cable-07.08-67153-LabBETA.image
+ORIG=$(TOPDIR)/../FRITZ.Box_6591_Cable-07.04.image
 
 # Keep original rootfs for diff?
 # sudo dirdiff arm/orig/ arm/squashfs-root/
@@ -108,8 +108,6 @@ endif
 armfs:	arm/filesystem.image
 
 ARM_PATCHES += rc.tail.patch
-ARM_PATCHES += $(shell test $(FWNUM) -gt 660 && echo nvram_dontremove.patch)
-ARM_PATCHES += $(shell test $(FWNUM) -lt 663 && echo ipv6_enable.patch)
 
 ARM_PATCHST=$(ARM_PATCHES:%=arm/.applied.%)
 
@@ -184,7 +182,7 @@ atom/filesystem.image: atom/.applied.fs
 	@rm -f atom/filesystem.image
 	@$(SUDO) chmod 755 atom/squashfs-root
 	@echo "PACK  atom/squashfs-root"
-	@cd atom; $(SUDO) mksquashfs squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 -processors 1 >/dev/null
+	@cd atom; $(SUDO) mksquashfs squashfs-root filesystem.image -comp xz -all-root -info -no-progress -no-sparse -b 65536 -no-xattrs -processors 1 >/dev/null
 
 #.PHONY:		$(RELDIR)
 
@@ -195,14 +193,15 @@ release:
 	fakeroot make clean
 	fakeroot make $(RELDIR)/$(FWFILE)
 	
-$(RELDIR)/$(FWFILE): armfs atomfs $(RELDIR) 
+# no armfs on 6591 yet
+$(RELDIR)/$(FWFILE): atomfs $(RELDIR) 
 	@rm -rf $(RELDIR)/var
 	@cd $(RELDIR); tar xf $(ORIG)
 	@echo "PACK   $(RELDIR)/$(FWFILE)"
-	@cp arm/filesystem.image $(RELDIR)/var/remote/var/tmp/filesystem.image
-	@cp arm/mod/usr/bin/switch_bootbank $(RELDIR)/var
+#	@cp arm/filesystem.image $(RELDIR)/var/remote/var/tmp/filesystem.image
+	@rm -f $(RELDIR)/var/remote/var/tmp/filesystem.image
+	@cp atom/mod/usr/bin/switch_bootbank $(RELDIR)/var
 	@cp atom/filesystem.image $(RELDIR)/var/remote/var/tmp/x86/filesystem.image
-	@cd $(RELDIR); patch -p0 < ../install.p
 	@cd $(RELDIR); $(TAR) cf $(FWFILE) var
 	@rm -rf $(RELDIR)/var
 	@echo

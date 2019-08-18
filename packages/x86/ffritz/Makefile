@@ -49,8 +49,8 @@ SUBDIRS    += src
 INSTDIRS   += ../nfs/install 
 INSTDIRS   += ../bt/install 
 INSTDIRS   += ../prtg/install 
-INSTDIRS   += ../athtool/install 
-INSTDIRS   += ../libdvbfi/install
+#INSTDIRS   += ../athtool/install 
+#INSTDIRS   += ../libdvbfi/install
 
 ifeq ($(CASH),)
 CASH=$(shell ls -d ../cash/build/.. 2>/dev/null)
@@ -109,7 +109,7 @@ $(IMAGE): ffimage.bin
 	cp ../libdvbfi/README.txt README-dvb.txt 
 	cp ../libdvbfi/fwd .
 	cp $(CSUM) ffimage.sha256sum
-	tar cf $(IMAGE) ffimage.bin ffimage.sha256sum *.md uclib-version
+	tar cf $(IMAGE) ffimage.bin ffimage.sha256sum *.md glibc-version
 	rm -f ffimage.sha256sum
 	@echo
 	@echo +++ DONE +++
@@ -160,7 +160,7 @@ stage: $(BINFILES) $(ETCFILES) $(INSTDIRS) modules
 	cd $(INSTDIR)/share; ln -s ../buildroot/usr/share/terminfo .
 	# buildroot binaries link against /lib/libc.so.0
 	cd $(BRCOPY)/usr/lib; ln -s ../../lib/libuClibc-1.0.*.so libc.so.0; ln -s ../../lib/libuClibc-1.0.*.so libc.so.1
-	ls ${BR_TGT}/lib/libuClibc-* | sed -e 's/.*-\([0-9]\).*/\1/' > uclib-version || exit 1
+	readlink ${BR_TGT}/lib/libc.so.* | xargs basename > glibc-version || exit 1
 	
 clean: 
 	rm -rf output $(IMAGE) ffimage.bin

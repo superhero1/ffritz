@@ -45,16 +45,8 @@ cd $NVRAM_COPY
 tar cf /tmp/ffstore.tar . 
 
 ## encrypt it 
-## Note that this makes explicit use of md5 algorithm, although deprecated with openssl 1.1.0
-## Changing this would break backwards compatibility .. so i keep it for now.
-## rc script already can handle both
 #
-# New:
-# openssl enc -pass file:$KEY_PLAIN -salt -aes-256-cbc -pbkdf2 -iter 1000  -in /tmp/ffstore.tar  -out /tmp/ffstore.dat
-#
-# Old:
-#
-openssl enc -md md5 -pass file:$KEY_PLAIN -salt -aes-256-cbc -in /tmp/ffstore.tar  -out /tmp/ffstore.dat >/dev/null 2>&1
+openssl enc -pass file:$KEY_PLAIN -salt -aes-256-cbc -pbkdf2 -iter 1000  -in /tmp/ffstore.tar  -out /tmp/ffstore.dat
 
 rc=$?
 rm -f /tmp/ffstore.tar

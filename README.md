@@ -1,3 +1,50 @@
+!!!!!!
+
+This is the branch for FritzBox 6591, which is under development. 
+
+
+INSTALLATION ON 6591
+====================
+
+Initial setup:
+--------------
+- Find some way to get shell access.
+- There is no known method so far.
+
+Update from shell
+-----------------
+- **
+- ** WARNING: THERE IS NO WAY TO RECOVER FROM BOOTLOADER/EVA ONCE YOU HAVE BRICKED YOUR BOX 
+- **
+- Copy the release image to NAS and run these commands:
+~~~
+        cd /var/media/ftp
+        tar xf fb6591.tar
+        cp var/switch_bootbank /tmp
+        /tmp/switch_bootbank
+~~~
+- sample output:
+~~~
+        SELECTED boot bank        1
+        RUNNING firmware version: 161.07.04  [/dev/mmcblk0p9]  modified
+        BACKUP firmware version:  161.07.04  [/dev/mmcblk0p3]
+~~~
+- write image to BACKUP partition. here:
+~~~
+        dd if=var/remote/var/tmp/x86/filesystem.image of=/dev/mmcblk0p3
+~~~
+- reset the box
+- enter EVA ftp and change linux_fs_start. here:
+~~~
+        quote SETENV linux_fs_start 0
+        quote REBOOT
+~~~
+- _ALWAYS_ make sure that there is one known image (0 or 1) which boots, and
+  don't overwrite it!
+
+
+Descriptions further below may or may not apply (unchanged from 6x90)
+ 
 Introduction 
 ============
 This is a repository containing my modifications for FritzBox-6490 Cable.

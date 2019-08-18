@@ -5,12 +5,12 @@ include ../../buildroot.mk
 
 arch-patches:	.patch.applied
 	@if [ -f user_defconfig ]; then install -v user_defconfig build/configs/user_defconfig; make -C build user_defconfig; fi
-	@if [ -f mod/busybox-config ]; then install -v mod/busybox-config build/package/busybox/busybox.config; fi
 	
 .patch.applied:
 	for d in `cd package; ls -d *`; do \
 	    mkdir -p build/package/$$d; \
-	    install -v package/$$d/* build/package/$$d; \
+	    cp -ar package/$$d/* build/package/$$d; \
+#	    install -v package/$$d/* build/package/$$d; \
 	    done
 	cp mod/ffritz_atom_defconfig build/configs
 	make -C build ffritz_atom_defconfig

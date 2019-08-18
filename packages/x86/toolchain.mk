@@ -7,7 +7,7 @@ $(error BUILDROOT (buildroot top directory) not defined)
 endif
 
 ifeq ($(CROSS_COMPILE),)
-CROSS_COMPILE=i686-buildroot-linux-uclibc-
+CROSS_COMPILE=i686-buildroot-linux-gnu-
 endif
 
 

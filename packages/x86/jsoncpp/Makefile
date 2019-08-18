@@ -5,7 +5,7 @@ TOPDIR      = $(shell pwd)
 BUILDROOT   = $(shell cd ../buildroot/build; pwd)
 TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
 DESTDIR     = $(TOPDIR)/output
-SYSROOT     = $(BUILDROOT)/output/host/usr/i686-buildroot-linux-uclibc/sysroot
+SYSROOT     = $(BUILDROOT)/output/host/usr/i686-buildroot-linux-gnu/sysroot
 
 URL     = $(shell cat $(PKGTOP)/url-jsoncpp)
 FILE    = $(DLDIR)/$(shell basename $(URL))
@@ -26,7 +26,7 @@ libjsoncpp.a:	$(OBJECTS)
 	ar crus $@ $^
 
 .cpp.o:
-	i686-buildroot-linux-uclibc-c++ -I build/include -c $<
+	i686-buildroot-linux-gnu-c++ -I build/include -c $<
 
 $(FILE):
 	@cd $(DLDIR); wget $(URL)

@@ -5,7 +5,7 @@ TOPDIR	    = $(shell pwd)
 BUILDROOT   = $(shell cd ../buildroot/build; pwd)
 TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
 DESTDIR	    = $(TOPDIR)/output
-SYSROOT	    = $(BUILDROOT)/output/host/usr/i686-buildroot-linux-uclibc/sysroot
+SYSROOT	    = $(BUILDROOT)/output/host/usr/i686-buildroot-linux-gnu/sysroot
 
 URL	= $(shell cat $(PKGTOP)/url-nfs)
 FILE	= $(DLDIR)/$(shell basename $(URL))
@@ -26,7 +26,7 @@ build/configure:    $(FILE)
 	cd build; ./setup.sh
 
 build/config.status:	build/configure
-	@cd build; export PATH=$(TOOLCHAIN):$(PATH); ./configure --host=i686-buildroot-linux-uclibc --target=i686-buildroot-linux-uclibc --prefix=/
+	@cd build; export PATH=$(TOOLCHAIN):$(PATH); ./configure --host=i686-buildroot-linux-gnu --target=i686-buildroot-linux-gnu --prefix=/
 
 install: $(DFILE)
 

@@ -2,7 +2,7 @@ TOPDIR	    = $(shell cd ..; pwd)
 BUILDROOT   = $(shell cd ../../buildroot/build; pwd)
 TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
 export PATH := $(TOOLCHAIN):$(PATH)
-CC	    = i686-buildroot-linux-uclibc-gcc
+CC	    = i686-buildroot-linux-gnu-gcc
 
 CFLAGS += -I../../libmaru -I../../../common/ffdaemon
 LDFLAGS += ../../libmaru/libmaru.a -lusb-1.0 -pthread

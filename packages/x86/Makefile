@@ -36,7 +36,8 @@ stage:
 	make -C dropbear install DESTDIR=$(STAGEDIR) prefix=/usr
 	mv $(STAGEDIR)/usr/lib/lib* $(FFLIB)
 	cp -a buildroot/build/output/target/usr/lib/libtirpc* $(FFLIB)
-	cp -a buildroot/build/output/target/lib/libuClibc-*.so $(FFLIB)
+	cp -a buildroot/build/output/target/lib/libutil* $(FFLIB)
+	cp -a buildroot/build/output/target/lib/libatomic* $(FFLIB)
 	cp buildroot/build/output/target/bin/busybox $(FFBIN)/busybox-i686
 	if [ -d $(STAGEDIR)/usr/local/bin ]; then mv $(STAGEDIR)/usr/local/bin/* $(FFBIN); fi
 	if [ -d $(STAGEDIR)/usr/local/sbin ]; then mv $(STAGEDIR)/usr/local/sbin/* $(FFBIN); fi
@@ -48,7 +49,6 @@ stage:
 		mv $$f $(FFEXEC)/$$f;\
 		ln -sv ../lib/ff/exec/ffwrap $$f;\
 	    done
-	cd $(STAGEDIR)/lib; ln -s libc.so.1 libc.so.0
 
 buildroot:	_TGT=base
 

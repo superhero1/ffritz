@@ -8,7 +8,7 @@ TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
 
 TGTLIB=$(shell cd ../../../atom/squashfs-root/lib/; pwd)
 
-CROSS_COMPILE=i686-buildroot-linux-uclibc-
+CROSS_COMPILE=i686-buildroot-linux-gnu-
 
 WARN = -Wall -Wformat=0 -Werror
 

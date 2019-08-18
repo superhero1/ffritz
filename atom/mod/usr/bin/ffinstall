@@ -8,19 +8,6 @@
 #
 export FFRITZ_HOME=/var/media/ftp/ffritz
 
-if [ -f /lib/libc.so.1 ]; then
-    UCLIB_VERSION=`readlink -f /lib/libc.so.1 | sed -e 's/.*-\([0-9]\).*/\1/'`
-elif [ -f /lib/libc.so.0 ]; then
-    UCLIB_VERSION=`readlink -f /lib/libc.so.0 | sed -e 's/.*-\([0-9]\).*/\1/'`
-else
-    UCLIB_VERSION=1
-fi
-
-REL=
-if [ $UCLIB_VERSION -gt 0 ]; then
-	REL=-${UCLIB_VERSION}
-fi
-
 DATADIR=$FFRITZ_HOME/data
 TMPDIR=$DATADIR/tmp
 BINFILE=$DATADIR/ffimage${REL}.bin
@@ -89,14 +76,8 @@ tar -x -C ${TMPDIR} -f $relfile || exit 1
 
 echo +++ Verifying compatibility
 
-if [ -r ${TMPDIR}/uclib-version ]; then
-	nver=`cat ${TMPDIR}/uclib-version`
-else
-	nver=0
-fi
-
-if [ $nver -ne ${UCLIB_VERSION} ]; then
-	echo FAILED: Expected uClibc major version ${UCLIB_VERSION}, image is for $nver
+if [ ! -r ${TMPDIR}/glibc-version ]; then
+	echo FAILED: Expected glibc, image is for uClibc
 	exit 1
 fi
 
