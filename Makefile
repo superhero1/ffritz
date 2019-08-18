@@ -19,7 +19,8 @@ SUDO	=
 #URL=http://download.avm.de/firmware//6490/36787213/FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.07.00.image
 #URL=http://download.avm.de/firmware//6490/70988975/FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.07.01.image
 #URL=https://download.avm.de/firmware/6490/59088767/FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.07.02.image
-URL=http://download.avm.de/firmware/6490/64679703/FRITZ.Box_6490_Cable-07.10.image
+#URL=http://download.avm.de/firmware/6490/64679703/FRITZ.Box_6490_Cable-07.10.image
+URL=http://download.avm.de/firmware/6591/sorry-unknown/FRITZ.Box_6591_Cable-07.04.image
 
 
 # where to store to/fetch from
