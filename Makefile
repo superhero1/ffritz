@@ -244,7 +244,7 @@ atom-brconfig:
 	@echo
 
 rebuild:
-	make -C packages base base-install
+	make -C packages/x86 base base-install
 
 help:
 	@echo 'Make targets:'
