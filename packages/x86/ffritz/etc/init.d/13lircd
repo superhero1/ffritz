@@ -16,8 +16,8 @@ mkdir -p /var/run/lirc
 chmod 777 /var/run/lirc
                        
 if [ ! -d $FFRITZ_HOME/etc/lirc ]; then
-    mkdir -p FFRITZ_HOME/etc
-    cp -ar $FFINSTDIR/etc/lirc $FFRITZ_HOME/etc
+    mkdir -p $FFRITZ_HOME/etc
+    cp -ar $FFINSTDIR/buildroot/etc/lirc $FFRITZ_HOME/etc
     chown -R ffritz:ffritz $FFRITZ_HOME/etc
 fi
 
@@ -25,12 +25,12 @@ fi
 chmod 666 /dev/ttyACM*                        
                       
 if [ ! -f $FFRITZ_HOME/lirc_options.conf ]; then
-    cp $FFINSTDIR/etc/lirc_options_dfl.conf $FFRITZ_HOME/lirc_options.conf
+    cp $FFINSTDIR/buildroot/etc/lirc_options_dfl.conf $FFRITZ_HOME/lirc_options.conf
     chown ffritz:ffritz $FFRITZ_HOME/lirc_options.conf                    
 fi                                                    
 
 if [ ! -f $FFRITZ_HOME/irexec.lircrc ]; then
-    cp $FFINSTDIR/etc/lirc/irexec.lircrc $FFRITZ_HOME/irexec.lircrc
+    cp $FFINSTDIR/buildroot/etc/lirc/irexec.lircrc $FFRITZ_HOME/irexec.lircrc
     chown ffritz:ffritz $FFRITZ_HOME/irexec.lircrc
 fi                                                    
 
