@@ -18,14 +18,16 @@
 - Statically linked busybox/telnetd for now
 - Change atom squashfs options: set xz compression, bfs export, no xattrs
 - application package must contain glibc-version file to distinct from uclibc image
-- use AVM kernel defconfig (from rootfs) for building modules
+- use AVM kernel/defconfig (from rootfs) for building modules
+- add WireGuard kernel module and tools
 
 TODO
-	- Find better way for ffnvram
-	- Redesign repository to support both 6x90 and 6591 in one tree
-	- write own update script
-	- switch_bootbank: changing via /proc/sys/urlader does not work
-	- test committed build environment
+
+- Find better way for ffnvram
+- Redesign repository to support both 6x90 and 6591 in one tree
+- write own update script
+- switch_bootbank: changing via /proc/sys/urlader does not work
+- test committed build environment
 
 Change history of application package
 =====================================

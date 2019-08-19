@@ -51,6 +51,7 @@ INSTDIRS   += ../bt/install
 INSTDIRS   += ../prtg/install 
 #INSTDIRS   += ../athtool/install 
 #INSTDIRS   += ../libdvbfi/install
+INSTDIRS   += ../wireguard/install
 
 ifeq ($(CASH),)
 CASH=$(shell ls -d ../cash/build/.. 2>/dev/null)
@@ -93,8 +94,6 @@ $(INSTDIR):
 
 modules:
 	make -C ../modules install DESTDIR=$(STAGEDIR) INSTDIR=$(STAGEDIR)
-	mkdir -p $(STAGEDIR)/lib/modules
-	mv $(STAGEDIR)/lib/*.ko $(STAGEDIR)/lib/modules
 
 $(SUBDIRS):	
 	mkdir -p ../../dl
@@ -126,7 +125,7 @@ ffimage.bin: $(BINFILES) $(ETCFILES) stage
 # which is linked to for each binary. This makes the package position independent, i.e.
 # it can be installed to /var/media/ftp, or integrated into the atom squashfs (to /usr/local).
 #
-stage: $(BINFILES) $(ETCFILES) $(INSTDIRS) modules
+stage: $(BINFILES) $(ETCFILES) $(INSTDIRS)
 	cp -a $(BINFILES) $(INSTDIR)/bin
 	cp -r $(ETCFILES) $(INSTDIR)/etc
 	cp -ar etc/openvpn $(INSTDIR)/etc
@@ -155,6 +154,9 @@ stage: $(BINFILES) $(ETCFILES) $(INSTDIRS) modules
 	    for l in `ls | xargs file | grep ELF | sed -e 's/:.*//'`; do\
 		strip $$l;\
 	    done; fi
+	# move modules
+	mkdir -p $(STAGEDIR)/lib/modules
+	mv $(STAGEDIR)/lib/*.ko $(STAGEDIR)/lib/modules
 	# shairport does not like those
 	rm -f $(INSTDIR)/bin/avahi*
 	cd $(INSTDIR)/share; ln -s ../buildroot/usr/share/terminfo .

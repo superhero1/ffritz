@@ -120,6 +120,7 @@ _INST=$(shell echo "if [ -f $(1) ]; then install -vDC $(1) $(2)/`basename $(1)`;
 ifneq ($(FILE),)
 $(FILE):
 	@cd $(DLDIR); wget $(URL)
+	if [ -r $(PKGTOP)/sha-$(PKGNAME) ]; then cd $(DLDIR); sha256sum -c $(PKGTOP)/sha-$(PKGNAME); fi
 endif
 
 ifneq ($(REPO),)
