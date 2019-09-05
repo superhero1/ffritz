@@ -23,10 +23,9 @@
 
 #define UIMG_NAME_LEN       20
 #define UIMG_NUM_PARTITIONS 20
-#define UIMG_MAGIC		
-#define IMAGE_MAGIC_VER3    (((uint32_t)'V' << 24) | ((uint32_t)'E' << 16) | ((uint32_t)'R' << 8) | ((uint32_t)'3'))
+#define UIMG_MAGIC    (((uint32_t)'V' << 24) | ((uint32_t)'E' << 16) | ((uint32_t)'R' << 8) | ((uint32_t)'3'))
 
-#define BE_TO_HOST(v)       (((((uint8_t*)&(v))[0]) << 24) | ((((uint8_t*)&(v))[1]) << 16) | ((((uint8_t*)&(v))[2]) << 8) | (((uint8_t*)&(v))[3]))
+#define BE_TO_HOST(v) (((((uint8_t*)&(v))[0]) << 24) | ((((uint8_t*)&(v))[1]) << 16) | ((((uint8_t*)&(v))[2]) << 8) | (((uint8_t*)&(v))[3]))
 
 struct uimg_head
 {

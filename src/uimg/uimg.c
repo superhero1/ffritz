@@ -85,10 +85,13 @@ int main (int argc, char **argv)
 		}
 	}
 
-	fname = argv[optind];
-
 	if (mode != unpack)
 		exit (1);
+
+	if (optind >= argc)
+		exit (1);
+
+	fname = argv[optind];
 
 	if (!prefix)
 	{
@@ -102,8 +105,6 @@ int main (int argc, char **argv)
 			}
 		}
 	}
-
-	printf ("%s %s\n", fname, prefix);
 
 	in_fd = open (fname, O_RDONLY);
 	if (in_fd == 0)
