@@ -17,7 +17,11 @@ all:
 config:
 	make -C build ARCH=x86 CROSS_COMPILE=i686-buildroot-linux-gnu- menuconfig savedefconfig
 
+bzImage:
+	make -C build ARCH=x86 CROSS_COMPILE=i686-buildroot-linux-gnu- bzImage
+
 include ../../package.mk
 
 test:
 	make -C build ARCH=x86 CROSS_COMPILE=i686-buildroot-linux-gnu- puma7-crash-kernel_defconfig
+

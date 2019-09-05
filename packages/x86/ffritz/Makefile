@@ -133,6 +133,9 @@ stage: $(BINFILES) $(ETCFILES) $(INSTDIRS)
 	sed -i -e 's@^rundir=.*@rundir=/var/media/ftp/ffritz@' $(INSTDIR)/etc/ff_atom_startup
 	cd $(BRCOPY)/usr/lib; ln -s ../../lib/libutil* . || true
 	mv $(INSTDIR)/bin/ffwrap $(BRCOPY)/usr/bin
+	# move modules
+	mkdir -p $(STAGEDIR)/lib/modules
+	mv $(STAGEDIR)/lib/*.ko $(STAGEDIR)/lib/modules
 	# Move our binaries to buildroot
 	@cd $(INSTDIR)/bin; \
 	    for f in `ls | xargs file | grep ELF | grep -v cash_wrap.so | sed -e 's/:.*//'`; do\
@@ -155,9 +158,6 @@ stage: $(BINFILES) $(ETCFILES) $(INSTDIRS)
 	    for l in `ls | xargs file | grep ELF | sed -e 's/:.*//'`; do\
 		strip $$l;\
 	    done; fi
-	# move modules
-	mkdir -p $(STAGEDIR)/lib/modules
-	mv $(STAGEDIR)/lib/*.ko $(STAGEDIR)/lib/modules
 	# shairport does not like those
 	rm -f $(INSTDIR)/bin/avahi*
 	cd $(INSTDIR)/share; ln -s ../buildroot/usr/share/terminfo .

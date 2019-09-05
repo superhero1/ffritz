@@ -1,45 +1,45 @@
 diff --git a/example/a2dp_sink_demo.c b/example/a2dp_sink_demo.c
-index 95409ef..26c932d 100644
+index d8e7ae9b8..3334af52c 100644
 --- a/example/a2dp_sink_demo.c
 +++ b/example/a2dp_sink_demo.c
-@@ -78,7 +78,7 @@
+@@ -79,7 +79,7 @@
  
  #ifdef HAVE_POSIX_FILE_IO
  #include "wav_util.h"
--#define STORE_SBC_TO_SBC_FILE 
-+#undef STORE_SBC_TO_SBC_FILE 
- #define STORE_SBC_TO_WAV_FILE 
+-#define STORE_TO_SBC_FILE 
++#undef STORE_TO_SBC_FILE 
+ #define STORE_TO_WAV_FILE 
  #endif
  
-@@ -122,6 +122,8 @@ static FILE * sbc_file;
- static char * sbc_filename = "avdtp_sink.sbc";
- #endif
+@@ -126,6 +126,8 @@ static char * sbc_filename = "avdtp_sink.sbc";
+ 
+ static int volume_percentage = 0; 
  
 +const char *sink_name = "A2DP Sink Demo 00:00:00:00:00:00";
 +
  typedef struct {
      // bitmaps
      uint8_t sampling_frequency_bitmap;
-@@ -238,7 +240,7 @@ static int a2dp_and_avrcp_setup(void){
-     avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10001, AVRCP_BROWSING_ENABLED, 1, NULL, NULL);
-     sdp_register_service(sdp_avrcp_controller_service_buffer);
-     
+@@ -271,7 +273,7 @@ static int a2dp_and_avrcp_setup(void){
+     avrcp_target_create_sdp_record(sdp_avrcp_target_service_buffer, 0x10003, target_supported_features, NULL, NULL);
+     sdp_register_service(sdp_avrcp_target_service_buffer);
+ 
 -    gap_set_local_name("A2DP Sink Demo 00:00:00:00:00:00");
 +    gap_set_local_name(sink_name);
      gap_discoverable_control(1);
      gap_set_class_of_device(0x200408);
  
-@@ -711,7 +713,9 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
+@@ -885,7 +887,9 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
+                 break;
              }
-             printf("A2DP Sink demo: streaming connection is established, address %s, a2dp cid 0x%02X, local_seid %d\n", bd_addr_to_str(address), a2dp_cid, local_seid);
              
 +#ifdef HAVE_BTSTACK_STDIN
              memcpy(device_addr, address, 6);
 +#endif
- 
-             local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
-             a2dp_sink_connected = 1;
-@@ -952,6 +956,15 @@ int btstack_main(int argc, const char * argv[]){
+             a2dp_local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
+             printf("A2DP  Sink      : Streaming connection is established, address %s, cid 0x%02X, local seid %d\n", bd_addr_to_str(address), a2dp_cid, a2dp_local_seid);
+             break;
+@@ -1119,6 +1123,15 @@ int btstack_main(int argc, const char * argv[]){
      UNUSED(argc);
      (void)argv;
  
@@ -56,7 +56,7 @@ index 95409ef..26c932d 100644
  
  #ifdef HAVE_BTSTACK_STDIN
 diff --git a/platform/libusb/hci_transport_h2_libusb.c b/platform/libusb/hci_transport_h2_libusb.c
-index 7a289e7..3b24bf4 100644
+index fa54a0f74..8aae94ea6 100644
 --- a/platform/libusb/hci_transport_h2_libusb.c
 +++ b/platform/libusb/hci_transport_h2_libusb.c
 @@ -85,6 +85,14 @@
@@ -75,7 +75,7 @@ index 7a289e7..3b24bf4 100644
  // Bluetooth USB Transport Alternate Settings:
  //
 diff --git a/platform/posix/btstack_link_key_db_fs.c b/platform/posix/btstack_link_key_db_fs.c
-index ade3c52..96a0ab5 100644
+index 0c70b3e45..75c7febba 100644
 --- a/platform/posix/btstack_link_key_db_fs.c
 +++ b/platform/posix/btstack_link_key_db_fs.c
 @@ -54,7 +54,7 @@
@@ -88,7 +88,7 @@ index ade3c52..96a0ab5 100644
  #endif
  
 diff --git a/port/libusb/Makefile b/port/libusb/Makefile
-index 085b076..2d8e416 100644
+index a5f4c1372..3d61cb270 100644
 --- a/port/libusb/Makefile
 +++ b/port/libusb/Makefile
 @@ -1,3 +1,9 @@
@@ -99,10 +99,10 @@ index 085b076..2d8e416 100644
 +CC=i686-buildroot-linux-gnu-gcc
 +
  # Makefile for libusb based examples
- BTSTACK_ROOT = ../..
+ BTSTACK_ROOT ?= ../..
  
-@@ -27,8 +33,10 @@ VPATH += ${BTSTACK_ROOT}/platform/libusb
- VPATH += ${BTSTACK_ROOT}/chipset/csr
+@@ -29,8 +35,10 @@ VPATH += ${BTSTACK_ROOT}/chipset/csr
+ VPATH += ${BTSTACK_ROOT}/chipset/zephyr
  
  # use pkg-config
 -CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
@@ -112,10 +112,10 @@ index 085b076..2d8e416 100644
 +CFLAGS  += -I$(SYSROOT)/usr/include/libusb-1.0
 +LDFLAGS += -L$(SYSROOT)/usr/lib -lusb-1.0
  
- EXAMPLES += csr_set_bd_addr
- 
+ EXAMPLES = ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY} ${EXAMPLES_LE_ONLY} ${EXAMPLES_DUAL_MODE}
+ EXAMPLES += pan_lwip_http_server
 diff --git a/port/libusb/btstack_config.h b/port/libusb/btstack_config.h
-index 66d77ad..5cd739c 100644
+index be90d576f..ffd9e61a1 100644
 --- a/port/libusb/btstack_config.h
 +++ b/port/libusb/btstack_config.h
 @@ -8,7 +8,7 @@

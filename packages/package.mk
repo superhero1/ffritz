@@ -133,7 +133,7 @@ build:	$(FILE)
 	@rm -rf build
 	@mkdir -p build
 	@cd build; tar xf $(FILE) --strip-components=1
-	@cd build; for p in $(PATCHES); do echo Applying $$p ..; patch -p1 < ../$$p; done
+	@cd build; for p in $(PATCHES); do echo Applying $$p ..; patch -p1 < ../$$p || exit 1; done
 	cd build; $(AUTORECONF)
 else
 build:	$(REPO)
@@ -141,7 +141,7 @@ build:	$(REPO)
 	@git clone $(REPO) build
 	@cd build; git submodule update --init
 	@cd build; git checkout $(COMMIT)
-	@cd build; for p in $(PATCHES); do echo Applying $$p ..; patch -p1 < ../$$p; done
+	@cd build; for p in $(PATCHES); do echo Applying $$p ..; patch -p1 < ../$$p || exit 1; done
 	cd build; $(AUTORECONF)
 endif
 
