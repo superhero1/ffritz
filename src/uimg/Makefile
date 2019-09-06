@@ -2,4 +2,7 @@
 all: uimg
 
 uimg:	uimg.c uimg.h
-	cc -o uimg uimg.c
+	cc -O2 -o uimg uimg.c
+
+clean:
+	rm -f uimg

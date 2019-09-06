@@ -35,9 +35,9 @@ struct uimg_head
 	uint32_t unknown2;
 	uint32_t unknown3_ver;
 	uint32_t size;
-	uint32_t unknown4;
-	uint32_t csum1;
-	uint32_t csum2;
+	uint32_t num_part;
+	uint32_t head_crc; /* CRC32 of head with head_crc = 0 */
+	uint32_t data_crc; /* CRC32 of all data partitions without head */
 	uint32_t part_csum[UIMG_NUM_PARTITIONS];
 	uint32_t part_size[UIMG_NUM_PARTITIONS];
 	uint8_t  part_dev[UIMG_NUM_PARTITIONS];
