@@ -1,10 +1,11 @@
 --- orig/etc/profile	2018-09-20 12:46:36.000000000 +0200
 +++ squashfs-root/etc/profile	2018-10-28 22:31:14.617271000 +0100
-@@ -6,6 +6,8 @@
+@@ -6,6 +6,9 @@
  ## Set max-Stacksize to 512kB for all new sub-shell
  ulimit -s 512
  
 +PATH=$PATH:/sbin:/usr/sbin:/usr/local/bin
++TERMINFO=/usr/local/lib/terminfo
 +
  ####################################################################
  if [ "$CONFIG_PRODUKT" = "Fritz_Box_Profi" ] ; then

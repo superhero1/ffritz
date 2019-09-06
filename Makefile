@@ -11,25 +11,18 @@ SUDO	=
 ################################################################################
 #
 # The original firmware tarball URL
+# None yet, labor image:
+# https://avm.de/fileadmin/user_upload/DE/Labor/Download/fritzbox-labor_6591-71081.zip
 #
-# 6590:
-#URL=http://download.avm.de/firmware/6590/96980342/FRITZ.Box_6590_Cable.de-en-es-it-fr-pl.148.07.00.image
-#
-# 6490:
-#URL=http://download.avm.de/firmware//6490/36787213/FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.07.00.image
-#URL=http://download.avm.de/firmware//6490/70988975/FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.07.01.image
-#URL=https://download.avm.de/firmware/6490/59088767/FRITZ.Box_6490_Cable.de-en-es-it-fr-pl.141.07.02.image
-#URL=http://download.avm.de/firmware/6490/64679703/FRITZ.Box_6490_Cable-07.10.image
-URL=http://download.avm.de/firmware/6591/sorry-unknown/FRITZ.Box_6591_Cable-07.04.image
-
+#URL=
 
 # where to store to/fetch from
 #
-ORIG=$(TOPDIR)/../$(shell basename $(URL))
+#ORIG=$(TOPDIR)/../$(shell basename $(URL))
 
 # for explicit image path (e.g. Labor)
 #
-ORIG=$(TOPDIR)/../FRITZ.Box_6591_Cable-07.04.image
+ORIG=$(TOPDIR)/../FRITZ.Box_6591_Cable-07.08-71081-LabBETA.image
 
 # Keep original rootfs for diff?
 # sudo dirdiff arm/orig/ arm/squashfs-root/
@@ -103,6 +96,14 @@ $(FFRITZ_ARM_PACKAGE):
 	wget ftp://ftp.ffesh.de/pub/ffritz/arm/$(shell basename $(FFRITZ_ARM_PACKAGE)) -O $(FFRITZ_ARM_PACKAGE) || true
 endif
 
+src/uimg/uimg:
+	@make -C src/uimg
+
+tmp/uimage:	$(ORIG) src/uimg/uimg
+	@mkdir -p tmp/uimage
+	@cd tmp/uimage; tar xf $(ORIG)  
+	@cd tmp/uimage; $(TOPDIR)/src/uimg/uimg -u -n part var/firmware-update.uimg
+
 ###############################################################################################
 ## Unpack, patch and repack ARM FS
 #
@@ -112,9 +113,9 @@ ARM_PATCHES += rc.tail.patch
 
 ARM_PATCHST=$(ARM_PATCHES:%=arm/.applied.%)
 
-tmp/arm/filesystem.image: $(ORIG)
+tmp/arm/filesystem.image: tmp/uimage
 	@mkdir -p tmp/arm
-	@cd tmp/arm; tar xf $(ORIG) ./var/remote/var/tmp/filesystem.image --strip-components=5
+	@cd tmp/arm; ln -s ../uimage/part_09_ARM_ROOTFS.bin filesystem.image
 
 arm/squashfs-root:  tmp/arm/filesystem.image 
 	@if [ ! -d arm/squashfs-root ]; then cd arm; $(SUDO) $(HOSTTOOLS)/unsquashfs4-avm-be $(TOPDIR)/tmp/arm/filesystem.image; fi
@@ -159,9 +160,9 @@ ATOM_PATCHES = 50-udev-default.patch profile.patch rc.tail.patch
 
 ATOM_PATCHST=$(ATOM_PATCHES:%=atom/.applied.%)
 
-tmp/atom/filesystem.image: $(ORIG)
+tmp/atom/filesystem.image: tmp/uimage
 	@mkdir -p tmp/atom
-	@cd tmp/atom; tar xf $(ORIG) ./var/remote/var/tmp/x86/filesystem.image --strip-components=6
+	@cd tmp/atom; ln -s ../uimage/part_03_ATOM_ROOTFS.bin filesystem.image
 
 atom/squashfs-root:  tmp/atom/filesystem.image
 	@if [ ! -d atom/squashfs-root ]; then cd atom; $(SUDO) unsquashfs $(TOPDIR)/tmp/atom/filesystem.image; fi
@@ -198,11 +199,15 @@ release:
 $(RELDIR)/$(FWFILE): atomfs $(RELDIR) 
 	@rm -rf $(RELDIR)/var
 	@cd $(RELDIR); tar xf $(ORIG)
-	@echo "PACK   $(RELDIR)/$(FWFILE)"
-#	@cp arm/filesystem.image $(RELDIR)/var/remote/var/tmp/filesystem.image
+#	@mkdir -p $(RELDIR)/var/remote/var/tmp/x86/
+#	@cp -vf arm/filesystem.image tmp/uimage/*ARM_ROOTFS.bin
 	@rm -f $(RELDIR)/var/remote/var/tmp/filesystem.image
 	@cp atom/mod/usr/bin/switch_bootbank $(RELDIR)/var
-	@cp atom/filesystem.image $(RELDIR)/var/remote/var/tmp/x86/filesystem.image
+	@cp -f atom/filesystem.image tmp/uimage/*ATOM_ROOTFS.bin
+#	@cp atom/filesystem.image $(RELDIR)/var/remote/var/tmp/x86/filesystem.image
+	@echo "PACK   firmware-update.uimg"
+	@$(TOPDIR)/src/uimg/uimg -p -n tmp/uimage/part $(RELDIR)/var/firmware-update.uimg
+	@echo "PACK   $(RELDIR)/$(FWFILE)"
 	@cd $(RELDIR); $(TAR) cf $(FWFILE) var
 	@rm -rf $(RELDIR)/var
 	@echo

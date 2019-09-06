@@ -16,49 +16,85 @@ else
 	current=0
 	linux_fs_start=1
 	this=/dev/mmcblk0p3
+	this_gwfs=/dev/mmcblk0p6
 	other=/dev/mmcblk0p9
+	other_gwfs=/dev/mmcblk0p12
     else
 	current=1
 	linux_fs_start=0
 	this=/dev/mmcblk0p9
+	this_gwfs=/dev/mmcblk0p12
 	other=/dev/mmcblk0p3
+	other_gwfs=/dev/mmcblk0p6
     fi
 fi
 
+tmp=/tmp/verinfo
+mkdir -p $tmp
+cd $tmp
+
 echo "SELECTED boot bank        $current"
 
-if [ -f /etc/version ]; then
+tar xf $this_gwfs ./var/content >/dev/null 2>&1
+
+if [ -f var/content ]; then
 	mod=
 	if [ -d /usr/lib/ff ]; then
 		mod=modified
 	fi
-	eval `grep CONFIG_VERSION_MAJOR= /etc/version`
-	eval `grep FIRMWARE_VERSION= /etc/version`
-	echo "RUNNING firmware version: $FIRMWARE_VERSION  [$this]  $mod"
+	eval `grep Version= var/content`
+	eval `grep Type= var/content`
+	echo "RUNNING firmware version: $Version $Type  [$this]  $mod"
+elif [ -f /etc/version ]; then
+        mod=
+        if [ -d /usr/lib/ff ]; then
+                mod=modified
+        fi
+	FIRMWARE_VERSION=unknown
+        eval `grep FIRMWARE_VERSION= /etc/version`
+        echo "BACKUP firmware version:  $FIRMWARE_VERSION  [$other]  $mod"
 else
 	echo "RUNNING firmware version: unknown  [$this]"
 fi
+rm -f var/content
 
 mount $other /mnt >/dev/null 2>&1
-if [ -f /mnt/etc/version ]; then
+tar xf $other_gwfs ./var/content >/dev/null 2>&1
+
+if [ -f var/content ]; then
 	mod=
 	if [ -d /mnt/usr/lib/ff ]; then
 		mod=modified
 	fi
-	eval `grep CONFIG_VERSION_MAJOR= /mnt/etc/version`
-	eval `grep FIRMWARE_VERSION= /mnt/etc/version`
-	echo "BACKUP firmware version:  $FIRMWARE_VERSION  [$other]  $mod"
+	eval `grep Version= var/content`
+	eval `grep Type= var/content`
+	echo "BACKUP firmware version: $Version $Type  [$this]  $mod"
+elif [ -f /etc/version ]; then
+        mod=
+        if [ -d /mnt/usr/lib/ff ]; then
+                mod=modified
+        fi
+	FIRMWARE_VERSION=unknown
+        eval `grep FIRMWARE_VERSION= /mnt/etc/version`
+        echo "BACKUP firmware version:  $FIRMWARE_VERSION  [$other]  $mod"
 else
-	echo "BACKUP firmware version:  unknown  [$other]"
+	echo "BACKUP firmware version: unknown  [$other]"
 fi
 umount /mnt >/dev/null 2>&1
 
 if [ "x$1" = "x-e" ]; then
-	echo linux_fs_start ${linux_fs_start} >${CONFIG_ENVIRONMENT_PATH}/environment
-	echo switched to boot bank $linux_fs_start
+	echo Sorry, not yet supported
+	echo To switch bank AND reset call
+	echo
+	echo /bin/aicmd pumaglued uimg switchandreboot
+#	echo linux_fs_start ${linux_fs_start} >${CONFIG_ENVIRONMENT_PATH}/environment
+#	echo switched to boot bank $linux_fs_start
 else
 	echo
 	echo Execute the following command, followed by /sbin/reboot, to flip boot bank:
 	echo
-	echo " echo linux_fs_start ${linux_fs_start} >${CONFIG_ENVIRONMENT_PATH}/environment"
+	echo /bin/aicmd pumaglued uimg switchandreboot
+#	echo " echo linux_fs_start ${linux_fs_start} >${CONFIG_ENVIRONMENT_PATH}/environment"
 fi
+
+rm -rf $tmp
