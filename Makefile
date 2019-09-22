@@ -3,6 +3,7 @@ TOPDIR	= $(shell pwd)
 VERSION = $(shell cat version)
 ARM_VER = $(shell cat packages/arm/ffritz/version)
 HOST    = $(shell uname -m)
+DLDIR   = $(TOPDIR)/packages/dl
 SUDO	=
 
 
@@ -10,19 +11,13 @@ SUDO	=
 # Configuration
 ################################################################################
 #
-# The original firmware tarball URL
-# None yet, labor image:
+# The original firmware .image/.zip URL
+# (or directly put the file to packages/dl)
+#
+# Labor image:
 # https://avm.de/fileadmin/user_upload/DE/Labor/Download/fritzbox-labor_6591-71081.zip
 #
-#URL=
-
-# where to store to/fetch from
-#
-#ORIG=$(TOPDIR)/../$(shell basename $(URL))
-
-# for explicit image path (e.g. Labor)
-#
-ORIG=$(TOPDIR)/../FRITZ.Box_6591_Cable-07.08-71081-LabBETA.image
+URL=https://avm.de/fileadmin/user_upload/DE/Labor/Download/fritzbox-labor_6591-71081.zip
 
 # Keep original rootfs for diff?
 # sudo dirdiff arm/orig/ arm/squashfs-root/
@@ -36,7 +31,6 @@ KEEP_ORIG = 1
 #FFRITZ_ARM_PACKAGE=DOWNLOAD
 #FFRITZ_ARM_PACKAGE=../ffritz-arm-0.7-fos7.tar.gz
 
-
 ## Host tools (unsquashfs4-lzma-avm-be, mksquashfs4-lzma-avm-be) can either be built
 # (using squashfstools-be target), or try the pre-compiled binaries
 #
@@ -45,6 +39,9 @@ HOSTTOOLS=$(TOPDIR)/host/$(HOST)
 
 ###############################################################################################
 
+all: release
+
+###############################################################################################
 RELDIR  = release$(VERSION)
 
 ARM_MODFILES = $(shell find arm/mod/ -type f -o -type d)
@@ -52,11 +49,32 @@ ATOM_MODFILES = $(shell find atom/mod/ -type f -o -type d)
 
 ###############################################################################################
 ###############################################################################################
+
+ITYPE=$(shell echo $(URL) | sed -e 's/.*\.//')
+DLIMAGE=$(DLDIR)/$(shell basename $(URL))
+
+ifeq ($(ITYPE),zip)
+# Fetch and extract labor zip
+INAME=$(shell mkdir -p $(DLDIR); if [ ! -f $(DLIMAGE) ]; then wget -O $(DLIMAGE) $(URL); fi; unzip -l $(DLIMAGE) | grep image | sed -e 's/.*\(FRITZ.*.image\)/\1/')
+ifeq ($(INAME),)
+error $(URL) is not a valid firmware zip
+endif
+ORIG=$(DLDIR)/$(INAME)
+
+$(ORIG):	$(DLIMAGE)
+	cd $(DLDIR); unzip -j $(DLIMAGE) $(INAME)
+
+else
+# fetch update image
+ORIG=$(DLDIR)/$(shell basename $(URL))
+
+$(ORIG):
+	mkdir -p $(DLDIR)
+	wget -O $(ORIG) $(URL)
+endif
+
 FWVER=$(shell echo $(ORIG) | sed -e 's/.*\([0-9]*.\.[0-9]*\).*\.image/\1/')
-
 MODEL=$(shell echo $(ORIG) | sed -e 's/.*_\(....\)_Cable.*/\1/')
-#FWVER=07.00
-
 FWNUM=$(subst .,,$(FWVER))
 
 ifeq ($(FWVER),)
@@ -84,11 +102,6 @@ endif
 ifeq ($(RSYNC),)
 $(error rsync missing, please install)
 endif
-
-all: release
-
-$(ORIG):
-	wget $(URL) -O $(ORIG)
 
 
 ifneq ($(FFRITZ_ARM_PACKAGE),)
