@@ -62,7 +62,8 @@ endif
 ORIG=$(DLDIR)/$(INAME)
 
 $(ORIG):	$(DLIMAGE)
-	cd $(DLDIR); unzip -j $(DLIMAGE) $(INAME)
+	cd $(DLDIR); unzip -oj $(DLIMAGE) $(INAME)
+	touch $(ORIG)
 
 else
 # fetch update image
