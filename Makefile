@@ -129,7 +129,7 @@ ARM_PATCHST=$(ARM_PATCHES:%=arm/.applied.%)
 
 tmp/arm/filesystem.image: tmp/uimage
 	@mkdir -p tmp/arm
-	@cd tmp/arm; ln -s ../uimage/part_09_ARM_ROOTFS.bin filesystem.image
+	@cd tmp/arm; ln -sf ../uimage/part_09_ARM_ROOTFS.bin filesystem.image
 
 arm/squashfs-root:  tmp/arm/filesystem.image 
 	@if [ ! -d arm/squashfs-root ]; then cd arm; $(SUDO) $(HOSTTOOLS)/unsquashfs4-avm-be $(TOPDIR)/tmp/arm/filesystem.image; fi
@@ -176,7 +176,7 @@ ATOM_PATCHST=$(ATOM_PATCHES:%=atom/.applied.%)
 
 tmp/atom/filesystem.image: tmp/uimage
 	@mkdir -p tmp/atom
-	@cd tmp/atom; ln -s ../uimage/part_03_ATOM_ROOTFS.bin filesystem.image
+	@cd tmp/atom; ln -sf ../uimage/part_03_ATOM_ROOTFS.bin filesystem.image
 
 atom/squashfs-root:  tmp/atom/filesystem.image
 	@if [ ! -d atom/squashfs-root ]; then cd atom; $(SUDO) unsquashfs $(TOPDIR)/tmp/atom/filesystem.image; fi

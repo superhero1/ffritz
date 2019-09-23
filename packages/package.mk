@@ -58,7 +58,7 @@ ifneq ($(URL),)
 FILE	= $(DLDIR)/$(shell basename $(URL))
 else
 ifneq ($(GIT),)
-REPO	= $(DLDIR)/$(PKGNAME)
+REPO	= $(DLDIR)/$(PKGNAME)_git
 COMMIT  = $(shell test -r $(PKGTOP)/commit-$(PKGNAME) && cat $(PKGTOP)/commit-$(PKGNAME))
 ifeq ($(COMMIT),)
 COMMIT	= HEAD
