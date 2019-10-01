@@ -8,19 +8,23 @@ INSTALLATION ON 6591
 
 Initial setup:
 --------------
-- Find some way to get shell access. There is no known method so far.
-- Get the latest firmware update image (named FRITZ.Box_6591_Cable ...).
-  Make sure that the ORIG definition in Makefile points to it
+- Find some way to get shell access. There is no known software method so far.
+  See also: https://www.ip-phone-forum.de/threads/fb-6591-verschiedenes.303332/post-2342169
+- Change the URL definition in the Makefile for a specivic AVM version to use.
 - A simple make should now generate a release image containing basic tools
   for login (as for 6x90).
 
-Update from shell
------------------
-- **
-- ** WARNING:
-- **  THERE IS NO KNOWN MATHOD TO RECOVER FROM BOOTLOADER/EVA 
-- **  ONCE YOU HAVE BRICKED YOUR BOX 
-- **
+Update from Atom shell
+----------------------
+This is for unbranded devices. Further steps might be needed to "unbrand"
+the Box (?).
+
+**
+** WARNING:
+**  THERE IS NO KNOWN SOFTWARE METHOD TO RECOVER FROM BOOTLOADER/EVA 
+**  ONCE YOU HAVE BRICKED YOUR BOX
+**
+
 - Copy the release image to NAS folder and run these commands:
 ~~~
         cd /var/media/ftp

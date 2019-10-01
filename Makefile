@@ -17,7 +17,8 @@ SUDO	=
 # Labor image:
 # https://avm.de/fileadmin/user_upload/DE/Labor/Download/fritzbox-labor_6591-71081.zip
 #
-URL=https://avm.de/fileadmin/user_upload/DE/Labor/Download/fritzbox-labor_6591-71081.zip
+# URL=https://avm.de/fileadmin/user_upload/DE/Labor/Download/fritzbox-labor_6591-71081.zip
+URL=ftp://jason:274jgjg85hh36@update.avm.de/labor/6591/labor_71700/FRITZ.Box_6591_Cable-07.08-71700-LabBETA.image
 
 # Keep original rootfs for diff?
 # sudo dirdiff arm/orig/ arm/squashfs-root/
@@ -123,7 +124,7 @@ tmp/uimage:	$(ORIG) src/uimg/uimg
 #
 armfs:	arm/filesystem.image
 
-ARM_PATCHES += rc.tail.patch
+ARM_PATCHES += oem.patch
 
 ARM_PATCHST=$(ARM_PATCHES:%=arm/.applied.%)
 
@@ -170,7 +171,7 @@ packages/arm/ffritz/ffritz-arm-$(ARM_VER).tar.gz:
 #
 atomfs:	atom/filesystem.image
 
-ATOM_PATCHES = 50-udev-default.patch profile.patch rc.tail.patch
+ATOM_PATCHES = 50-udev-default.patch profile.patch rc.tail.patch oem.patch
 
 ATOM_PATCHST=$(ATOM_PATCHES:%=atom/.applied.%)
 
@@ -209,16 +210,13 @@ release:
 	fakeroot make clean
 	fakeroot make $(RELDIR)/$(FWFILE)
 	
-# no armfs on 6591 yet
-$(RELDIR)/$(FWFILE): atomfs $(RELDIR) 
+$(RELDIR)/$(FWFILE): atomfs armfs $(RELDIR) 
 	@rm -rf $(RELDIR)/var
 	@cd $(RELDIR); tar xf $(ORIG)
-#	@mkdir -p $(RELDIR)/var/remote/var/tmp/x86/
-#	@cp -vf arm/filesystem.image tmp/uimage/*ARM_ROOTFS.bin
+	@cp -vf arm/filesystem.image tmp/uimage/*ARM_ROOTFS.bin
 	@rm -f $(RELDIR)/var/remote/var/tmp/filesystem.image
 	@cp atom/mod/usr/bin/switch_bootbank $(RELDIR)/var
 	@cp -f atom/filesystem.image tmp/uimage/*ATOM_ROOTFS.bin
-#	@cp atom/filesystem.image $(RELDIR)/var/remote/var/tmp/x86/filesystem.image
 	@echo "PACK   firmware-update.uimg"
 	@$(TOPDIR)/src/uimg/uimg -p -n tmp/uimage/part $(RELDIR)/var/firmware-update.uimg
 	@echo "PACK   $(RELDIR)/$(FWFILE)"
