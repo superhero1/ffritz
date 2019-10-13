@@ -18,7 +18,8 @@ SUDO	=
 # https://avm.de/fileadmin/user_upload/DE/Labor/Download/fritzbox-labor_6591-71081.zip
 #
 # URL=https://avm.de/fileadmin/user_upload/DE/Labor/Download/fritzbox-labor_6591-71081.zip
-URL=ftp://jason:274jgjg85hh36@update.avm.de/labor/6591/labor_71700/FRITZ.Box_6591_Cable-07.08-71700-LabBETA.image
+#URL=ftp://jason:274jgjg85hh36@update.avm.de/labor/6591/labor_71700/FRITZ.Box_6591_Cable-07.08-71700-LabBETA.image
+URL=ftp://jason:274jgjg85hh36@update.avm.de/labor/6591/labor_72169/FRITZ.Box_6591_Cable-07.08-72169-LabBETA.image
 
 # Keep original rootfs for diff?
 # sudo dirdiff arm/orig/ arm/squashfs-root/
@@ -76,6 +77,7 @@ $(ORIG):
 endif
 
 FWVER=$(shell echo $(ORIG) | sed -e 's/.*\([0-9]*.\.[0-9]*\).*\.image/\1/')
+BETA=$(shell echo $(ORIG) | sed -e 's/.*-\([0-9]*\)-LabBETA.*/-\1/')
 MODEL=$(shell echo $(ORIG) | sed -e 's/.*_\(....\)_Cable.*/\1/')
 FWNUM=$(subst .,,$(FWVER))
 
@@ -204,7 +206,7 @@ atom/filesystem.image: atom/.applied.fs
 #.PHONY:		$(RELDIR)
 
 ###############################################################################################
-FWFILE  = fb$(MODEL)_$(FWVER)-$(VERSION).tar
+FWFILE  = fb$(MODEL)_$(FWVER)$(BETA)-$(VERSION).tar
 
 release:
 	fakeroot make clean

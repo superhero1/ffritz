@@ -1,5 +1,5 @@
 --- orig/etc/init.d/rc.conf	2019-09-18 11:30:27.000000000 -0400
-+++ squashfs-root/etc/init.d/rc.conf	2019-10-01 05:50:08.821742271 -0400
++++ squashfs-root/etc/init.d/rc.conf	2019-10-13 02:53:05.282235704 -0400
 @@ -392,15 +392,17 @@
  ##########################################################################################
  ## OEM Ermitteln
@@ -25,4 +25,31 @@
 +#fi
  export OEM_DEFAULT_INDEX
  export OEM
+ ##########################################################################################
+@@ -409,16 +411,16 @@
+ ##########################################################################################
+ ## retail
+ ##########################################################################################
+-if [ "$CONFIG_RETAIL" = "y" ] ; then
+-testretail=`grep DMC ${CONFIG_ENVIRONMENT}`
+-testretail=`echo ${testretail##DMC} | tr -d ' '`
+-for i in `echo ${testretail} | tr ',' ' '` ; do
+-case $i in
+-RTL=y) export CONFIG_RETAIL="y"; break; ;;
+-RTL=n) export CONFIG_RETAIL="n"; break; ;;
+-esac;
+-done
+-fi
++#if [ "$CONFIG_RETAIL" = "y" ] ; then
++#testretail=`grep DMC ${CONFIG_ENVIRONMENT}`
++#testretail=`echo ${testretail##DMC} | tr -d ' '`
++#for i in `echo ${testretail} | tr ',' ' '` ; do
++#case $i in
++#RTL=y) export CONFIG_RETAIL="y"; break; ;;
++#RTL=n) export CONFIG_RETAIL="n"; break; ;;
++#esac;
++#done
++#fi
+ ##########################################################################################
+ ## Webguipass
  ##########################################################################################
