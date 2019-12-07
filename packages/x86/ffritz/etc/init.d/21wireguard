@@ -1,0 +1,37 @@
+#!/bin/sh
+#        
+# wireguard startup file
+#                   
+. /usr/local/etc/ffritz-env.sh || exit 1
+
+WGDIR=$NVRAM/etc/wireguard
+
+if [ "x$1" = "xstop" ]; then
+	$FFINSTDIR/bin/ffdaemon -K wgforward
+	$FFINSTDIR/bin/wg-quick down $WGDIR/wg0.conf
+	exit 0
+fi
+
+if [ ! -f $WGDIR/wg0.conf ]; then
+	echo WireGuard not started, no config file
+	exit 0
+fi
+
+module=$FFINSTDIR/lib/modules/`uname -r`/wireguard.ko
+
+if [ ! -r $module ]; then 
+	echo $module not present
+	exit 1
+fi
+
+lanip=169.254.1.1
+# lanip=`/sbin/ifconfig lan|grep 'inet addr:'|sed -e 's/.*inet addr:\(.*\) B.*/\1/'`
+test -z $lanip && exit 1
+
+insmod $module
+
+# run pcplisten periodically to add/renew a forward rule to wireguard
+#
+ffdaemon -i 90 -N wgforward pcplisten udp $lanip 51820 100 wg
+
+$FFINSTDIR/bin/wg-quick up $WGDIR/wg0.conf

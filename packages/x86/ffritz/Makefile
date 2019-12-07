@@ -52,7 +52,8 @@ INSTDIRS   += ../bt/install
 INSTDIRS   += ../prtg/install 
 #INSTDIRS   += ../athtool/install 
 #INSTDIRS   += ../libdvbfi/install
-INSTDIRS   += ../wireguard/install
+#INSTDIRS   += ../wireguard/install
+INSTDIRS   += ../modules/install
 
 ifeq ($(CASH),)
 CASH=$(shell ls -d ../cash/build/.. 2>/dev/null)
@@ -93,9 +94,6 @@ $(INSTDIR):
 	cd $(BRCOPY); tar xf $(BR_TGT)/../images/rootfs.tar 
 	cd $(INSTDIR); ln -s buildroot/usr/lib .
 
-modules:
-	make -C ../modules install DESTDIR=$(STAGEDIR) INSTDIR=$(STAGEDIR)
-
 $(SUBDIRS):	
 	mkdir -p ../../dl
 	make -C $@
@@ -133,9 +131,6 @@ stage: $(BINFILES) $(ETCFILES) $(INSTDIRS)
 	sed -i -e 's@^rundir=.*@rundir=/var/media/ftp/ffritz@' $(INSTDIR)/etc/ff_atom_startup
 	cd $(BRCOPY)/usr/lib; ln -s ../../lib/libutil* . || true
 	mv $(INSTDIR)/bin/ffwrap $(BRCOPY)/usr/bin
-	# move modules
-	mkdir -p $(STAGEDIR)/lib/modules
-	mv $(STAGEDIR)/lib/*.ko $(STAGEDIR)/lib/modules
 	# Move our binaries to buildroot
 	@cd $(INSTDIR)/bin; \
 	    for f in `ls | xargs file | grep ELF | grep -v cash_wrap.so | sed -e 's/:.*//'`; do\

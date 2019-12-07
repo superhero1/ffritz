@@ -10,6 +10,7 @@
 #
 # MAKE_OPTIONS: Options for make call
 # MAKE_SUBDIR:  Subdir in source tree to call make in (with / prefix)
+# MAKE_INSTALL_TGT: Target(s) for make install call (default: install)
 # MAKE_INSTALL_OPTIONS: Options for make install call
 # NO_MAKE_INSTALL: If set, no make install is called
 # INSTALL_BIN: files to put in DESTDIR/bin
@@ -114,6 +115,10 @@ ifeq ($(DESTDIR),)
 DESTDIR	    = $(TOPDIR)/output
 endif
 
+ifeq ($(MAKE_INSTALL_TGT),)
+MAKE_INSTALL_TGT = install
+endif
+
 _INST=$(shell echo "if [ -f $(1) ]; then install -vDC $(1) $(2)/`basename $(1)`; else mkdir -p $(2); cp -arv $(1) $(2); fi;")
 
 #------------------------------------
@@ -173,9 +178,9 @@ install-pkg: all
 	@$(foreach f,$(INSTALL_SHARE),$(call _INST,$(f),$(DESTDIR)/share))
 ifeq ($(NO_MAKE_INSTALL),)
 ifeq ($(INST_TO_TOOLCHAIN),)
-	make -C build install DESTDIR=$(DESTDIR) $(MAKE_INSTALL_OPTIONS)
+	PATH=$(TOOLCHAIN):$(PATH) make -C build$(MAKE_SUBDIR) $(MAKE_INSTALL_TGT) DESTDIR=$(DESTDIR) $(MAKE_INSTALL_OPTIONS)
 else
-	make -C build install DESTDIR=$(SYSROOT) $(MAKE_INSTALL_OPTIONS)
-	make -C build install DESTDIR=$(TGTDIR) $(MAKE_INSTALL_OPTIONS)
+	PATH=$(TOOLCHAIN):$(PATH) make -C build$(MAKE_SUBDIR) $(MAKE_INSTALL_TGT) DESTDIR=$(SYSROOT) $(MAKE_INSTALL_OPTIONS)
+	PATH=$(TOOLCHAIN):$(PATH) make -C build$(MAKE_SUBDIR) $(MAKE_INSTALL_TGT) DESTDIR=$(TGTDIR) $(MAKE_INSTALL_OPTIONS)
 endif
 endif

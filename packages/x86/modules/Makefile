@@ -1,27 +1,40 @@
 
-CONFTYPE	= legacy
+KERNELS	= 3.12.59 3.12.74
+MODULES = wireguard
 
-#INSTALL_LIB     = build/drivers/usb/class/cdc-acm.ko
-NO_MAKE_INSTALL = 1
-MAKE_OPTIONS    =  ARCH=x86 CROSS_COMPILE=i686-buildroot-linux-gnu- modules
-CUSTOM_DEP      = .prep.stamp
+ifeq ($(DESTDIR),)
+DESTDIR = $(shell pwd)/output
+endif
 
-all:
+TMPDIR = $(shell pwd)/modules/$(KERNEL)
 
-.prep.stamp:
-	cp x86_avm_defconfig build/arch/x86/configs/
-#	cp build/include/linux/compiler-gcc4.h build/include/linux/compiler-gcc7.h
-	make -C build ARCH=x86 CROSS_COMPILE=i686-buildroot-linux-gnu- x86_avm_defconfig
-	touch $@
+KDIRS	= $(KERNELS:%=../kernel_%)
 
-config:
-	make -C build ARCH=x86 CROSS_COMPILE=i686-buildroot-linux-gnu- menuconfig savedefconfig
+.PHONY:	$(KDIRS)
 
-bzImage:
-	make -C build ARCH=x86 CROSS_COMPILE=i686-buildroot-linux-gnu- bzImage
+all:	$(KDIRS)
+	for k in $(KERNELS); do \
+	 for m in $(MODULES); do \
+	  make KERNEL=$$k MODULE=$$m module; \
+         done; \
+	done
 
-include ../../package.mk
+$(KDIRS):
+	make -C $@
 
-test:
-	make -C build ARCH=x86 CROSS_COMPILE=i686-buildroot-linux-gnu- puma7-crash-kernel_defconfig
+module:
+	test -d ../kernel_$(KERNEL)/build
+	mkdir -p $(TMPDIR)
+	make -C ../$(MODULE) KERNELDIR=$(shell cd ../kernel_$(KERNEL)/build; pwd) DESTDIR=$(TMPDIR) install
 
+install: all
+	mkdir -p $(DESTDIR)/bin
+	for k in $(KERNELS); do \
+	 mkdir -p $(DESTDIR)/lib/modules/$$k; \
+	 cp -arv $(TMPDIR)/$$k/lib/* $(DESTDIR)/lib/modules/$$k; \
+	 cp -av $(TMPDIR)/$$k/bin/* $(DESTDIR)/bin; \
+	done
+
+clean:
+	for k in $(KERNELS); do make -C ../kernel_$$k clean; done
+	rm -rf modules output

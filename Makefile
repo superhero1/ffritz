@@ -32,7 +32,6 @@ KEEP_ORIG = 1
 # DOWNLOAD to fetch binary package
 #
 #FFRITZ_ARM_PACKAGE=DOWNLOAD
-#FFRITZ_ARM_PACKAGE=../ffritz-arm-0.7-fos7.tar.gz
 
 ## Host tools (unsquashfs4-lzma-avm-be, mksquashfs4-lzma-avm-be) can either be built
 # (using squashfstools-be target), or try the pre-compiled binaries
@@ -47,7 +46,7 @@ all: release
 ###############################################################################################
 RELDIR  = release$(VERSION)
 
-ARM_MODFILES = $(shell find arm/mod/ -type f -o -type d)
+#ARM_MODFILES = $(shell find arm/mod/ -type f -o -type d)
 ATOM_MODFILES = $(shell find atom/mod/ -type f -o -type d)
 
 ###############################################################################################
@@ -86,7 +85,7 @@ ifeq ($(FWVER),)
 $(error Could not determine firmware version ($(ORIG) missing?))
 endif
 
-DFL_ARM_PACKAGE=packages/arm/ffritz/ffritz-arm-$(ARM_VER)-fos7.tar.gz
+#DFL_ARM_PACKAGE=packages/arm/ffritz/ffritz-arm-$(ARM_VER)-fos7.tar.gz
 ifeq ($(FFRITZ_ARM_PACKAGE),DOWNLOAD)
 FFRITZ_ARM_PACKAGE=$(DFL_ARM_PACKAGE)
 else
@@ -147,13 +146,13 @@ $(ARM_PATCHST):	$(@:arm/.applied.%=%)
 arm/.applied.fs: $(ARM_MODFILES) arm/squashfs-root $(ARM_PATCHST) $(FFRITZ_ARM_PACKAGE)
 	@echo "PATCH  arm/squashfs-root"
 	@$(SUDO) rm -rf arm/squashfs-root/usr/local
-	@$(SUDO) $(RSYNC) -a --no-perms arm/mod/ arm/squashfs-root/
-	@if [ -f "$(FFRITZ_ARM_PACKAGE)" ]; then \
-	    echo Integrating ARM extensions from $(FFRITZ_ARM_PACKAGE); \
-	    $(SUDO) mkdir -p arm/squashfs-root/usr/local; \
-	    $(SUDO) tar xfk $(FFRITZ_ARM_PACKAGE) --strip-components=2 -C arm/squashfs-root/usr/local ./ffritz-arm; \
-	fi
-	@if [ -d arm/mod/usr/local/bin ]; then  $(TOPDIR)/mklinks -f arm/squashfs-root/usr/bin ../local/bin; fi
+#	@$(SUDO) $(RSYNC) -a --no-perms arm/mod/ arm/squashfs-root/
+#	@if [ -f "$(FFRITZ_ARM_PACKAGE)" ]; then \
+#	    echo Integrating ARM extensions from $(FFRITZ_ARM_PACKAGE); \
+#	    $(SUDO) mkdir -p arm/squashfs-root/usr/local; \
+#	    $(SUDO) tar xfk $(FFRITZ_ARM_PACKAGE) --strip-components=2 -C arm/squashfs-root/usr/local ./ffritz-arm; \
+#	fi
+#	@if [ -d arm/mod/usr/local/bin ]; then  $(TOPDIR)/mklinks -f arm/squashfs-root/usr/bin ../local/bin; fi
 	@touch $@
 
 arm/filesystem.image: arm/.applied.fs
