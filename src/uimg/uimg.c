@@ -127,7 +127,7 @@ void generate(char *fname, char *prefix)
 	char *in_name = alloca(strlen(prefix) + 20);
 	uint32_t in_size;
 	char *buffer;
-	uint32_t img_crc;
+	uint32_t img_crc = 0;
 	uint32_t img_crc_cnt = 0xffffffff;
 	int part_idx = 0;
 	uint32_t crc;
@@ -298,7 +298,7 @@ void extract(char *fname, char *prefix)
 		if (buffer == NULL)
 		{
 			fprintf (stderr, "failed to allocate 0x%x bytes for %s\n",
-					 head.part_size, part_label);
+					 psize, part_label);
 			exit (1);
 		}
 

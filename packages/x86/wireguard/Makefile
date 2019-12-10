@@ -18,6 +18,6 @@ all:
 build/src/tools/wg-quick/wg-quick:	build/src/tools/wg-quick/linux.bash
 		cp -f $< $@
 
-install:	build/src/tools/wg-quick/wg-quick
+install:	all build/src/tools/wg-quick/wg-quick
 
 include ../../package.mk
