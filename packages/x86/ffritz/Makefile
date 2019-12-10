@@ -42,7 +42,7 @@ endif
 #
 SUBDIRS    += ../libmaru
 SUBDIRS    += ../shairport 
-SUBDIRS    += ../wireguard 
+#SUBDIRS    += ../wireguard 
 SUBDIRS    += src
 
 ## Packages with (build/)install target
