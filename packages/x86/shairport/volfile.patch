@@ -1,0 +1,56 @@
+--- shairport/audio_pipe.c	2016-10-26 08:35:09.599628069 +0200
++++ build/audio_pipe.c	2016-10-26 08:42:04.093498896 +0200
+@@ -37,9 +37,12 @@
+ 
+ static int fd = -1;
+ static char *pipename = NULL;
++static char *volfilename = NULL;
+ static int Fs;
+ static long long starttime, samples_played;
+ 
++audio_output audio_pipe;
++
+ static void stop(void) {
+     close(fd);
+     fd = -1;
+@@ -100,10 +103,26 @@
+         stop();
+ }
+ 
++static void volume(double vol)
++{
++    FILE *fh;
++
++    if (!volfilename)
++	return;
++
++    fh = fopen(volfilename, "w");
++    if (!fh)
++	return;
++
++    fprintf (fh, "%d", (int)(vol * (double)100.0));
++
++    fclose (fh);
++}
++
+ static int init(int argc, char **argv) {
+     struct stat sb;
+ 
+-    if (argc != 1)
++    if (argc < 1)
+         die("bad argument(s) to pipe");
+ 
+     pipename = strdup(argv[0]);
+@@ -114,6 +133,12 @@
+     if (!S_ISFIFO(sb.st_mode))
+         die("not a pipe");
+ 
++    if (argc == 2)
++    {
++	volfilename = strdup(argv[1]);
++	audio_pipe.volume = volume;
++    }
++
+     return 0;
+ }
+ 

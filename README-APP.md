@@ -124,7 +124,7 @@ For example, to start a http server on port 81:
 
 User space player for USB DACs (usbplayd)
 -----------------------------------------
-- Accepts inputs from mpd, shairport and bluetooth.
+- Accepts inputs from mpd, shairport-sync and bluetooth.
 - Details in MPD.md
 
 Music Player Daemon (mpd)
@@ -135,8 +135,8 @@ Music Player Daemon (mpd)
 	- ympd (http frontend at port 82) 
 - Refer to MPD.md for details
 
-ShairPort Daemon (shairport)
-----------------------------
+ShairPort Daemon (shairport-sync)
+---------------------------------
 - Acts as AirPort receiver
 - Refer to MPD.txt for details
 

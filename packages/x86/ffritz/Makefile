@@ -17,13 +17,14 @@ BR_TGT_BIN  = $(BR_TGT)/usr/bin
 BR_TGT_SBIN = $(BR_TGT)/usr/sbin
 
 BINFILES    = src/sndlist src/usbplay src/usbplayd src/ffdaemon
-BINFILES   += ../shairport/build/shairport
+#BINFILES   += ../shairport/build/shairport
 BINFILES   += $(wildcard bin/*)
 ETCFILES    = etc/ffritz-env.sh etc/mpd.conf etc/ff_atom_startup etc/ffservices etc/mkusers
 ETCFILES   += etc/lirc_options_dfl.conf
 ETCFILES   += etc/upmpdcli.conf-dist
 ETCFILES   += etc/usrmount etc/fflogrotate etc/ffshutdown
 ETCFILES   += etc/init.d
+ETCFILES   += etc/shairport-sync.conf.dfl
 
 STAGEDIR    = $(TOPDIR)/output/ffritz
 
@@ -41,7 +42,7 @@ endif
 ## Packages
 #
 SUBDIRS    += ../libmaru
-SUBDIRS    += ../shairport 
+SUBDIRS    += ../shairport-sync
 #SUBDIRS    += ../wireguard 
 SUBDIRS    += src
 
@@ -54,6 +55,7 @@ INSTDIRS   += ../prtg/install
 #INSTDIRS   += ../libdvbfi/install
 #INSTDIRS   += ../wireguard/install
 INSTDIRS   += ../modules/install
+INSTDIRS    += ../shairport-sync/install
 
 ifeq ($(CASH),)
 CASH=$(shell ls -d ../cash/build/.. 2>/dev/null)

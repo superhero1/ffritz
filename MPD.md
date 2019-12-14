@@ -140,18 +140,16 @@ my music database on an external NAS:
 
     MOUNT Musik/NAS nfs://nas/Multimedia/Music -a
 
-Shairport
-=========
-shairport will announce itself as "fFritz". It will output data to /var/tmp/shairport.fifo
+Shairport-sync
+==============
+shairport-sync will announce itself as "FritzBox". It will output data to /var/tmp/shairport.fifo
 and has precedence over the MPD audio pipe.
 
-shairport is started via the shairport service (/tmp/ffnvram/etc/rc.d).
+shairport-sync is started via the shairport service (/tmp/ffnvram/etc/rc.d).
 This script will also start the usbplayd service if required.
 
-The pipe output driver accepts a second parameter, which is the file where the volume 
-level is written to (/var/tmp/volume in this case).
-
-Tested with Android AirAudio app.
+The configuration file is located in /tmp/ffnvram/etc/shairport-sync.conf. Make sure to
+store it persistently with nvsync after modifying it.
 
 If you do not want to start shairport:
 

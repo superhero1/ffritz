@@ -22,6 +22,7 @@
 - add WireGuard kernel module and tools
 - Force firmware_version to avm
 - Add wireguard service, module, wg-quick and wg tool
+- Replace/fix shairport with shairport-sync
 
 TODO
 
