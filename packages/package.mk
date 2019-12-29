@@ -19,6 +19,7 @@
 # INSTALL_SHARE: files/dirs to put in DESTDIR/share
 # FORCE_MAKE_INSTALL: force make install even if INSTALL_XX is set
 # CUSTOM_DEP: Own dependencies for preparing build
+# BUILDDIR: Name of build sub-directory (default: build)
 # 
 
 
@@ -77,14 +78,14 @@ endif
 
 AUTORECONF=
 ifeq ($(CONFTYPE),autoconf)
-ALL_DEP	= build/config.status
+ALL_DEP	= $(BUILDDIR)/config.status
 else
 ifeq ($(CONFTYPE),autoreconf)
-ALL_DEP = build/config.status
+ALL_DEP = $(BUILDDIR)/config.status
 AUTORECONF=autoreconf -vfi
 else
 MAKE_OPTIONS += CC=$(CC)
-ALL_DEP = build$(MAKE_SUBDIR)/Makefile
+ALL_DEP = $(BUILDDIR)$(MAKE_SUBDIR)/Makefile
 endif
 endif
 
@@ -119,6 +120,10 @@ ifeq ($(MAKE_INSTALL_TGT),)
 MAKE_INSTALL_TGT = install
 endif
 
+ifeq ($(BUILDDIR),)
+BUILDDIR=build
+endif
+
 _INST=$(shell echo "if [ -f $(1) ]; then install -vDC $(1) $(2)/`basename $(1)`; else mkdir -p $(2); cp -arv $(1) $(2); fi;")
 
 #------------------------------------
@@ -134,39 +139,39 @@ $(REPO):
 endif
 
 ifneq ($(FILE),)
-build:	$(FILE)
-	@rm -rf build
-	@mkdir -p build
-	@cd build; tar xf $(FILE) --strip-components=1
-	@cd build; for p in $(PATCHES); do echo Applying $$p ..; patch -p1 < ../$$p || exit 1; done
-	cd build; $(AUTORECONF)
+$(BUILDDIR):	$(FILE)
+	@rm -rf $(BUILDDIR)
+	@mkdir -p $(BUILDDIR)
+	@cd $(BUILDDIR); tar xf $(FILE) --strip-components=1
+	@cd $(BUILDDIR); for p in $(PATCHES); do echo Applying $$p ..; patch -p1 < ../$$p || exit 1; done
+	cd $(BUILDDIR); $(AUTORECONF)
 else
-build:	$(REPO)
-	@rm -rf build
-	@git clone $(REPO) build
-	@cd build; git submodule update --init
-	@cd build; git checkout $(COMMIT)
-	@cd build; for p in $(PATCHES); do echo Applying $$p ..; patch -p1 < ../$$p || exit 1; done
-	cd build; $(AUTORECONF)
+$(BUILDDIR):	$(REPO)
+	@rm -rf $(BUILDDIR)
+	@git clone $(REPO) $(BUILDDIR)
+	@cd $(BUILDDIR); git submodule update --init
+	@cd $(BUILDDIR); git checkout $(COMMIT)
+	@cd $(BUILDDIR); for p in $(PATCHES); do echo Applying $$p ..; patch -p1 < ../$$p || exit 1; done
+	cd $(BUILDDIR); $(AUTORECONF)
 endif
 
 
 all-pkg:	$(ALL_DEP) $(CUSTOM_DEP)
-	PATH=$(TOOLCHAIN):$(PATH) make -C build$(MAKE_SUBDIR) $(MAKE_OPTIONS)
+	PATH=$(TOOLCHAIN):$(PATH) make -C $(BUILDDIR)$(MAKE_SUBDIR) $(MAKE_OPTIONS)
 
-build$(MAKE_SUBDIR)/Makefile:    build
-	@test -f build$(MAKE_SUBDIR)/Makefile && touch build$(MAKE_SUBDIR)/Makefile
+$(BUILDDIR)$(MAKE_SUBDIR)/Makefile:    $(BUILDDIR)
+	@test -f $(BUILDDIR)$(MAKE_SUBDIR)/Makefile && touch $(BUILDDIR)$(MAKE_SUBDIR)/Makefile
 
-build/configure:    build
+$(BUILDDIR)/configure:    $(BUILDDIR)
 
-build/config.status:	build/configure
-	cd build; export PATH=$(TOOLCHAIN):$(PATH); ./configure $(CONFIGURE_FLAGS) --build=x86_64-unknown-linux-gnu --prefix=/usr/local --exec-prefix=/usr --sysconfdir=/usr/local/etc --localstatedir=/var --program-prefix= --disable-doc --disable-docs --disable-documentation --disable-static --enable-shared $(PKG_CONFIGURE_FLAGS)
+$(BUILDDIR)/config.status:	$(BUILDDIR)/configure
+	cd $(BUILDDIR); export PATH=$(TOOLCHAIN):$(PATH); ./configure $(CONFIGURE_FLAGS) --build=x86_64-unknown-linux-gnu --prefix=/usr/local --exec-prefix=/usr --sysconfdir=/usr/local/etc --localstatedir=/var --program-prefix= --disable-doc --disable-docs --disable-documentation --disable-static --enable-shared $(PKG_CONFIGURE_FLAGS)
 	touch $@
 
 clean:	clean-pkg 
  
 clean-pkg:
-	rm -rf build
+	rm -rf $(BUILDDIR)
 	rm -f .*.stamp
 
 install: install-pkg
@@ -178,9 +183,9 @@ install-pkg: all
 	@$(foreach f,$(INSTALL_SHARE),$(call _INST,$(f),$(DESTDIR)/share))
 ifeq ($(NO_MAKE_INSTALL),)
 ifeq ($(INST_TO_TOOLCHAIN),)
-	PATH=$(TOOLCHAIN):$(PATH) make -C build$(MAKE_SUBDIR) $(MAKE_INSTALL_TGT) DESTDIR=$(DESTDIR) $(MAKE_INSTALL_OPTIONS)
+	PATH=$(TOOLCHAIN):$(PATH) make -C $(BUILDDIR)$(MAKE_SUBDIR) $(MAKE_INSTALL_TGT) DESTDIR=$(DESTDIR) $(MAKE_INSTALL_OPTIONS)
 else
-	PATH=$(TOOLCHAIN):$(PATH) make -C build$(MAKE_SUBDIR) $(MAKE_INSTALL_TGT) DESTDIR=$(SYSROOT) $(MAKE_INSTALL_OPTIONS)
-	PATH=$(TOOLCHAIN):$(PATH) make -C build$(MAKE_SUBDIR) $(MAKE_INSTALL_TGT) DESTDIR=$(TGTDIR) $(MAKE_INSTALL_OPTIONS)
+	PATH=$(TOOLCHAIN):$(PATH) make -C $(BUILDDIR)$(MAKE_SUBDIR) $(MAKE_INSTALL_TGT) DESTDIR=$(SYSROOT) $(MAKE_INSTALL_OPTIONS)
+	PATH=$(TOOLCHAIN):$(PATH) make -C $(BUILDDIR)$(MAKE_SUBDIR) $(MAKE_INSTALL_TGT) DESTDIR=$(TGTDIR) $(MAKE_INSTALL_OPTIONS)
 endif
 endif

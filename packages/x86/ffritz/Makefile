@@ -42,8 +42,6 @@ endif
 ## Packages
 #
 SUBDIRS    += ../libmaru
-SUBDIRS    += ../shairport-sync
-#SUBDIRS    += ../wireguard 
 SUBDIRS    += src
 
 ## Packages with (build/)install target
@@ -51,11 +49,10 @@ SUBDIRS    += src
 INSTDIRS   += ../nfs/install 
 INSTDIRS   += ../bt/install 
 INSTDIRS   += ../prtg/install 
-#INSTDIRS   += ../athtool/install 
-#INSTDIRS   += ../libdvbfi/install
-#INSTDIRS   += ../wireguard/install
 INSTDIRS   += ../modules/install
-INSTDIRS    += ../shairport-sync/install
+INSTDIRS   += ../wireguard-tools/install
+INSTDIRS   += ../shairport-sync/install
+INSTDIRS   += ../unfs/install
 
 ifeq ($(CASH),)
 CASH=$(shell ls -d ../cash/build/.. 2>/dev/null)

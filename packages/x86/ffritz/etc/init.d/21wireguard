@@ -9,7 +9,7 @@ WGDIR=$NVRAM/etc/wireguard
 if [ "x$1" = "xstop" ]; then
 	$FFINSTDIR/bin/ffdaemon -K wgforward
 	$FFINSTDIR/bin/wg-quick down $WGDIR/wg0.conf
-	rmmod wireguard
+#	rmmod wireguard
 	exit 0
 fi
 

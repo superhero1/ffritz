@@ -25,7 +25,10 @@ $(KDIRS):
 module:
 	test -d ../kernel_$(KERNEL)/build
 	mkdir -p $(TMPDIR)
-	make -C ../$(MODULE) KERNELDIR=$(shell cd ../kernel_$(KERNEL)/build; pwd) DESTDIR=$(TMPDIR) install
+	make -C ../$(MODULE) KERNELDIR=$(shell cd ../kernel_$(KERNEL)/build; pwd) DESTDIR=$(TMPDIR) BUILDDIR=build_$(KERNEL) install
+
+cleanmodule:
+	make -C ../$(MODULE) KERNELDIR=$(shell cd ../kernel_$(KERNEL)/build; pwd) DESTDIR=$(TMPDIR) BUILDDIR=build_$(KERNEL) clean
 
 install: all
 	mkdir -p $(DESTDIR)/bin
@@ -36,5 +39,9 @@ install: all
 	done
 
 clean:
-	for k in $(KERNELS); do make -C ../kernel_$$k clean; done
-	rm -rf modules output
+	for k in $(KERNELS); do \
+	 for m in $(MODULES); do \
+	  make KERNEL=$$k MODULE=$$m cleanmodule; \
+         done; \
+	 make -C ../kernel_$$k clean; \
+	done

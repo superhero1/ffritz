@@ -1,0 +1,25 @@
+diff --git a/Config/exports.l b/Config/exports.l
+index 662603c..7e7c4fc 100644
+--- a/Config/exports.l
++++ b/Config/exports.l
+@@ -50,6 +50,7 @@ OLDNET {IP}"/"{IP}
+ 
+ %option nounput
+ %option noinput
++%option noyywrap
+ 
+ %%
+ 
+diff --git a/aclocal.m4 b/aclocal.m4
+index 653b0ae..346f70e 100644
+--- a/aclocal.m4
++++ b/aclocal.m4
+@@ -1,6 +1,6 @@
+-# generated automatically by aclocal 1.15.1 -*- Autoconf -*-
++# generated automatically by aclocal 1.15 -*- Autoconf -*-
+ 
+-# Copyright (C) 1996-2017 Free Software Foundation, Inc.
++# Copyright (C) 1996-2014 Free Software Foundation, Inc.
+ 
+ # This file is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,

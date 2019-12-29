@@ -16,7 +16,7 @@ config:
 	make -C build ARCH=x86 CROSS_COMPILE=i686-buildroot-linux-gnu- menuconfig savedefconfig
 
 bzImage:
-	make -C build ARCH=x86 CROSS_COMPILE=i686-buildroot-linux-gnu- bzImage
+	PATH=$(TOOLCHAIN):$(PATH) make -C build ARCH=x86 CROSS_COMPILE=i686-buildroot-linux-gnu- bzImage
 
 include ../../package.mk
 

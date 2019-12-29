@@ -1,5 +1,5 @@
 diff --git a/audio_pipe.c b/audio_pipe.c
-index 4ec9b24..2143678 100644
+index 4ec9b24..2e821ae 100644
 --- a/audio_pipe.c
 +++ b/audio_pipe.c
 @@ -42,8 +42,36 @@
@@ -39,7 +39,21 @@ index 4ec9b24..2143678 100644
  static void start(__attribute__((unused)) int sample_rate,
                    __attribute__((unused)) int sample_format) {
  
-@@ -113,6 +141,12 @@ static int init(int argc, char **argv) {
+@@ -85,9 +113,10 @@ static int play(void *buf, int samples) {
+ }
+ 
+ static void stop(void) {
+-  // Don't close the pipe just because a play session has stopped.
+-  //  if (fd > 0)
+-  //    close(fd);
++  if (fd > 0)
++    close(fd);
++
++  fd = -1;
+ }
+ 
+ static int init(int argc, char **argv) {
+@@ -113,6 +142,12 @@ static int init(int argc, char **argv) {
  
      if ((pipename) && (strcasecmp(pipename, "STDOUT") == 0))
        die("Can't use \"pipe\" backend for STDOUT. Use the \"stdout\" backend instead.");
@@ -52,7 +66,7 @@ index 4ec9b24..2143678 100644
    }
  
    if ((pipename == NULL) && (argc != 1))
-@@ -149,5 +183,5 @@ audio_output audio_pipe = {.name = "pipe",
+@@ -149,5 +184,5 @@ audio_output audio_pipe = {.name = "pipe",
                             .delay = NULL,
                             .play = &play,
                             .volume = NULL,
