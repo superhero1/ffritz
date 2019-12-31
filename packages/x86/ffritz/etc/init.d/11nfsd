@@ -1,0 +1,31 @@
+#!/bin/sh
+#        
+# unfsd startup file
+#                   
+. /usr/local/etc/ffritz-env.sh || exit 1
+
+# Location of exports file
+#
+EXPORTS=$NVRAM/etc/exports
+
+if [ "x$1" = "xstop" ]; then
+	$FFINSTDIR/bin/ffdaemon -K unfsd
+	exit 0
+fi
+
+# Get interface for lan bridge for binding portmap to it
+#
+lanip=`/sbin/ifconfig lan|grep 'inet addr:'|sed -e 's/.*inet addr:\(.*\) B.*/\1/'`
+
+test -z $lanip && exit 1
+
+if [ ! -r $EXPORTS ]; then
+	echo No exports file: $EXPORTS
+	exit 0
+fi
+
+# Have portmap daemon listen on lan bridge
+#
+portmap $lanip
+
+ffdaemon $FFINSTDIR/bin/unfsd -d -e $EXPORTS 

@@ -35,7 +35,6 @@ install: all
 	for k in $(KERNELS); do \
 	 mkdir -p $(DESTDIR)/lib/modules/$$k; \
 	 cp -arv $(TMPDIR)/$$k/lib/* $(DESTDIR)/lib/modules/$$k; \
-	 cp -av $(TMPDIR)/$$k/bin/* $(DESTDIR)/bin; \
 	done
 
 clean:

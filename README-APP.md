@@ -10,17 +10,18 @@ Features
 All services provided by the application package are invoked at startup
 via rc scripts in 
 
-	/tmp/ffnvram/etc/rc.d
+	/nvram/ffnvram/etc/rc.d
 
 which in turn are symlinks to 
 
-	/tmp/ffnvram/etc/init.d
+	/nvram/ffnvram/etc/init.d
 
 The service name is preceded by two digits controlling the initialization
 order.
-To (de)activate them just add(remove) symlinks in rc.d and make the changes
-persistent by calling nvsync. The service name is preceded by two digits
-controlling the initialization order.
+
+To (de)activate them just add(remove) symlinks in rc.d.
+
+The service name is preceded by two digits controlling the initialization order.
 
 The tool "ffservice" provides a simple script to operate services:
 
@@ -36,29 +37,40 @@ below
 
 	/var/media/ftp/ffritz
 
+or
+
+	/nvram/ffnvram
+
 The script /usr/local/etc/ffshutdown attempts to unmount the application
 package by
 - stopping all services
 - killing all remaining PIDs that access the image
-- umnounting /usr/local
+- unmounting /usr/local
+
+ffdeamon
+--------
 
 A simple deamon manager is provided with ffdaemon.
 
-       -n : No daemon mode
-       -C : Do not close FDs
-       -r : run as user[:group]
-       -i : Restart delay after program terminates
-       -l : Number of loops to run (0 = default = endless)
-       -N : Name service rather than using the executable name
-       -L : List all services
-       -K : Kill named service (%all for all)
-       -R : Restart named service (%all for all)
-       -o : Run service after chroot to dir
+Usage: ffdaemon [daemon-args] executable [executable-args]
+
+daemon-args are:
+
+       -n              : No daemon mode
+       -C              : Do not close file descriptors
+       -r user[:group] : run as user[:group]
+       -i secs         : Restart delay after program terminates
+       -l loops        : Number of loops to run (0 = default = endless)
+       -N name         : Name service rather than using the executable name
+       -L              : List all services
+       -K name         : Kill named service (%all for all)
+       -R name         : Restart named service (%all for all)
+       -o dir          : Run service after chroot to dir
 
 Following is a list of services (service name in brackets).
 
-Buildroot environment (buildroot) - experimental
-------------------------------------------------
+Buildroot environment (buildroot)
+---------------------------------
 
 The application package contains the complete buildroot root-filesystem
 that was used to build the ffritz application package in /usr/local/buildroot.
@@ -79,25 +91,26 @@ There are two flavours for the constructed filesystem:
 
 Option (1):
 
--	A ramdisc overlay is mounted over parts the filesystem using
-	unionfs (/etc, /var, /root) so that the filesystem is writeable there.
-	Since the ramdisc overlay is located in /etc/ffnvram/buildroot
-	any change made there can be made persistent by calling nvsync.
+-	A overlay is mounted over parts the filesystem using
+	unionfs (nvram for /etc, /root, ramdisc for /var) so that the
+        filesystem is writeable there.
+	Since the nvram overlay is located in /etc/ffnvram/buildroot
+	any change made there is persistent.
 
--	NOTE: The ramdisc overlay is meant to store configuration files only.
-	Bigger data (incl. log files) would easily exceed the available RAM
-	size (which is ca. 100MB).
+-	NOTE: The nvram overlay is meant to store configuration files only.
+	Bigger data (incl. log files) would easily exceed the available 
+	size (which is ca. 5MB)!
+	The same applies to /var, where changes reside in volatile RAM.
 
 Option (2):
 
--	Create/edit the file /tmp/ffnvram/ffbuildroot.conf
+-	Create/edit the file /nvram/ffnvram/ffbuildroot.conf
 -	Add the line BR_USER_OVERLAY=/var/media/ftp/my-root
 -	This option will use /var/media/ftp/my-root to store
 	new or changed contents of the buildroot filesystem
 	in a copy-on-write manner.
 -	Preferably, the storage should be located on a mounted
 	USB device.
--	Dont forget nvsync to make the config-file persistent.
 -	NOTE: Be aware that storing files below /var/media/ftp
 	exposes them via the NAS service of the box, if enabled!!
 
@@ -119,13 +132,12 @@ For example, to start a http server on port 81:
 - install it to the box as described (ffinstall -r package checksum)
 - edit /tmp/br/etc/lighttpd/lighttpd.conf and set the port to 81
 - edit /tmp/br/var/www/index.html
-- call nvsync to make configuration persistent
 - Start the http server: br /etc/init.d/S50lighttpd start
 
 User space player for USB DACs (usbplayd)
 -----------------------------------------
 - Accepts inputs from mpd, shairport-sync and bluetooth.
-- Details in MPD.md
+- Details in AUDIO.md
 
 Music Player Daemon (mpd)
 -------------------------
@@ -133,17 +145,18 @@ Music Player Daemon (mpd)
 - Additional services are
 	- upmpdcli (UPNP/DLNA renderer) 
 	- ympd (http frontend at port 82) 
-- Refer to MPD.md for details
+- Refer to AUDIO.md for details
 
 ShairPort Daemon (shairport-sync)
 ---------------------------------
 - Acts as AirPort receiver
-- Refer to MPD.txt for details
+- Refer to AUDIO.txt for details
 
-Bluetooth a2dp sink (a2dp_sink_demo)
+Bluetooth a2dp sink (bluetooth)
 ------------------------------------
 - Reports itself as "FritzBox"
 - Tested with Logitech BT stick (CSR chipset)
+- Refer to AUDIO.txt for details
 
 nfs mounter
 -----------
@@ -158,6 +171,15 @@ fuse-nfs tool:
 For example, to mount the music database from an external NAS:
 
 	MOUNT Musik/NAS nfs://nas/Multimedia/Music --allow_other
+
+nfs server (nfs)
+----------------
+The "nfs" service starts a user-space nfsv3 service (unfsd). To use it, 
+create an exports file in /nvram/ffnvram/etc/exports and run/enable the 
+service.
+A sample exports file can be found in /usr/local/etc/exports.
+
+Refer to /usr/local/etc/exports for details.
 
 lirc (lircd)
 ------------
@@ -184,97 +206,27 @@ OpenVPN (openvpn)
 
 See OPENVPN.md
 
-Enhanced DVB-C Transport Stream Forwarding (cableinfo)
-------------------------------------------------------
+Wireguard (wireguard)
+---------------------
 
-THIS IS EXPERIMENTAL FOR FRITZOS 7. In the current state it can crash the box!
+Experimental. I have observed that the box sometimes hangs when 
+removing a wg interface or removing the kernel module.
 
-To enhance DVB-C streaming performance the DVB-C transport stream can be 
-forwarded to an external service which generates the RTP packets.
+The wireguard service 
 
-For this the cableinfo daemon is executed with a wrapper library. For details
-refer to packages/x86/libdvbfi/README.txt.
+- installs the wireguard.ko kernel module
+- create a wireguard interface using the configuration file
+  /nvram/ffnvram/etc/wireguard/wg0.conf
+- installs an IPv4 UDP forwarding rule for port 51820
 
-Packet counters
----------------
+Building the application image
+==============================
 
-The pcount tool (on both arm/atom) can watch various packet counters and
-calculate rates.
-
-Usage:
-~~~~
- --pp-counters|-p [<all>[,<filter>]]               (ARM only!)
- --l2sw-counters|-l <p>[,<all>[,<filter>]]         (ARM only!)
- --netif-counters|-i <p>[,<all>[,<filter>]]
- --extsw-counters|-i <p>[,<all>[,<filter>]]	   (Atom only)
-                  : Print counters of port <p> (-1 for all ports).
-                    If <all> is 1 all counters are printed, otherwise only
-                    those that have changed since the previous call.
-                    Use optional <filter> for counter name substring match.
- --reset|-z       : Reset max. rate after output
- --slot|-s <num>  : A storage slot where counter history is kept.
-                    Usable for different average times, e.g. slot 0 for
-                    fast read and 1 for slow read
- --prtg|-x <mode> : Output in PRTG extended sensor (XML) format:
-                    1 : Absolute values
-                    2 : Relative values
-                    3 : Rate (1/s)
-                    4 : Maximum rate (1/s)
-                    5 : Both rate and maximum rate
-~~~~
-
-- pp-counters:    These are some counters from the packet processor
-- l2sw-counters:  Counters of the internal L2 switch
-- netif-counters: Counters of all network interfaces (from /proc/net/dev)
-- extsw-counters: Counters of external switch ports 
-
-To call the arm tool from atom, just use "rpc pcount ...".
-
-Example output:
-~~~~
-name/port  counter name Incr. since last call Total count Rate       Max. rate
----------- ------------ --------------------- ----------- ---------- ---------
-acc0[1]:   RX_octets  : +608                  549,962,764 1,870/s  < 1,870/s
-~~~~
-
-NOTE: The ARM version of the tool needs to be integrated into the firmware update.
-      This is done by downloading ffritz-arm-0.6.tar.gz (or later) into
-      packages/arm/ffritz before building the firmware image.
-
-
-PRTG Support
-------------
-
-The PRTG Network monitor allows to use tools it runs via ssh login,
-expecting XML output. pcount can directly provide this output with
-the -x parameter.
-
-These tools need to be located in /var/prtg/scriptsxml. The pcount tool itself
-and various wrapper scripts will be placed there at startup.
-
-- datarate_atom     : Reports rates of all atom counters
-- pktrate_atom      : Same for packets
-- max_datarate_atom : Reports maximum rate observed in 1 sec interval
-- max_pktrate_atom  : Same for packets
-- (The same sensor scripts exist for ARM. See NOTE above.)
-- pcount_arm       : rpc wrapper to invoke pcount on arm
-
-To directly call pcount as sensor tool make sure to put parameters into quotes.
-For example when creating a "pcount_arm" sensor:
-
-~~~~
-"-p1,MPDSP_frwrd_to_host" "-x2"
-~~~~
-
-This will create a sensor that monitors packets forwarded to ARM due to LUT miss,
-which is an indication for a DOS attack ;-).
-
-Building application image
-==========================
-
-You can either use the pre-built images from the download section
-(https://bitbucket.org/fesc2000/ffritz/downloads/) or build it
-by yourself:
+You can either use the pre-built images from
+- the download section: https://bitbucket.org/fesc2000/ffritz/downloads
+- my private server with dailiy builds (sorry, only ftp for now):
+  ftp://ftp.ffesh.de/pub/ffritz/FritzOS7/daily/
+- or build it by yourself:
 
 	make package-atom
 
@@ -293,22 +245,25 @@ If successfull the new features are available in the application image.
 Installation
 ============
 
-The image is distributed as ffritz-app-VERSION.tar. To install it,
+The image is distributed as ffritz-app-puma7-VERSION-fos7.tar. To install it,
 
 - Copy it to the box NAS directory 
 
-	scp ffritz-app-VERSION.tar root@192.168.178.1:/var/media/ftp
+	scp image.tar root@192.168.178.1:/var/media/ftp
 
 - Log in and install it
 
-	ffinstall /var/media/ftp/ffritz-app-VERSION.tar CHECKSUM
+	ffinstall image.tar CHECKSUM
 
-  The checksum is the sha256sum listed on the download page, or
-  generated by the build (packages/x86/ffritz/ffritz-app-VERSION.sha256sum). 
+- OR install, terminate old and start new image/services:
+
+	ffinstall -r image.tar CHECKSUM
+
+  The checksum (it is NOT the checksum of the tar file!) is the sha256sum
+  listed on the download page, or generated by the build
+  (packages/x86/ffritz/image.sha256sum). 
   It is also contained in the file ffimage.sha256sum within the release
   .tar archive.
-
-- After the success message, restart the box (or read the next chapter)
 
 Steps performed by the startup script:
 
@@ -320,7 +275,7 @@ Steps performed by the startup script:
 
 Restart services without box reboot
 -----------------------------------
-If you do nott want to restart the box after installing a new image:
+If you do not want to restart the box after installing a new image:
 - Stop all ffritz services:
 
 	/usr/local/etc/ffshutdown
@@ -330,26 +285,10 @@ If you do nott want to restart the box after installing a new image:
 
 Current core image supports -r switch as first parameter, which does all this:
 
-	ffinstall -r ffritz-app-VERSION.tar CHECKSUM
+	ffinstall -r image.tar CHECKSUM
 
 If ffshutdown fails to unmount /usr/local:
 
 - Try to localize processes still using /usr/local and terminate them
 - Terminate all login sessions, log in again and retry
 - If all fails, reboot the box
-
-Notes
-=====
-
-Atom libraries
---------------
-
-- Espcially mpd requires a lot of additional shared libraries. Rather than
-    integrating them into /lib / /usr/lib, they remain in their own lib
-    directory (/usr/local/lib).
-    Also, the systems `LD_LIBRARY_PATH` is not modified. This is to avoid any
-    conflicts/incompatibilies with other box services.
-
-    In order to be able to call these binaries they are invoked via a wrapper
-    script (bin/exec/ffwrap) which sets `LD_LIBRARY_PATH` before actually
-    calling the binary.

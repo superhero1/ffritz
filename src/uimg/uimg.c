@@ -46,8 +46,9 @@ dev_to_name[] =
 };
 
 const char *help =
-" uimg -u [-n <name>] uimg-file\n"
+" uimg -u|p [-n <name>] uimg-file\n"
 "   -u   unpack all partitions and write to .bin files\n"
+"   -p   pack all partition files with -n prefix and write to uimg-file\n"
 "   -n   name prefix for output files (default: input file name without suffix)\n"
 ;
 
@@ -214,8 +215,8 @@ void generate(char *fname, char *prefix)
 	/* update header */
 	head.magic = UIMG_MAGIC;
 	strcpy (head.name, "Intel_Unified_Image");
-	head.unknown1 = 0x0077081B;
-	head.unknown2 = 0x00083810;
+	head.unknown1 = 0x00770a15;
+	head.unknown2 = 0x000d1015;
 	head.unknown3_ver = 3;
 	head.num_part = part_idx;
 	head.size = size;

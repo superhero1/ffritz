@@ -1,41 +1,20 @@
-6591 (all)
-==========
-- Toolchain
-	- buildroot
-		- Use Release 2019.05
-		- change to glibc from uClibc.
-			- Use same as AVM (2.23) to avoid two different
-			  libc's (LD_LIBRARY_PATH does not work for libc).
-- privatekeypassword
-	- remove check for uClibc
-- linux kernel modules
-	- no longer required (cdc-acm part of FritzOS)
-- Remove athtool
-- Adapt rc scripts
-	- still use encrypted ffnvram (/nvram quite small, 5MB)
-	- dont use md5 hash any more
-- Adapt switch_bootbank script
-- Statically linked busybox/telnetd for now
-- Change atom squashfs options: set xz compression, bfs export, no xattrs
-- application package must contain glibc-version file to distinct from uclibc image
-- use AVM kernel/defconfig (from rootfs) for building modules
-- add WireGuard kernel module and tools
-- Force firmware_version to avm
-- Add wireguard service, module, wg-quick and wg tool
-- Replace/fix shairport with shairport-sync
-
-TODO
-
-- Find better way for ffnvram
-- Redesign repository to support both 6x90 and 6591 in one tree
-- write own update script
-- Adapt ARM toolchain
-
 Change history of application package
 =====================================
 
-NEXT
-====
+Release puma7-13
+================
+- linux kernel modules
+	- no longer required (cdc-acm part of FritzOS)
+- Remove athtool
+- use AVM kernel/defconfig (from rootfs) for building modules
+- Add wireguard service, module, wg-quick and wg tool
+- Replace/fix shairport with shairport-sync
+- Added nfs server (user space unfsd).
+- Buildroot: The /var filesystem is now a unionfs with ramdisk instead of nvram.
+
+
+Release 12
+==========
 - Add feature to buildroot to use FS overlay on flash
 	- Configuration file /tmp/ffnvram/ffbuildroot.conf
 	- Parameter BR_USER_OVERLAY
@@ -219,6 +198,33 @@ TODO
 
 Change history of ffritz core integration:
 ==========================================
+
+release 23
+----------
+- Toolchain
+	- buildroot
+		- Use Release 2019.05
+		- change to glibc from uClibc.
+			- Use same as AVM (2.23) to avoid two different
+			  libc's (LD_LIBRARY_PATH does not work for libc).
+	- uimg: Fix help message
+- privatekeypassword
+	- remove check for uClibc
+- Adapt rc scripts
+	- dont use md5 hash any more
+- Adapt switch_bootbank script
+- Change atom squashfs options: set xz compression, bfs export, no xattrs
+- Statically linked busybox/telnetd for now
+- application package must contain glibc-version file to distinct from uclibc image
+- Force firmware_version to avm
+- Force CONFIG_RTL=y
+- Move "nvram" to /nvram filesystem.
+	The nvram used to be an encrypted tar file extracted to /tmp/ffnvram.
+	It is now located in /nvram/ffnvram, which is a ext4 filessytem on
+	the eMMC (ca. 5MB free). The startup script migrates the existing
+	data to /nvram and uses it from there on.
+        nvsync is no longer necessary but can still be called.
+
 
 release 22
 ----------

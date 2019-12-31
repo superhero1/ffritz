@@ -10,29 +10,18 @@
 #
 
 export FFINSTDIR=/usr/local
-export FFRITZ_HOME=/var/media/ftp/ffritz
+export FFRITZ_DATA=/var/media/ftp/ffritz
 export FFLOG=/var/log/ffritz.log
 
-#if [ -f /lib/libc.so.1 ]; then
-#    UCLIB_VERSION=`readlink -f /lib/libc.so.1 | sed -e 's/.*-\([0-9]\).*/\1/'`
-#elif [ -f /lib/libc.so.0 ]; then
-#    UCLIB_VERSION=`readlink -f /lib/libc.so.0 | sed -e 's/.*-\([0-9]\).*/\1/'`
-#else
-#    UCLIB_VERSION=1
-#fi
-
-
-#if [ $UCLIB_VERSION -gt 0 ]; then
-#        REL=-${UCLIB_VERSION}
-#fi
-
-DATADIR=$FFRITZ_HOME/data
+DATADIR=$FFRITZ_DATA/data
 
 NVRAM_FILE=$DATADIR/ffstore.dat
 BINFILE=$DATADIR/ffimage${REL}.bin
 PRIVKEY=/var/flash/websrv_ssl_key.pem
 
 NVRAM_COPY=/var/tmp/ffnvram
+
+NVRAM_FLASH=/nvram/ffnvram
 
 KEY_ENC=$DATADIR/key.enc
 KEY_PLAIN=/tmp/key.bin
@@ -127,7 +116,26 @@ chmod 700 $NVRAM_COPY
 
 touch /var/tmp/openssl.cnf
 
-decrypt_nvram
+## Decrypt NVRAM from persisten storage and put to RAMDISK.
+## This is 6x90 legacy mode, on 6591 it is ok to use /nvram, which is a 6MB
+## ext4 filesystem on the eMMC.
+## So once the 1st step is done, move everything to /nvram and use it from
+## there on.
+#
+if [ ! -d $NVRAM_FLASH ]; then
+	decrypt_nvram
+
+        # Don't care if decrypt_nvram has failed
+
+	mkdir -p $NVRAM_FLASH
+	cp -ar $NVRAM_COPY/* $NVRAM_FLASH/
+	ln -s $NVRAM_FLASH $NVRAM_COPY
+else
+	rm -rf $NVRAM_COPY
+	ln -s $NVRAM_FLASH $NVRAM_COPY
+fi
+
+
 
 # by default, /var/tmp/shadow is the default from var.tar, use it if we don't have one
 #
@@ -135,6 +143,7 @@ if [ ! -r $NVRAM_COPY/shadow ]; then
 	touch /var/tmp/shadow
 	cp /var/tmp/shadow $NVRAM_COPY/shadow
 fi
+
 chmod 600 $NVRAM_COPY/shadow
 
 ## install data to correct places

@@ -25,6 +25,7 @@ ETCFILES   += etc/upmpdcli.conf-dist
 ETCFILES   += etc/usrmount etc/fflogrotate etc/ffshutdown
 ETCFILES   += etc/init.d
 ETCFILES   += etc/shairport-sync.conf.dfl
+ETCFILES   += etc/exports
 
 STAGEDIR    = $(TOPDIR)/output/ffritz
 
@@ -103,8 +104,8 @@ $(INSTDIRS):
 $(IMAGE): ffimage.bin
 	sha256sum ffimage.bin | sed -e 's/ .*//' > $(CSUM)
 	cp ../../../*.md .
-	cp ../libdvbfi/README.txt README-dvb.txt 
-	cp ../libdvbfi/fwd .
+#	cp ../libdvbfi/README.txt README-dvb.txt 
+#	cp ../libdvbfi/fwd .
 	cp $(CSUM) ffimage.sha256sum
 	tar cf $(IMAGE) ffimage.bin ffimage.sha256sum *.md glibc-version
 	rm -f ffimage.sha256sum

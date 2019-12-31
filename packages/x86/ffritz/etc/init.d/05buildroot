@@ -5,10 +5,11 @@
 . /usr/local/etc/ffritz-env.sh || exit 1
 
 BR_DIR=/var/tmp/br
-BR_OVERLAY=/tmp/ffnvram/rootfs-overlay
+BR_OVERLAY=$NVRAM/rootfs-overlay
 BR_ROOT=/usr/local/buildroot
 BR_CONF=$NVRAM/ffbuildroot.conf
 BR_CONF_ACTIVE=/tmp/ffbuildroot.conf
+BR_VAR=/tmp/ffbrvar
 
 ismounted()
 {
@@ -32,12 +33,11 @@ mtab_ram()
 	echo /dev devtmpfs
 	echo /etc NVRAM
 	echo /proc proc
-	echo /proc/bus/usb usbfs
 	echo /root NVRAM
 	echo /run tmpfs
 	echo /sys sysfs
 	echo /tmp tmpfs
-	echo /var NVRAM
+	echo /var COW $BR_VAR
 	echo /var/media/ftp REDIR /var/media/ftp
 }
 
@@ -47,7 +47,6 @@ mtab_flash()
 	echo / COW $1
 	echo /dev devtmpfs
 	echo /proc proc
-	echo /proc/bus/usb usbfs
 	echo /run tmpfs
 	echo /sys sysfs
 	echo /tmp tmpfs
@@ -150,6 +149,12 @@ if [ -f $BR_CONF_ACTIVE ]; then
 	exit 1
 fi
 
+# create default buildroot root overlay (in nvram)
+#
+mkdir -p $BR_OVERLAY || exit 1
+
+mkdir -p $BR_VAR
+
 # read configuration and store in active config so that stop
 # does not use intermittent changes
 #
@@ -160,6 +165,8 @@ if [ -f $BR_CONF ]; then
 fi
 touch $BR_CONF_ACTIVE
 
+# Make sure users' overlay exists
+#
 if [ ! -d $BR_OVERLAY ]; then
 	echo buildroot overlay does not exist: $BR_OVERLAY
 	exit 1
@@ -181,7 +188,7 @@ mtab | while read line; do
 	set $line
 	mkdir -p $BR_DIR/$1
 	if [ "$2" = "NVRAM" ]; then
-		mkdir -p /tmp/ffnvram/rootfs-overlay/$1 || abort
+		mkdir -p $BR_OVERLAY/$1 || abort
 		unionfs -o cow,dev,suid,allow_other,nonempty $BR_OVERLAY/$1=RW:$BR_ROOT/$1=RO $BR_DIR/$1 || abort
 	elif [ "$2" = "COW" ]; then
 		unionfs -o cow,dev,suid,allow_other,nonempty $3=RW:$BR_ROOT/$1=RO $BR_DIR/$1 || abort

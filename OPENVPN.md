@@ -25,7 +25,7 @@ OpenVPN configuration (openvpn.conf):
 
 Installation steps required by the user (once)
 ----------------------------------------------
-- Create the directory /tmp/ffnvram/root-ssh/openvpn (permission 700).
+- Create the directory /nvram/ffnvram/root-ssh/openvpn (permission 700).
   All files mentioned below must be copied into this directory.
 - Create the daemon configuration file openvpn.conf.
   /usr/local/etc/openvpn/openvpn.conf.template can be used as template.
@@ -34,7 +34,6 @@ Installation steps required by the user (once)
 	- dh.pem 	- Diffie Hellman parameters
 	- machine.cert	- The certificate for the FritzBox
 	- machine.key	- The box private key
-- Make changes persistent by calling "nvsync"
 - Enable/start service:
 	- ffservice enable openvpn
 	- ffservice stop openvpn
@@ -54,10 +53,9 @@ Set up:
 For the Fritzbox (server):
 
 	./easyrsa build-server-full fbox nopass
-	scp ./pki/ca.crt ./pki/dh.pem root@192.168.178.1:/var/tmp/ffnvram/root-ssh/openvpn
-	scp ./pki/private/fbox.key root@192.168.178.1:/var/tmp/ffnvram/root-ssh/openvpn/machine.key
-	scp ./pki/issued/fbox.crt root@192.168.178.1:/var/tmp/ffnvram/root-ssh/openvpn/machine.cert
-	ssh root@192.168.178.1 nvsync
+	scp ./pki/ca.crt ./pki/dh.pem root@192.168.178.1:/var/nvram/ffnvram/root-ssh/openvpn
+	scp ./pki/private/fbox.key root@192.168.178.1:/var/nvram/ffnvram/root-ssh/openvpn/machine.key
+	scp ./pki/issued/fbox.crt root@192.168.178.1:/var/nvram/ffnvram/root-ssh/openvpn/machine.cert
 
 For the clients:
 
@@ -68,20 +66,3 @@ Use pki/ca.crt, private/myclient.key and issued/myclient.crt for client initiali
 TODO
 ====
 - Use Box DHCP server to assign addresses
-
-PERFORMANCE
-===========
-
-My performance numbers:
-
-	Cipher		Speed (Mbit/s)	openvpn daemon load
-	---------------	---------------	-------------------
-	BF-CBC		32 		47%
-	none		54		45%
-	AES-128-CBC	29		47%
-	
-
-The setup is:
-
-	PC[192.168.20.1] --- LAN --> Atom[192.168.20.253] -> OpenVPN -> lan bridge -> Cable(80mbit/sec) -> speedtest
-

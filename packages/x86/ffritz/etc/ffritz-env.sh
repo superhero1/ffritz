@@ -2,8 +2,10 @@
 # /usr/local (if package is intergrated into atom squashfs)
 #
 export FFINSTDIR=/usr/local
-export FFRITZ_HOME=/var/media/ftp/ffritz
 PATH=$PATH:$FFINSTDIR/bin
-NVRAM=/tmp/ffnvram
+NVRAM=`readlink -f /tmp/ffnvram`
 FFLOG=/var/log/ffritz.log
 BR_DIR=/tmp/br
+
+export FFRITZ_HOME=/var/media/ftp/ffritz
+export FFRITZ_DATA=/var/media/ftp/ffritz
