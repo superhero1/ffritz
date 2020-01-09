@@ -22,8 +22,17 @@ rebuild them is located below packages.
 Have Fun,
 <f/e/s/c/2/0/0/0/@/g/m/a/i/l/./c/o/m>
 
-NOTE: This is the main branch which only supports FrizOS 7. Older versions
-      are kept on the "fritzos6" branch.
+NOTES
+=====
+This is the main branch for 6x90 which only supports FrizOS 7.
+Older versions for 6x90 are kept on the "fritzos6" branch:
+
+	<https://bitbucket.org/fesc2000/ffritz/src/fritzos6>
+
+A version for FritzBox-6591 is in the 6591 branch:
+
+	<https://bitbucket.org/fesc2000/ffritz/src/6591>
+
 
 Usage
 =====
