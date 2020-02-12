@@ -3,10 +3,12 @@
 # Simple service management
 #
 
+. /usr/local/etc/ffritz-env.sh
+
 op=$1
 service=$2
 
-cd /tmp/ffnvram/etc/rc.d || exit 1
+cd $NVRAM/etc/rc.d || exit 1
 
 if [ "$op" = "list" ]; then
 	echo Available:
@@ -21,7 +23,7 @@ if [ -z "$op" -o -z "$service" ]; then
     exit 1
 fi
 
-service_file=`ls /tmp/ffnvram/etc/init.d/[0-9]*$service 2>/dev/null`
+service_file=`ls $NVRAM/etc/init.d/[0-9]*$service 2>/dev/null`
 
 if [ ! -f "$service_file" ]; then
     echo no such service: $service
@@ -34,7 +36,7 @@ case $op in
 	start)	$service_file start || echo $service started;;
 	stop)   $service_file stop  || echo $service stopped;;
 	enable) ln -sfv ../init.d/$service_fname .; nvsync;;
-	disable) rm -fv /tmp/ffnvram/etc/rc.d/$service_fname; nvsync;; 
+	disable) rm -fv $NVRAM/etc/rc.d/$service_fname; nvsync;; 
 	restart) $service_file stop;
 		 sleep 3;
 		 $service_file start || echo $service restarted;;

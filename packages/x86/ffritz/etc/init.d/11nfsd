@@ -26,6 +26,6 @@ fi
 
 # Have portmap daemon listen on lan bridge
 #
-portmap $lanip
+portmap -i $lanip
 
 ffdaemon $FFINSTDIR/bin/unfsd -d -e $EXPORTS 

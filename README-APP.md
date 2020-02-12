@@ -43,6 +43,7 @@ or
 
 The script /usr/local/etc/ffshutdown attempts to unmount the application
 package by
+
 - stopping all services
 - killing all remaining PIDs that access the image
 - unmounting /usr/local
@@ -127,6 +128,7 @@ Specific tools and services might require executing them in the chroot
 environment.
 
 For example, to start a http server on port 81:
+
 - run "make atom-brconfig" and add lighttpd
 - run "make package-atom" to rebuild the application package
 - install it to the box as described (ffinstall -r package checksum)
@@ -223,6 +225,7 @@ Building the application image
 ==============================
 
 You can either use the pre-built images from
+
 - the download section: https://bitbucket.org/fesc2000/ffritz/downloads
 - my private server with dailiy builds (sorry, only ftp for now):
   ftp://ftp.ffesh.de/pub/ffritz/FritzOS7/daily/
@@ -276,6 +279,7 @@ Steps performed by the startup script:
 Restart services without box reboot
 -----------------------------------
 If you do not want to restart the box after installing a new image:
+
 - Stop all ffritz services:
 
 	/usr/local/etc/ffshutdown
