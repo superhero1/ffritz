@@ -1,5 +1,5 @@
 
-KERNELS	= 3.12.59 3.12.74
+KERNELS	= 3.12.59 3.12.74 4.9.175
 MODULES = wireguard
 
 ifeq ($(DESTDIR),)
