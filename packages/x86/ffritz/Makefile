@@ -157,7 +157,7 @@ stage: $(BINFILES) $(ETCFILES) $(INSTDIRS)
 	rm -f $(INSTDIR)/bin/avahi*
 	cd $(INSTDIR)/share; ln -s ../buildroot/usr/share/terminfo .
 	# buildroot binaries link against /lib/libc.so.0
-	cd $(BRCOPY)/usr/lib; ln -s ../../lib/libuClibc-1.0.*.so libc.so.0; ln -s ../../lib/libuClibc-1.0.*.so libc.so.1
+#	cd $(BRCOPY)/usr/lib; ln -s ../../lib/libuClibc-1.0.*.so libc.so.0; ln -s ../../lib/libuClibc-1.0.*.so libc.so.1
 	readlink ${BR_TGT}/lib/libc.so.* | xargs basename > glibc-version || exit 1
 	
 clean: 
