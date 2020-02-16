@@ -1,0 +1,6 @@
+--- orig/etc/udev/rules.d/10-console.rules	2020-02-04 05:47:40.000000000 -0500
++++ squashfs-root/etc/udev/rules.d/10-console.rules	2020-02-15 07:04:54.230161539 -0500
+@@ -1,2 +1,2 @@
+ KERNEL=="console", SUBSYSTEM=="tty", GROUP="root", MODE="0662"
+-
++KERNEL=="ttyACM[0-9]*", GROUP="tty", MODE="0666"

@@ -52,7 +52,7 @@ elif [ -f /etc/version ]; then
         fi
 	FIRMWARE_VERSION=unknown
         eval `grep FIRMWARE_VERSION= /etc/version`
-        echo "BACKUP firmware version:  $FIRMWARE_VERSION  [$other]  $mod"
+        echo "RUNNING firmware version:  $FIRMWARE_VERSION  [$this]  $mod"
 else
 	echo "RUNNING firmware version: unknown  [$this]"
 fi
@@ -68,8 +68,8 @@ if [ -f var/content ]; then
 	fi
 	eval `grep Version= var/content`
 	eval `grep Type= var/content`
-	echo "BACKUP firmware version: $Version $Type  [$this]  $mod"
-elif [ -f /etc/version ]; then
+	echo "BACKUP firmware version: $Version $Type  [$other]  $mod"
+elif [ -f /mnt/etc/version ]; then
         mod=
         if [ -d /mnt/usr/lib/ff ]; then
                 mod=modified
@@ -83,15 +83,11 @@ fi
 umount /mnt >/dev/null 2>&1
 
 if [ "x$1" = "x-e" ]; then
-	echo Sorry, not yet supported
-	echo To switch bank AND reset call
-	echo
-	echo /bin/aicmd pumaglued uimg switchandreboot
-#	echo linux_fs_start ${linux_fs_start} >${CONFIG_ENVIRONMENT_PATH}/environment
-#	echo switched to boot bank $linux_fs_start
+	echo Rebooting with new image ..
+	/bin/aicmd pumaglued uimg switchandreboot
 else
 	echo
-	echo Execute the following command, followed by /sbin/reboot, to flip boot bank:
+	echo Execute the following command to flip boot bank and reboot:
 	echo
 	echo /bin/aicmd pumaglued uimg switchandreboot
 #	echo " echo linux_fs_start ${linux_fs_start} >${CONFIG_ENVIRONMENT_PATH}/environment"

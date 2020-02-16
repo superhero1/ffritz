@@ -20,18 +20,19 @@ SUDO	=
 # URL=https://avm.de/fileadmin/user_upload/DE/Labor/Download/fritzbox-labor_6591-71081.zip
 #URL=ftp://jason:274jgjg85hh36@update.avm.de/labor/6591/labor_71700/FRITZ.Box_6591_Cable-07.08-71700-LabBETA.image
 #URL=ftp://jason:274jgjg85hh36@update.avm.de/labor/6591/labor_72169/FRITZ.Box_6591_Cable-07.08-72169-LabBETA.image
-URL=http://download.avm.de/firmware/6591/79013767/FRITZ.Box_6591_Cable-07.12-72501-Release.image
+#URL=http://download.avm.de/firmware/6591/79013767/FRITZ.Box_6591_Cable-07.12-72501-Release.image
+#URL=http://download.avm.de/firmware/6591/213215464/FRITZ.Box_6591_Cable-07.13.image
+URL=fritzbox-6591-labor-75516.zip
 
 # Keep original rootfs for diff?
 # sudo dirdiff arm/orig/ arm/squashfs-root/
 #
 KEEP_ORIG = 1
 
-# The optional arm package contains some none-essential binaries for the
-# arm core (not really required any more)
-# DOWNLOAD to fetch binary package
+# Set this to 1 to enable the serial consoles (this requires root/sudo since it does 
+# a loop mount of the EFI boot fs)
 #
-#FFRITZ_ARM_PACKAGE=DOWNLOAD
+ENABLE_CONSOLE=1
 
 ## Host tools (unsquashfs4-lzma-avm-be, mksquashfs4-lzma-avm-be) can either be built
 # (using squashfstools-be target), or try the pre-compiled binaries
@@ -84,6 +85,9 @@ FWNUM=$(subst .,,$(FWVER))
 ifeq ($(FWVER),)
 $(error Could not determine firmware version ($(ORIG) missing?))
 endif
+
+FWMAJ=$(shell echo $(FWVER) | sed -e 's/\..*//')
+FWMIN=$(shell echo $(FWVER) | sed -e 's/.*\.//')
 
 #DFL_ARM_PACKAGE=packages/arm/ffritz/ffritz-arm-$(ARM_VER)-fos7.tar.gz
 ifeq ($(FFRITZ_ARM_PACKAGE),DOWNLOAD)
@@ -173,7 +177,13 @@ packages/arm/ffritz/ffritz-arm-$(ARM_VER).tar.gz:
 #
 atomfs:	atom/filesystem.image
 
-ATOM_PATCHES = 50-udev-default.patch profile.patch rc.tail.patch oem.patch
+ATOM_PATCHES = profile.patch oem.patch
+
+ifeq ($(shell test $(FWMAJ) -eq 7 -a $(FWMIN) -lt 19 ; echo $$?),0)
+ATOM_PATCHES += 50-udev-default.patch
+else
+ATOM_PATCHES += 10-console.rules.patch
+endif
 
 ATOM_PATCHST=$(ATOM_PATCHES:%=atom/.applied.%)
 
@@ -219,6 +229,15 @@ $(RELDIR)/$(FWFILE): atomfs armfs $(RELDIR)
 	@rm -f $(RELDIR)/var/remote/var/tmp/filesystem.image
 	@cp atom/mod/usr/bin/switch_bootbank $(RELDIR)/var
 	@cp -f atom/filesystem.image tmp/uimage/*ATOM_ROOTFS.bin
+ifeq ($(ENABLE_CONSOLE),1)
+	@echo "PATCH  part_02_ATOM_KERNEL.bin"
+	@mkdir -p tmp/mnt; sudo mount -o loop tmp/uimage/part_02_ATOM_KERNEL.bin tmp/mnt 2>/dev/null
+	@test -f tmp/mnt/EFI/BOOT/startup.nsh
+	@(echo mm 0xfed94810 0x00914b49 -w 4; echo mm 0xfed94820 0x00914b49 -w 4; cat tmp/mnt/EFI/BOOT/startup.nsh) > /tmp/.startup.nsh
+	@sudo cp /tmp/.startup.nsh tmp/mnt/EFI/BOOT/startup.nsh
+	@sudo umount tmp/mnt 2>/dev/null
+	@rm -f /tmp/.startup.nsh
+endif
 	@echo "PACK   firmware-update.uimg"
 	@$(TOPDIR)/src/uimg/uimg -p -n tmp/uimage/part $(RELDIR)/var/firmware-update.uimg
 	@echo "PACK   $(RELDIR)/$(FWFILE)"

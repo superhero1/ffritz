@@ -199,6 +199,14 @@ TODO
 Change history of ffritz core integration:
 ==========================================
 
+NEXT (24)
+=========
+- Add support for Firmware 7.19
+- Add Makefile option to enable console
+
+TODO
+- Application package
+
 release 23
 ----------
 - Toolchain
