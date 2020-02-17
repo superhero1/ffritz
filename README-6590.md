@@ -57,23 +57,23 @@ FB6490/Puma6 block diagram, Firmware 6.8x (no claim for correctness)
 +------------------------------------------------------------+    |     |
 |eMMC                                                        +----+     |
 +------------------------------------------------------------+          |
-|Off KB  |Size   |Content    |ARM |ATOM|EVA(*)|Comment       |          |       6591
+|Off KB  |Size   |Content    |ARM |ATOM|EVA(*)|Comment       |          | 
 +------------------------------------------------------------+          |
-|0       |64MB   |ARM FS   1 |mmcblk0p1|mtd0  |or mtd11(*)   |          |	Atom FS	
+|0       |64MB   |ARM FS   1 |mmcblk0p1|mtd0  |or mtd11(*)   |          |
 +------------------------------------------------------------+          |
-|0x10000 |8MB    |ARM Kern 1 |mmcblk0p2|mtd1  |or mtd12(*)   |          |	Atom Krn
+|0x10000 |8MB    |ARM Kern 1 |mmcblk0p2|mtd1  |or mtd12(*)   |          |
 +------------------------------------------------------------+          |	
-|0x12000 |64MB   |Atom FS  1 |mmcblk0p3|mtd6  |or mtd13(*)   |          |	ARM FS
+|0x12000 |64MB   |Atom FS  1 |mmcblk0p3|mtd6  |or mtd13(*)   |          |
 +------------------------------------------------------------+          |	
-|0x22000 |8MB    |Atom Krn 1 |mmcblk0p4|mtd7  |or mtd14(*)   |          |	ARM Krn
+|0x22000 |8MB    |Atom Krn 1 |mmcblk0p4|mtd7  |or mtd14(*)   |          |
 +------------------------------------------------------------+          |
-|0x24000 |64MB   |ARM FS   2 |mmcblk0p5|mtd11 |or mtd0(*)    |          |       Atom FS
+|0x24000 |64MB   |ARM FS   2 |mmcblk0p5|mtd11 |or mtd0(*)    |          |
 +------------------------------------------------------------+          |    
-|0x34000 |8MB    |ARM Kern 2 |mmcblk0p6|mtd12 |or mtd1(*)    |          |       Atom Krn
+|0x34000 |8MB    |ARM Kern 2 |mmcblk0p6|mtd12 |or mtd1(*)    |          |
 +------------------------------------------------------------+          |
-|0x36000 |64MB   |Atom FS  2 |mmcblk0p7|mtd13 |or mtd6(*)    |          |       ARM FS
+|0x36000 |64MB   |Atom FS  2 |mmcblk0p7|mtd13 |or mtd6(*)    |          |
 +------------------------------------------------------------+          |
-|0x46000 |8MB    |Atom Krn 2 |mmcblk0p8|mtd14 |or mtd7(*)    |          |       ARM Krn
+|0x46000 |8MB    |Atom Krn 2 |mmcblk0p8|mtd14 |or mtd7(*)    |          |
 +------------------------------------------------------------+          |
 |0x48000 |1.5GB  |NAS        |mmcblk0p9|      |/^ar/media/ftp|          |
 +------------------------------------------------------------+          |

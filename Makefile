@@ -6,52 +6,26 @@ HOST    = $(shell uname -m)
 DLDIR   = $(TOPDIR)/packages/dl
 SUDO	=
 
+-include conf.mk
 
-################################################################################
-# Configuration
-################################################################################
-#
-# The original firmware .image/.zip URL
-# (or directly put the file to packages/dl)
-#
-# Labor image:
-# https://avm.de/fileadmin/user_upload/DE/Labor/Download/fritzbox-labor_6591-71081.zip
-#
-# URL=https://avm.de/fileadmin/user_upload/DE/Labor/Download/fritzbox-labor_6591-71081.zip
-#URL=ftp://jason:274jgjg85hh36@update.avm.de/labor/6591/labor_71700/FRITZ.Box_6591_Cable-07.08-71700-LabBETA.image
-#URL=ftp://jason:274jgjg85hh36@update.avm.de/labor/6591/labor_72169/FRITZ.Box_6591_Cable-07.08-72169-LabBETA.image
-#URL=http://download.avm.de/firmware/6591/79013767/FRITZ.Box_6591_Cable-07.12-72501-Release.image
-#URL=http://download.avm.de/firmware/6591/213215464/FRITZ.Box_6591_Cable-07.13.image
-URL=fritzbox-6591-labor-75516.zip
+ifeq ($(URL),)
+include conf.mk.dfl
+endif
 
-# Keep original rootfs for diff?
-# sudo dirdiff arm/orig/ arm/squashfs-root/
-#
-KEEP_ORIG = 1
+ifeq ($(URL),)
+$(error URL not set.)
+endif
 
-# Set this to 1 to enable the serial consoles (this requires root/sudo since it does 
-# a loop mount of the EFI boot fs)
-#
-ENABLE_CONSOLE=1
-
-## Host tools (unsquashfs4-lzma-avm-be, mksquashfs4-lzma-avm-be) can either be built
-# (using squashfstools-be target), or try the pre-compiled binaries
-#
-#HOSTTOOLS=$(TOPDIR)/freetz/tools
+ifeq ($(HOSTTOOLS),)
 HOSTTOOLS=$(TOPDIR)/host/$(HOST)
-
-###############################################################################################
+endif
 
 all: release
 
-###############################################################################################
 RELDIR  = release$(VERSION)
 
 #ARM_MODFILES = $(shell find arm/mod/ -type f -o -type d)
 ATOM_MODFILES = $(shell find atom/mod/ -type f -o -type d)
-
-###############################################################################################
-###############################################################################################
 
 ITYPE=$(shell echo $(URL) | sed -e 's/.*\.//')
 DLIMAGE=$(DLDIR)/$(shell basename $(URL))
@@ -231,12 +205,13 @@ $(RELDIR)/$(FWFILE): atomfs armfs $(RELDIR)
 	@cp -f atom/filesystem.image tmp/uimage/*ATOM_ROOTFS.bin
 ifeq ($(ENABLE_CONSOLE),1)
 	@echo "PATCH  part_02_ATOM_KERNEL.bin"
-	@mkdir -p tmp/mnt; sudo mount -o loop tmp/uimage/part_02_ATOM_KERNEL.bin tmp/mnt 2>/dev/null
-	@test -f tmp/mnt/EFI/BOOT/startup.nsh
-	@(echo mm 0xfed94810 0x00914b49 -w 4; echo mm 0xfed94820 0x00914b49 -w 4; cat tmp/mnt/EFI/BOOT/startup.nsh) > /tmp/.startup.nsh
-	@sudo cp /tmp/.startup.nsh tmp/mnt/EFI/BOOT/startup.nsh
-	@sudo umount tmp/mnt 2>/dev/null
-	@rm -f /tmp/.startup.nsh
+	@mkdir -p tmp/mnt
+	@sudo mount -o loop tmp/uimage/part_02_ATOM_KERNEL.bin tmp/mnt >/dev/null 2>&1
+	@test -r tmp/mnt/EFI/BOOT/startup.nsh
+	@(echo mm 0xfed94810 0x00914b49 -w 4; echo mm 0xfed94820 0x00914b49 -w 4; cat tmp/mnt/EFI/BOOT/startup.nsh) > .startup.nsh
+	@sudo cp .startup.nsh tmp/mnt/EFI/BOOT/startup.nsh
+	@sudo umount tmp/mnt >/dev/null 2>&1
+	@rm -f .startup.nsh
 endif
 	@echo "PACK   firmware-update.uimg"
 	@$(TOPDIR)/src/uimg/uimg -p -n tmp/uimage/part $(RELDIR)/var/firmware-update.uimg

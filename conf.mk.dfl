@@ -1,0 +1,30 @@
+################################################################################
+# Configuration
+################################################################################
+#
+## The original firmware .image/.zip URL (or directly put the file to packages/dl)
+##
+## Labor image:
+#
+#URL=https://avm.de/fileadmin/user_upload/DE/Labor/Download/fritzbox-6591-labor-75516.zip
+#
+## Release images:
+#
+#URL=http://download.avm.de/firmware/6591/79013767/FRITZ.Box_6591_Cable-07.12-72501-Release.image
+URL=http://download.avm.de/firmware/6591/213215464/FRITZ.Box_6591_Cable-07.13.image
+
+## Keep original rootfs for diff?
+## sudo dirdiff arm/orig/ arm/squashfs-root/
+#
+KEEP_ORIG = 1
+
+## Set this to 1 to enable the serial consoles (this requires root/sudo since it does 
+## a loop mount of the EFI boot fs)
+#
+#ENABLE_CONSOLE=1
+
+## Host tools (unsquashfs4-lzma-avm-be, mksquashfs4-lzma-avm-be) can either be built
+# (using squashfstools-be target), or try the pre-compiled binaries
+#
+#HOSTTOOLS=$(TOPDIR)/freetz/tools
+HOSTTOOLS=$(TOPDIR)/host/$(HOST)

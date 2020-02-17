@@ -1,6 +1,11 @@
 Change history of application package
 =====================================
 
+NEXT (puma7-14)
+=========
+- Don't activate any service except buildroot on a fresh installation
+- Fix LD_LIBRARY_PATH for ff wrapper (required for 7.19)
+
 Release puma7-13
 ================
 - linux kernel modules
@@ -203,9 +208,9 @@ NEXT (24)
 =========
 - Add support for Firmware 7.19
 - Add Makefile option to enable console
+- Move configurable make settings to conf.mk
 
 TODO
-- Application package
 
 release 23
 ----------

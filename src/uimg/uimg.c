@@ -47,8 +47,15 @@ dev_to_name[] =
 
 const char *help =
 " uimg -u|p [-n <name>] uimg-file\n"
-"   -u   unpack all partitions and write to .bin files\n"
-"   -p   pack all partition files with -n prefix and write to uimg-file\n"
+"   -u   unpack all partitions and write them to .bin files named\n"
+"        name_nn[_suffix].bin, where\n"
+"        - name is the given name or uimg-file (including the path, without\n"
+"          file extension).\n"
+"        - nn is the logical partition number.\n"
+"        - suffix is the name of the partition content, if known by the tool.\n"
+"   -p   pack all partition files with -n prefix and write to uimg-file.\n"
+"        All file names matching the above file format are added as partition.\n"
+"        The file name can be with content _suffix (default) or without.\n"
 "   -n   name prefix for output files (default: input file name without suffix)\n"
 ;
 
@@ -126,6 +133,7 @@ void generate(char *fname, char *prefix)
 	int i, j;
 	struct uimg_head head;
 	char *in_name = alloca(strlen(prefix) + 20);
+	char *in_name_verb = alloca(strlen(prefix) + 20);
 	uint32_t in_size;
 	char *buffer;
 	uint32_t img_crc = 0;
@@ -154,21 +162,26 @@ void generate(char *fname, char *prefix)
 
 	for (i = 0; (i < 99) && (part_idx < UIMG_NUM_PARTITIONS) ; i++)
 	{
-		sprintf (in_name, "%s_%02d", prefix, i);
+		sprintf (in_name, "%s_%02d.bin", prefix, i);
+		strcpy (in_name_verb, in_name);
 
 		for (j = 0; dev_to_name[j].name != NULL; j++)
 		{
 			if (i == dev_to_name[j].dev)
 			{
-				strcat (in_name, "_");
-				strcat (in_name, dev_to_name[j].name);
+				sprintf (in_name_verb, "%s_%02d_%s.bin", prefix, i, dev_to_name[j].name);
 				break;
 			}
 		}
-		strcat (in_name, ".bin");
 
-		in_fd = open(in_name, O_RDONLY);
-		if (in_fd == 0)
+		in_fd = open(in_name_verb, O_RDONLY);
+
+		if (in_fd == -1)
+			in_fd = open(in_name, O_RDONLY);
+		else
+			strcpy (in_name, in_name_verb);
+
+		if (in_fd == -1)
 			continue;
 
 		in_size = (uint32_t)lseek (in_fd, 0, SEEK_END);
@@ -222,6 +235,7 @@ void generate(char *fname, char *prefix)
 	head.size = size;
 	head.data_crc = img_crc;
 
+	/* Adjust endianess */
 	head.magic = BE_TO_HOST(head.magic);
 	head.unknown1 = BE_TO_HOST(head.unknown1);
 	head.unknown2 = BE_TO_HOST(head.unknown2);
@@ -230,9 +244,11 @@ void generate(char *fname, char *prefix)
 	head.size = BE_TO_HOST(head.size);
 	head.data_crc = BE_TO_HOST(head.data_crc);
 
+	/* update header CRC */
 	head.head_crc = crc32((void*)&head, sizeof(head), NULL);
 	head.head_crc = BE_TO_HOST(head.head_crc);
 
+	/* update file with final header */
 	lseek (out_fd, 0, SEEK_SET);
 
 	if (write (out_fd, &head, sizeof(head)) != sizeof(head))
@@ -338,6 +354,9 @@ int main (int argc, char **argv)
 		{
 		case 'h':
 			printf (help);
+			printf ("\n Known content names:\n");
+			for (i = 0; dev_to_name[i].name != NULL; i++)
+				printf ("  Num=%02d Name=%s\n", dev_to_name[i].dev, dev_to_name[i].name);
 			exit (0);
 		case 'p':
 			mode = pack;

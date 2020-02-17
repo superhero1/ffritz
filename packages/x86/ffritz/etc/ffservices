@@ -51,7 +51,9 @@ prep_etcdir()
 			mod=1
 			ln -s $FFINSTDIR/etc/init.d/$svc $NVRAM/etc/init.d/$svc
 			cd $NVRAM/etc/rc.d/
-			ln -s ../init.d/$svc .
+# Don't activate any service by default, except buildroot
+#			ln -s ../init.d/$svc .
+			ln -s ../init.d/*buildroot .
 		fi
 	done
 

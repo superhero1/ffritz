@@ -84,6 +84,7 @@ umount /mnt >/dev/null 2>&1
 
 if [ "x$1" = "x-e" ]; then
 	echo Rebooting with new image ..
+	sleep 2
 	/bin/aicmd pumaglued uimg switchandreboot
 else
 	echo

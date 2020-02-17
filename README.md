@@ -39,7 +39,12 @@ Creating an install/update firmware image
 
     `git clone --branch 6591 https://fesc2000@bitbucket.org/fesc2000/ffritz.git`
 
-- Go to ffritz directory and run "make".
+- Go to ffritz directory
+
+- To change the default build settings (AVM image URL, etc) copy conf.mk.dfl to
+  conf.mk and edit it.
+
+- Run make
 
 Note that this will use pre-built binaries checked into the git repository.
 To rebuild these binaries:
@@ -47,7 +52,7 @@ To rebuild these binaries:
 	make rebuild
 
 If you want to build an image based on a different original firmware, select
-the URL definition in the Makefile (by commenting out the one you want).
+the URL definition in conf.mk (by commenting out the one you want).
 Or place the image file to the packages/dl directory and set URL=filename
 
 IMPORTANT NOTE
@@ -67,7 +72,7 @@ Installing the image (with ssh/telnet access)
 - Extract the image:
 
 ~~~
-	cd /var/media/ftp; tar xf fb6591_7.12-23.tar
+	cd /var/media/ftp; tar xf fb6591_7.13-24.tar
 ~~~
 
 - Install the image:
