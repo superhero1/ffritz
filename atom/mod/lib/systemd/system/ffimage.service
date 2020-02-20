@@ -1,9 +1,8 @@
 [Service]
 ExecStart=/etc/init.d/S93-ffimage
-ExecStart=/etc/init.d/S93-ffstart
 ExecStop=/usr/local/etc/ffshutdown
 Type=oneshot
-After=ffinit.service net.service
+After=ffinit.service
 RemainAfterExit=yes
 [Install]
 WantedBy=multi-user.target
