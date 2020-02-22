@@ -4,6 +4,7 @@
 #                   
 . /usr/local/etc/ffritz-env.sh || exit 1
 
+
 WGDIR=$NVRAM/etc/wireguard
 
 if [ "x$1" = "xstop" ]; then
@@ -15,6 +16,12 @@ fi
 
 if [ ! -f $WGDIR/wg0.conf ]; then
 	echo WireGuard not started, no config file
+	exit 0
+fi
+
+if [ `echo $CONFIG_VERSION | tr -d '.'` -gt 712 ]; then
+	echo 'Sorry, wireguard will not yet run on firmware > 7.12' 1>&2
+	echo 'Sorry, wireguard will not yet run on firmware > 7.12' > /dev/console
 	exit 0
 fi
 

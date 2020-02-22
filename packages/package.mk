@@ -6,32 +6,35 @@
 # DESTDIR: installation base (default: output)
 #	   TOOLCHAIN to install to buildroot
 # PKGNAME: Name of package   (default: dirname)
-# URL:     URL of download tar file (default: content of url-PKGNAME)
+# URL:     URL of download tar file (default: content of url-pkgname)
+# GIT:     URL of git repository (default: content of git-pkgname)
+#					 You might also want to specify the tag in COMMIT / commit-pkgname.
 #
 # MAKE_OPTIONS: Options for make call
 # MAKE_SUBDIR:  Subdir in source tree to call make in (with / prefix)
 # MAKE_INSTALL_TGT: Target(s) for make install call (default: install)
 # MAKE_INSTALL_OPTIONS: Options for make install call
 # NO_MAKE_INSTALL: If set, no make install is called
-# INSTALL_BIN: files to put in DESTDIR/bin
-# INSTALL_LIB: files/dirs to put in DESTDIR/lib
-# INSTALL_ETC: files/dirs to put in DESTDIR/etc
-# INSTALL_SHARE: files/dirs to put in DESTDIR/share
+# INSTALL_BIN: files to put in DESTDIR/bin, don't call make install
+# INSTALL_LIB: files/dirs to put in DESTDIR/lib, don't call make install
+# INSTALL_ETC: files/dirs to put in DESTDIR/etc, don't call make install
+# INSTALL_SHARE: files/dirs to put in DESTDIR/share, don't call make install
 # FORCE_MAKE_INSTALL: force make install even if INSTALL_XX is set
 # CUSTOM_DEP: Own dependencies for preparing build
 # BUILDDIR: Name of build sub-directory (default: build)
 # 
 
+ARCHDIR=$(shell while test -f arch.mk && echo $$PWD && exit 0; [[ $PWD != / ]]; do cd ..; done)
 
 ## Standard definitions 
 #
-include ../arch.mk
+include $(ARCHDIR)/arch.mk
 
-PKGTOP	= $(shell cd ../..; pwd)
+PKGTOP	= $(shell cd $(ARCHDIR)/..; pwd)
 DLDIR	= $(PKGTOP)/dl
 
 TOPDIR	    = $(shell pwd)
-BUILDROOT   = $(shell cd ../buildroot/build; pwd)
+BUILDROOT   = $(shell cd $(ARCHDIR)/buildroot/build; pwd)
 TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
 SYSROOT	    = $(BUILDROOT)/output/host/usr/$(HOST)/sysroot
 TGTDIR	    = $(BUILDROOT)/output/target
@@ -61,9 +64,11 @@ FILE	= $(DLDIR)/$(shell basename $(URL))
 else
 ifneq ($(GIT),)
 REPO	= $(DLDIR)/$(PKGNAME)_git
+ifeq ($(COMMIT),)
 COMMIT  = $(shell test -r $(PKGTOP)/commit-$(PKGNAME) && cat $(PKGTOP)/commit-$(PKGNAME))
 ifeq ($(COMMIT),)
 COMMIT	= HEAD
+endif
 endif
 else
 $(error No url/git file for $(PKGNAME))

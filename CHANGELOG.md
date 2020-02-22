@@ -1,6 +1,18 @@
 Change history of application package
 =====================================
 
+Release puma7-14
+================
+- Don't activate any service except buildroot on a fresh installation
+- Fix LD_LIBRARY_PATH for ff wrapper (required for 7.19)
+- ffimage=0 option in kernel_args EFI parameter will prevent application 
+  image startup.
+
+ISSUES
+- wireguard
+	- Kernel panic in 7.13 on "ip link up", will not load here
+	- Same on 7.19, so kernel module will not be built
+
 Release puma7-13
 ================
 - linux kernel modules
@@ -198,6 +210,19 @@ TODO
 
 Change history of ffritz core integration:
 ==========================================
+
+release 24
+----------
+- Add support for Lab Firmware 7.19
+	- New init system
+	- kernel 4.9.175
+- Add Makefile option to enable console
+- Move configurable make settings to conf.mk
+- uimg tool: Partition files names can be without content identifier.
+- ffimage=0 option in kernel_args EFI parameter will prevent mounting of 
+  image startup.
+
+TODO
 
 release 23
 ----------

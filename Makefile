@@ -6,51 +6,26 @@ HOST    = $(shell uname -m)
 DLDIR   = $(TOPDIR)/packages/dl
 SUDO	=
 
+-include conf.mk
 
-################################################################################
-# Configuration
-################################################################################
-#
-# The original firmware .image/.zip URL
-# (or directly put the file to packages/dl)
-#
-# Labor image:
-# https://avm.de/fileadmin/user_upload/DE/Labor/Download/fritzbox-labor_6591-71081.zip
-#
-# URL=https://avm.de/fileadmin/user_upload/DE/Labor/Download/fritzbox-labor_6591-71081.zip
-#URL=ftp://jason:274jgjg85hh36@update.avm.de/labor/6591/labor_71700/FRITZ.Box_6591_Cable-07.08-71700-LabBETA.image
-#URL=ftp://jason:274jgjg85hh36@update.avm.de/labor/6591/labor_72169/FRITZ.Box_6591_Cable-07.08-72169-LabBETA.image
-URL=http://download.avm.de/firmware/6591/79013767/FRITZ.Box_6591_Cable-07.12-72501-Release.image
+ifeq ($(URL),)
+include conf.mk.dfl
+endif
 
-# Keep original rootfs for diff?
-# sudo dirdiff arm/orig/ arm/squashfs-root/
-#
-KEEP_ORIG = 1
+ifeq ($(URL),)
+$(error URL not set.)
+endif
 
-# The optional arm package contains some none-essential binaries for the
-# arm core (not really required any more)
-# DOWNLOAD to fetch binary package
-#
-#FFRITZ_ARM_PACKAGE=DOWNLOAD
-
-## Host tools (unsquashfs4-lzma-avm-be, mksquashfs4-lzma-avm-be) can either be built
-# (using squashfstools-be target), or try the pre-compiled binaries
-#
-#HOSTTOOLS=$(TOPDIR)/freetz/tools
+ifeq ($(HOSTTOOLS),)
 HOSTTOOLS=$(TOPDIR)/host/$(HOST)
-
-###############################################################################################
+endif
 
 all: release
 
-###############################################################################################
 RELDIR  = release$(VERSION)
 
 #ARM_MODFILES = $(shell find arm/mod/ -type f -o -type d)
 ATOM_MODFILES = $(shell find atom/mod/ -type f -o -type d)
-
-###############################################################################################
-###############################################################################################
 
 ITYPE=$(shell echo $(URL) | sed -e 's/.*\.//')
 DLIMAGE=$(DLDIR)/$(shell basename $(URL))
@@ -84,6 +59,9 @@ FWNUM=$(subst .,,$(FWVER))
 ifeq ($(FWVER),)
 $(error Could not determine firmware version ($(ORIG) missing?))
 endif
+
+FWMAJ=$(shell echo $(FWVER) | sed -e 's/\..*//')
+FWMIN=$(shell echo $(FWVER) | sed -e 's/.*\.//')
 
 #DFL_ARM_PACKAGE=packages/arm/ffritz/ffritz-arm-$(ARM_VER)-fos7.tar.gz
 ifeq ($(FFRITZ_ARM_PACKAGE),DOWNLOAD)
@@ -173,7 +151,13 @@ packages/arm/ffritz/ffritz-arm-$(ARM_VER).tar.gz:
 #
 atomfs:	atom/filesystem.image
 
-ATOM_PATCHES = 50-udev-default.patch profile.patch rc.tail.patch oem.patch
+ATOM_PATCHES = profile.patch oem.patch
+
+ifeq ($(shell test $(FWMAJ) -eq 7 -a $(FWMIN) -lt 19 ; echo $$?),0)
+ATOM_PATCHES += 50-udev-default.patch
+else
+ATOM_PATCHES += 10-console.rules.patch
+endif
 
 ATOM_PATCHST=$(ATOM_PATCHES:%=atom/.applied.%)
 
@@ -219,6 +203,16 @@ $(RELDIR)/$(FWFILE): atomfs armfs $(RELDIR)
 	@rm -f $(RELDIR)/var/remote/var/tmp/filesystem.image
 	@cp atom/mod/usr/bin/switch_bootbank $(RELDIR)/var
 	@cp -f atom/filesystem.image tmp/uimage/*ATOM_ROOTFS.bin
+ifeq ($(ENABLE_CONSOLE),1)
+	@echo "PATCH  part_02_ATOM_KERNEL.bin"
+	@mkdir -p tmp/mnt
+	@sudo mount -o loop tmp/uimage/part_02_ATOM_KERNEL.bin tmp/mnt >/dev/null 2>&1
+	@test -r tmp/mnt/EFI/BOOT/startup.nsh
+	@(echo mm 0xfed94810 0x00914b49 -w 4; echo mm 0xfed94820 0x00914b49 -w 4; cat tmp/mnt/EFI/BOOT/startup.nsh) > .startup.nsh
+	@sudo cp .startup.nsh tmp/mnt/EFI/BOOT/startup.nsh
+	@sudo umount tmp/mnt >/dev/null 2>&1
+	@rm -f .startup.nsh
+endif
 	@echo "PACK   firmware-update.uimg"
 	@$(TOPDIR)/src/uimg/uimg -p -n tmp/uimage/part $(RELDIR)/var/firmware-update.uimg
 	@echo "PACK   $(RELDIR)/$(FWFILE)"

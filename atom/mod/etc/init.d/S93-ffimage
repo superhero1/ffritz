@@ -18,6 +18,11 @@ export FFLOG=/var/log/ffritz.log
 #	REL=-${UCLIB_VERSION}
 #fi
 
+# Do not even try to mount the image if ffimage=0 is specified
+# in kernel_args
+#
+grep 'ffimage=0' /sys/firmware/efi/vars/kernel_args-*/data >/dev/null 2>&1 && exit 1
+
 DATADIR=$FFRITZ_HOME/data
 
 NVRAM_FILE=$DATADIR/ffstore.dat

@@ -27,6 +27,7 @@
 
 #define BE_TO_HOST(v) (((((uint8_t*)&(v))[0]) << 24) | ((((uint8_t*)&(v))[1]) << 16) | ((((uint8_t*)&(v))[2]) << 8) | (((uint8_t*)&(v))[3]))
 
+/* uimg header. All data is stored in big endian byte order. */
 struct uimg_head
 {
 	uint32_t magic;

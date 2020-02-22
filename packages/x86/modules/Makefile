@@ -1,4 +1,5 @@
 
+#KERNELS	= 3.12.59 3.12.74 4.9.175
 KERNELS	= 3.12.59 3.12.74
 MODULES = wireguard
 

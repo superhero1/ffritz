@@ -4,6 +4,17 @@ This image provides some additional software packages for the atom core,
 which i have implemented/ported mainly for the purpose of operating the
 FritzBox as media player for my dumb old amplifier.
 
+If the box fails to start due to some issue in the application image, its 
+execution can be prevented by adding the keyword 'ffimage=0' to the 
+kernel_args nvram variable in the EVA bootloader:
+
+Log in to the bootloader ca. 5 seconds after starting the box
+("ftp 192.168.178.1", password adam2/adam2) and run this command:
+
+	quote SETENV kernel_args ffimage=0
+
+And restart the box.
+
 Features
 ========
 
@@ -43,6 +54,7 @@ or
 
 The script /usr/local/etc/ffshutdown attempts to unmount the application
 package by
+
 - stopping all services
 - killing all remaining PIDs that access the image
 - unmounting /usr/local
@@ -127,6 +139,7 @@ Specific tools and services might require executing them in the chroot
 environment.
 
 For example, to start a http server on port 81:
+
 - run "make atom-brconfig" and add lighttpd
 - run "make package-atom" to rebuild the application package
 - install it to the box as described (ffinstall -r package checksum)
@@ -223,6 +236,7 @@ Building the application image
 ==============================
 
 You can either use the pre-built images from
+
 - the download section: https://bitbucket.org/fesc2000/ffritz/downloads
 - my private server with dailiy builds (sorry, only ftp for now):
   ftp://ftp.ffesh.de/pub/ffritz/FritzOS7/daily/
@@ -276,6 +290,7 @@ Steps performed by the startup script:
 Restart services without box reboot
 -----------------------------------
 If you do not want to restart the box after installing a new image:
+
 - Stop all ffritz services:
 
 	/usr/local/etc/ffshutdown
