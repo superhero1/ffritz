@@ -1,0 +1,7 @@
+[Service]
+ExecStart=/etc/init.d/S94-ffstart
+Type=oneshot
+After=ffimage.service
+RemainAfterExit=yes
+[Install]
+WantedBy=multi-user.target
