@@ -4,6 +4,17 @@ This image provides some additional software packages for the atom core,
 which i have implemented/ported mainly for the purpose of operating the
 FritzBox as media player for my dumb old amplifier.
 
+If the box fails to start due to some issue in the application image, its 
+execution can be prevented by adding the keyword 'ffimage=0' to the 
+kernel_args nvram variable in the EVA bootloader:
+
+Log in to the bootloader ca. 5 seconds after starting the box
+("ftp 192.168.178.1", password adam2/adam2) and run this command:
+
+	quote SETENV kernel_args ffimage=0
+
+And restart the box.
+
 Features
 ========
 

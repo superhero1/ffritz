@@ -6,6 +6,12 @@
 
 . /usr/local/etc/ffritz-env.sh || exit 1
 
+grep 'ffimage=0' /sys/firmware/efi/vars/kernel_args-*/data >/dev/null 2>&1
+if [ $? -eq 0 ]; then
+	echo ffservices: Found ffimage=0 in kernel_args, not starting services. 1>&2
+	exit 1
+fi
+
 OVERLAY=$NVRAM/rootfs-overlay
 
 touch $FFLOG
