@@ -6,10 +6,11 @@ arch-patches:	.patch.applied
 	@if [ -f user_defconfig ]; then install -v user_defconfig build/configs/user_defconfig; make -C build user_defconfig; fi
 	
 .patch.applied:
-#	for d in `cd package; ls -d *`; do \
-#	    mkdir -p build/package/$$d; \
+	for d in `cd package; ls -d *`; do \
+	    mkdir -p build/package/$$d; \
+	    cp -ar package/$$d/* build/package/$$d; \
 #	    install -v package/$$d/* build/package/$$d; \
-#	    done
+	    done
 	cp mod/ffritz_arm_defconfig build/configs
 	make -C build ffritz_arm_defconfig
 	touch $@
@@ -19,5 +20,8 @@ userconfig: .build.stamp arch-patches
 	@make -C build user_defconfig 
 	@make -C build menuconfig
 	@make -C build savedefconfig
-	@cp build/configs/user_defconfig user_defconfig; echo new config saved to `pwd`/user_defconfig; fi
+	@cp build/configs/user_defconfig user_defconfig;
+	@echo
+	@echo +++ new config saved to `pwd`/user_defconfig
+	@echo 
 

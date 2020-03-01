@@ -1,0 +1,49 @@
+--- glibc-glibc-2.23/sysdeps/ieee754/dbl-64/e_pow.c	2016-02-18 12:54:00.000000000 -0500
++++ glibc-glibc-2.23.p/sysdeps/ieee754/dbl-64/e_pow.c	2020-03-01 06:56:59.564397652 -0500
+@@ -466,15 +466,15 @@
+     return (n & 1) ? -1 : 1;	/* odd or even */
+   if (k > 20)
+     {
+-      if (n << (k - 20))
++      if ((n << (k - 20)) != 0)
+ 	return 0;		/* if not integer */
+-      return (n << (k - 21)) ? -1 : 1;
++      return ((n << (k - 21)) != 0) ? -1 : 1;
+     }
+   if (n)
+     return 0;			/*if  not integer */
+   if (k == 20)
+     return (m & 1) ? -1 : 1;
+-  if (m << (k + 12))
++  if ((m << (k + 12)) != 0)
+     return 0;
+-  return (m << (k + 11)) ? -1 : 1;
++  return ((m << (k + 11)) != 0) ? -1 : 1;
+ }
+--- glibc-glibc-2.23/posix/getconf.c	2016-02-18 12:54:00.000000000 -0500
++++ glibc-glibc-2.23.p/posix/getconf.c	2020-03-01 07:01:17.408031316 -0500
+@@ -493,7 +493,7 @@
+ 
+   const char *spec = NULL;
+   char buf[sizeof "POSIX_V6_LPBIG_OFFBIG"];
+-  char *argv0 = argv[0];
++//  char *argv0 = argv[0];
+   if (argc > 1 && strncmp (argv[1], "-v", 2) == 0)
+     {
+       if (argv[1][2] == '\0')
+@@ -574,6 +574,7 @@
+ #ifndef _POSIX_V7_LPBIG_OFFBIG
+ 	  case _SC_V7_LPBIG_OFFBIG:
+ #endif
++#if 0 // -Werror=switch-unreachable
+ 	    {
+ 	      const char *args[argc + 3];
+ 	      size_t spec_len = strlen (spec);
+@@ -588,6 +589,7 @@
+ 	      execv (getconf_name, (char * const *) args);
+ 	      error (4, errno, _("Couldn't execute %s"), getconf_name);
+ 	    }
++#endif
+ 	  default:
+ 	    break;
+ 	}

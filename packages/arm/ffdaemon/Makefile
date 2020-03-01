@@ -2,7 +2,7 @@ TOPDIR	    = $(pwd)
 BUILDROOT   = $(shell cd ../buildroot/build; pwd)
 TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
 export PATH := $(TOOLCHAIN):$(PATH)
-CC	    = armeb-buildroot-linux-uclibcgnueabi-gcc
+CC	    = armeb-buildroot-linux-gnueabi-gcc
 
 vpath %.c ../../common/ffdaemon
 

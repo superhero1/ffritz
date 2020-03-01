@@ -7,7 +7,7 @@ $(error BUILDROOT (buildroot top directory) not defined)
 endif
 
 ifeq ($(CROSS_COMPILE),)
-CROSS_COMPILE=armeb-buildroot-linux-uclibcgnueabi-
+CROSS_COMPILE=armeb-buildroot-linux-gnueabi-
 endif
 
 

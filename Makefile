@@ -4,7 +4,7 @@ VERSION = $(shell cat version)
 ARM_VER = $(shell cat packages/arm/ffritz/version)
 HOST    = $(shell uname -m)
 DLDIR   = $(TOPDIR)/packages/dl
-SUDO	=
+SUDO	= fakeroot
 
 -include conf.mk
 
@@ -63,13 +63,11 @@ endif
 FWMAJ=$(shell echo $(FWVER) | sed -e 's/\..*//')
 FWMIN=$(shell echo $(FWVER) | sed -e 's/.*\.//')
 
-#DFL_ARM_PACKAGE=packages/arm/ffritz/ffritz-arm-$(ARM_VER)-fos7.tar.gz
-ifeq ($(FFRITZ_ARM_PACKAGE),DOWNLOAD)
-FFRITZ_ARM_PACKAGE=$(DFL_ARM_PACKAGE)
-else
-FFRITZ_ARM_PACKAGE=
-endif
+DFL_ARM_PACKAGE=packages/arm/ffritz/ffritz-arm-$(ARM_VER)-fos7.tar.gz
 
+ifeq ($(FFRITZ_ARM_PACKAGE),LOCAL)
+FFRITZ_ARM_PACKAGE=$(DFL_ARM_PACKAGE)
+endif
 
 BUSYBOX	= $(shell which busybox)
 RSYNC	= $(shell which rsync)
@@ -86,10 +84,10 @@ $(error rsync missing, please install)
 endif
 
 
-ifneq ($(FFRITZ_ARM_PACKAGE),)
-$(FFRITZ_ARM_PACKAGE):
-	wget ftp://ftp.ffesh.de/pub/ffritz/arm/$(shell basename $(FFRITZ_ARM_PACKAGE)) -O $(FFRITZ_ARM_PACKAGE) || true
-endif
+#ifneq ($(FFRITZ_ARM_PACKAGE),)
+#$(FFRITZ_ARM_PACKAGE):
+#	wget ftp://ftp.ffesh.de/pub/ffritz/arm/$(shell basename $(FFRITZ_ARM_PACKAGE)) -O $(FFRITZ_ARM_PACKAGE) || true
+#endif
 
 src/uimg/uimg:
 	@make -C src/uimg
@@ -99,12 +97,15 @@ tmp/uimage:	$(ORIG) src/uimg/uimg
 	@cd tmp/uimage; tar xf $(ORIG)  
 	@cd tmp/uimage; $(TOPDIR)/src/uimg/uimg -u -n part var/firmware-update.uimg
 
+$(DFL_ARM_PACKAGE):
+	@make package-arm
+
 ###############################################################################################
 ## Unpack, patch and repack ARM FS
 #
 armfs:	arm/filesystem.image
 
-ARM_PATCHES += oem.patch
+ARM_PATCHES += oem.patch profile.patch
 
 ARM_PATCHST=$(ARM_PATCHES:%=arm/.applied.%)
 
@@ -124,13 +125,13 @@ $(ARM_PATCHST):	$(@:arm/.applied.%=%)
 arm/.applied.fs: $(ARM_MODFILES) arm/squashfs-root $(ARM_PATCHST) $(FFRITZ_ARM_PACKAGE)
 	@echo "PATCH  arm/squashfs-root"
 	@$(SUDO) rm -rf arm/squashfs-root/usr/local
-#	@$(SUDO) $(RSYNC) -a --no-perms arm/mod/ arm/squashfs-root/
-#	@if [ -f "$(FFRITZ_ARM_PACKAGE)" ]; then \
-#	    echo Integrating ARM extensions from $(FFRITZ_ARM_PACKAGE); \
-#	    $(SUDO) mkdir -p arm/squashfs-root/usr/local; \
-#	    $(SUDO) tar xfk $(FFRITZ_ARM_PACKAGE) --strip-components=2 -C arm/squashfs-root/usr/local ./ffritz-arm; \
-#	fi
-#	@if [ -d arm/mod/usr/local/bin ]; then  $(TOPDIR)/mklinks -f arm/squashfs-root/usr/bin ../local/bin; fi
+	@$(SUDO) $(RSYNC) -a --no-perms arm/mod/ arm/squashfs-root/
+	@if [ -f "$(FFRITZ_ARM_PACKAGE)" ]; then \
+	    echo Integrating ARM extensions from $(FFRITZ_ARM_PACKAGE); \
+	    $(SUDO) mkdir -p arm/squashfs-root/usr/local; \
+	    $(SUDO) tar xfk $(FFRITZ_ARM_PACKAGE) --strip-components=2 -C arm/squashfs-root/usr/local ./ffritz-arm; \
+	fi
+#	@if [ -d arm/squashfs-root/usr/local/bin ]; then  $(TOPDIR)/mklinks -f arm/squashfs-root/usr/bin ../local/bin; fi
 	@touch $@
 
 arm/filesystem.image: arm/.applied.fs
@@ -178,7 +179,6 @@ atom/.applied.fs: $(ATOM_MODFILES) atom/squashfs-root $(ATOM_PATCHST)
 	@echo "PATCH  atom/squashfs-root"
 	@$(SUDO) $(RSYNC) -a atom/mod/ atom/squashfs-root/
 	@mkdir -p atom/squashfs-root/usr/local
-#	@packages/x86/ffritz/mkbblinks packages/x86/ffritz/bb-apps busybox-i686 atom/squashfs-root/usr/bin atom/squashfs-root/sbin atom/squashfs-root/bin atom/squashfs-root/usr/sbin atom/squashfs-root/usr/bin atom/squashfs-root/usr/local/bin
 	@touch $@
 
 atom/filesystem.image: atom/.applied.fs
@@ -193,24 +193,24 @@ atom/filesystem.image: atom/.applied.fs
 FWFILE  = fb$(MODEL)_$(FWVER)$(BETA)-$(VERSION).tar
 
 release:
-	fakeroot make clean
-	fakeroot make $(RELDIR)/$(FWFILE)
+	make clean
+	make $(RELDIR)/$(FWFILE)
 	
 $(RELDIR)/$(FWFILE): atomfs armfs $(RELDIR) 
 	@rm -rf $(RELDIR)/var
 	@cd $(RELDIR); tar xf $(ORIG)
-	@cp -vf arm/filesystem.image tmp/uimage/*ARM_ROOTFS.bin
+	@cp -f arm/filesystem.image tmp/uimage/*ARM_ROOTFS.bin
 	@rm -f $(RELDIR)/var/remote/var/tmp/filesystem.image
 	@cp atom/mod/usr/bin/switch_bootbank $(RELDIR)/var
 	@cp -f atom/filesystem.image tmp/uimage/*ATOM_ROOTFS.bin
 ifeq ($(ENABLE_CONSOLE),1)
 	@echo "PATCH  part_02_ATOM_KERNEL.bin"
 	@mkdir -p tmp/mnt
-	@sudo mount -o loop tmp/uimage/part_02_ATOM_KERNEL.bin tmp/mnt >/dev/null 2>&1
+	@sudo mount -o loop tmp/uimage/part_02_ATOM_KERNEL.bin tmp/mnt >/dev/null 
 	@test -r tmp/mnt/EFI/BOOT/startup.nsh
 	@(echo mm 0xfed94810 0x00914b49 -w 4; echo mm 0xfed94820 0x00914b49 -w 4; cat tmp/mnt/EFI/BOOT/startup.nsh) > .startup.nsh
 	@sudo cp .startup.nsh tmp/mnt/EFI/BOOT/startup.nsh
-	@sudo umount tmp/mnt >/dev/null 2>&1
+	@sudo umount tmp/mnt >/dev/null 
 	@rm -f .startup.nsh
 endif
 	@echo "PACK   firmware-update.uimg"
@@ -256,6 +256,12 @@ atom-brconfig:
 	@echo +++ run \"make package-atom\" to generate application image with modified configuration.
 	@echo
 
+arm-brconfig:
+	@make -C packages/arm/buildroot userconfig
+	@echo
+	@echo +++ run \"make package-arm\" to generate application image with modified configuration.
+	@echo
+
 rebuild:
 	make -C packages/x86 base base-install
 
@@ -268,6 +274,7 @@ help:
 	@echo 'package-arm      : Rebuild optional package for arm'
 	@echo 'package-atom     : Rebuild optional package for atom'
 	@echo 'atom-brconfig    : Change buildroot configuration for atom'
+	@echo 'arm-brconfig     : Change buildroot configuration for arm'
 	@echo 'squashfstools-be : Download freetz and build big endian squashfs tools for host'
 
 

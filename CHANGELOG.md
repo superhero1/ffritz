@@ -211,6 +211,10 @@ TODO
 Change history of ffritz core integration:
 ==========================================
 
+release 25
+----------
+- Add support for ARM toolchain/application image.
+
 release 24
 ----------
 - Add support for Lab Firmware 7.19

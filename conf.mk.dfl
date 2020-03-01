@@ -28,3 +28,11 @@ KEEP_ORIG = 1
 #
 #HOSTTOOLS=$(TOPDIR)/freetz/tools
 HOSTTOOLS=$(TOPDIR)/host/$(HOST)
+
+## The package containing ARM tools. Setting this to LOCAL expects it to be located
+## in packages/arm/ffritz. If it's not there it's going to get rebuilt.
+##
+## If this option is not set no binaries will be placed into the ARM root filesystem.
+#
+#FFRITZ_ARM_PACKAGE=LOCAL
+#FFRITZ_ARM_PACKAGE=packages/dl/ffritz-arm-puma7-0.8-fos7.tar.gz
