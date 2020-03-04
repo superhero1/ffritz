@@ -24,7 +24,7 @@
 # BUILDDIR: Name of build sub-directory (default: build)
 # 
 
-ARCHDIR=$(shell while test -f arch.mk && echo $$PWD && exit 0; [[ $PWD != / ]]; do cd ..; done)
+ARCHDIR=$(shell while test -f arch.mk && echo $$PWD && exit 0; test $$PWD != /; do cd ..; done)
 
 ## Standard definitions 
 #
