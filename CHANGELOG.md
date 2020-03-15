@@ -1,6 +1,10 @@
 Change history of application package
 =====================================
 
+Next
+====
+- Buildroot version 2020-02
+
 Release puma7-14
 ================
 - Don't activate any service except buildroot on a fresh installation

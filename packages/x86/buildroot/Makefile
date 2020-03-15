@@ -9,7 +9,7 @@ arch-patches:	.patch.applied
 .patch.applied:
 	for d in `cd package; ls -d *`; do \
 	    mkdir -p build/package/$$d; \
-	    cp -ar package/$$d/* build/package/$$d; \
+	    cp -ar --backup package/$$d/* build/package/$$d; \
 #	    install -v package/$$d/* build/package/$$d; \
 	    done
 	cp mod/ffritz_atom_defconfig build/configs
