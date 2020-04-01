@@ -105,7 +105,7 @@ $(DFL_ARM_PACKAGE):
 #
 armfs:	arm/filesystem.image
 
-ARM_PATCHES += oem.patch profile.patch
+ARM_PATCHES += profile.patch
 
 ARM_PATCHST=$(ARM_PATCHES:%=arm/.applied.%)
 
@@ -152,7 +152,7 @@ packages/arm/ffritz/ffritz-arm-$(ARM_VER).tar.gz:
 #
 atomfs:	atom/filesystem.image
 
-ATOM_PATCHES = profile.patch oem.patch
+ATOM_PATCHES = profile.patch 
 
 ifeq ($(shell test $(FWMAJ) -eq 7 -a $(FWMIN) -lt 19 ; echo $$?),0)
 ATOM_PATCHES += 50-udev-default.patch
