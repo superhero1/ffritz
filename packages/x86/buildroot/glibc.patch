@@ -1,0 +1,14 @@
+--- buildroot-2020.02/package/glibc/glibc.mk	2020-03-08 17:23:03.000000000 -0400
++++ build/package/glibc/glibc.mk	2020-03-14 06:19:31.351063369 -0400
+@@ -16,8 +16,9 @@
+ else
+ # Generate version string using:
+ #   git describe --match 'glibc-*' --abbrev=40 origin/release/MAJOR.MINOR/master | cut -d '-' -f 2-
+-# When updating the version, please also update localedef
+-GLIBC_VERSION = 2.30-20-g50f20fe506abb8853641006a7b90a81af21d7b91
++#GLIBC_VERSION = 2.29-11-ge28ad442e73b00ae2047d89c8cc7f9b2a0de5436
++GLIBC_VERSION = glibc-2.28
++
+ # Upstream doesn't officially provide an https download link.
+ # There is one (https://sourceware.org/git/glibc.git) but it's not reliable,
+ # sometimes the connection times out. So use an unofficial github mirror.

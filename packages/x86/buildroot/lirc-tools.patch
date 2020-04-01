@@ -1,0 +1,11 @@
+--- buildroot-2020.02/package/lirc-tools/lirc-tools.mk	2020-03-14 08:26:17.340196683 -0400
++++ build/package/lirc-tools/lirc-tools.mk	2020-03-14 08:26:22.364185345 -0400
+@@ -17,6 +17,8 @@
+ LIRC_TOOLS_CONF_ENV = XSLTPROC=yes HAVE_WORKING_POLL=yes
+ LIRC_TOOLS_CONF_OPTS = --without-x --enable-devinput --enable-uinput
+ 
++LIRC_TOOLS_CONF_OPTS += --localstatedir=/var --with-lockdir=/var/lock/lockdev
++
+ ifeq ($(BR2_TOOLCHAIN_HEADERS_AT_LEAST_4_4),y)
+ LIRC_TOOLS_CONF_ENV += \
+ 	DEVINPUT_HEADER=$(STAGING_DIR)/usr/include/linux/input-event-codes.h
