@@ -105,7 +105,7 @@ $(DFL_ARM_PACKAGE):
 #
 armfs:	arm/filesystem.image
 
-ARM_PATCHES += profile.patch
+ARM_PATCHES += profile.patch $(shell cd arm; ls user-*.patch 2>/dev/null | sort)
 
 ARM_PATCHST=$(ARM_PATCHES:%=arm/.applied.%)
 
@@ -152,7 +152,7 @@ packages/arm/ffritz/ffritz-arm-$(ARM_VER).tar.gz:
 #
 atomfs:	atom/filesystem.image
 
-ATOM_PATCHES = profile.patch
+ATOM_PATCHES = profile.patch $(shell cd atom; ls user-*.patch 2>/dev/null | sort)
 
 ifeq ($(shell test $(FWMAJ) -eq 7 -a $(FWMIN) -lt 19 ; echo $$?),0)
 ATOM_PATCHES += 50-udev-default.patch
@@ -288,5 +288,5 @@ clean:
 	@$(SUDO) rm -rf atom/squashfs-root
 	@$(SUDO) rm -rf atom/orig
 	@rm -f atom/filesystem.image
-	@rm -f atom/.applied*
+	@rm -f atom/.applied* 
 	@rm -f .fwver.cache

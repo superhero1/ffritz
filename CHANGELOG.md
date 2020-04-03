@@ -2,11 +2,11 @@ Change history of application package
 =====================================
 
 Next
-====
-- Buildroot version 2020-02
+----
+- Buildroot version 2020-02 (only for FritzOS 7.19 onwards)
 
 Release puma7-14
-================
+----------------
 - Don't activate any service except buildroot on a fresh installation
 - Fix LD_LIBRARY_PATH for ff wrapper (required for 7.19)
 - ffimage=0 option in kernel_args EFI parameter will prevent application 
@@ -18,7 +18,7 @@ ISSUES
 	- Same on 7.19, so kernel module will not be built
 
 Release puma7-13
-================
+----------------
 - linux kernel modules
 	- no longer required (cdc-acm part of FritzOS)
 - Remove athtool
@@ -30,7 +30,7 @@ Release puma7-13
 
 
 Release 12
-==========
+----------
 - Add feature to buildroot to use FS overlay on flash
 	- Configuration file /tmp/ffnvram/ffbuildroot.conf
 	- Parameter BR_USER_OVERLAY
@@ -71,12 +71,12 @@ Release 12
 	overlay so that it is not exposed via /var/media/ftp.
 
 Release 11
-==========
+----------
 - Fix kernel header version for toolchain
   (caused some issues in chroot environment)
 
 Release 10
-==========
+----------
 - Use latest buildroot (2016.05 -> snapshot 20190428)
 	- Tons of new versions
 
@@ -214,6 +214,11 @@ TODO
 
 Change history of ffritz core integration:
 ==========================================
+
+next
+----
+- Add method for use to add own patches by simply copying them
+  as user-*.patch into the atom/arm subfolder.
 
 release 25
 ----------
