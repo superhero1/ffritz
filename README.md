@@ -11,15 +11,20 @@ image see README-APP.md.
 
 I take no responsibility for broken devices or other problems (e.g. with
 your provider).  Use this at your own risk.
+Also, what i DO NOT support is:
 
-If you don't trust my binaries, everything (hopefully) that is required to
-rebuild them is located below packages.
+- Modifying other peoples property (do experiments with hardware you own)
+- Commercial resellers of rebranded hardware
+
+If you don't trust my binaries (you shouldn't), everything that is required to
+rebuild them is provided (see below).
+
+NOTE: This is the branch for FritzBox 6591. For 6490/6590 use the master
+      branch of the repository (<https://bitbucket.org/fesc2000/ffritz/src/master/>).
 
 Have Fun,
 <f/e/s/c/2/0/0/0/@/g/m/a/i/l/./c/o/m>
 
-NOTE: This is the branch for FritzBox 6591. For 6490/6590 use the master
-      branch of the repository (<https://bitbucket.org/fesc2000/ffritz/src/master/>).
 
 Gaining shell access
 ====================
@@ -164,6 +169,15 @@ the arm package is added statically into the firmware update image.
 
 Notes
 =====
+
+Patches
+-------
+If you need/want to add your own patches for the Atom root filesystem, put them
+to atom/user-*.patch.
+To add/replace complete files/hierarchies in the filesystem, add them below
+the atom/mod directory.
+
+Likewise for ARM.
 
 Toolchain
 ---------
