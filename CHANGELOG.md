@@ -1,9 +1,15 @@
 Change history of application package
 =====================================
 
-Next
-----
+Release puma7-15
+----------------
 - Buildroot version 2020-02 (only for FritzOS 7.19 onwards)
+	- Add support for different buildroot versions living alongside.
+	  (see conf.mk.tpl)
+	- Add PARALLEL option to conf.mk to perform buildroot parallel build.
+- Add non-ELF binaries from buildroot usr/(s)bin to /usr/local/bin.
+- br-2020-02: Added patch for tvheadend (patched out early exit due to stack
+  rlimit failure).
 
 Release puma7-14
 ----------------

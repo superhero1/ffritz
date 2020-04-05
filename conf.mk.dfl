@@ -6,15 +6,15 @@
 ##
 ## Labor image:
 #
-#URL=https://avm.de/fileadmin/user_upload/DE/Labor/Download/fritzbox-6591-labor-75516.zip
+URL=ftp://jason:274jgjg85hh36@update.avm.de/labor/6591/labor_77042/FRITZ.Box_6591_Cable-labor-07.19-77042.image
 #
 ## Release images:
 #
 #URL=http://download.avm.de/firmware/6591/79013767/FRITZ.Box_6591_Cable-07.12-72501-Release.image
-URL=http://download.avm.de/firmware/6591/213215464/FRITZ.Box_6591_Cable-07.13.image
+#URL=http://download.avm.de/firmware/6591/213215464/FRITZ.Box_6591_Cable-07.13.image
 
 ## Keep original rootfs for diff?
-## sudo dirdiff arm/orig/ arm/squashfs-root/
+## dirdiff arm/orig/ arm/squashfs-root/
 #
 KEEP_ORIG = 1
 
@@ -36,3 +36,19 @@ HOSTTOOLS=$(TOPDIR)/host/$(HOST)
 #
 #FFRITZ_ARM_PACKAGE=LOCAL
 #FFRITZ_ARM_PACKAGE=packages/dl/ffritz-arm-puma7-0.8-fos7.tar.gz
+
+################################################################################
+
+## Toolchain option
+## Use this option to use a newer buildroot version for the application package.
+## -2019.05   - default (no need to set here)
+## -2020.02   - Binaries will only work for FritzOS 07.19 onwards
+#
+#BR_VERSION=-2020.02
+
+## Undefine this to enable parallel make for buildroot (BR2_PER_PACKAGE_DIRECTORIES).
+## Supported with buildroot 2020-02.
+## This is marked as experimental in the buildroot documentation, but seems to work fine.
+##
+#PARALLEL=$(shell cat /proc/cpuinfo | grep processor | wc -l)
+

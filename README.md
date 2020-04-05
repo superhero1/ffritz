@@ -26,17 +26,6 @@ Have Fun,
 <f/e/s/c/2/0/0/0/@/g/m/a/i/l/./c/o/m>
 
 
-Gaining shell access
-====================
-The very first step for installation is to gain console access. 
-Unfortunately there is currently no pure software method to achieve this,
-it is required to open the box and hook a serial cable to the console
-pins of box. Details are described here:
-
-https://www.ip-phone-forum.de/threads/fb-6591-verschiedenes.303332/post-2342169
-
-Once telnet/ssh is running future updates no longer require console access.
-
 Creating an install/update firmware image
 =========================================
 
@@ -60,15 +49,17 @@ If you want to build an image based on a different original firmware, select
 the URL definition in conf.mk (by commenting out the one you want).
 Or place the image file to the packages/dl directory and set URL=filename
 
-IMPORTANT NOTE
---------------
+Gaining shell access/installing for the first time
+--------------------------------------------------
+There are two known ways on how to acheive this, depending on which version 
+of the bootloader you are running. Details are described in README-6591.md.
 
-Before starting to modify the Box it is always recommended
-to generate (extended) support data (<http://192.168.178.1/support.lua>)
-and save it. It might become (very) useful to "unbrick" your Box ...
+But beware, each method has the potential risk of bricking your box!
 
-Installing the image (with ssh/telnet access)
----------------------------------------------
+Once telnet/ssh is running future updates no longer require this step.
+
+Installing the image (with ssh/telnet/console access)
+-----------------------------------------------------
 
 - Copy the release tar image to the box, e.g. NAS (/var/media/ftp)
 - If this is the very first installation you need to use the use a
@@ -98,8 +89,8 @@ First use
 
 After first installation, ssh login needs to be set up:
 
-- Log in to the box using telnet and the web password within the first 10
-  minutes after startup.
+- Log in to the box using console, or telnet and the web password within
+  the first 10 minutes after startup.
 - For password authentication, call "passwd" to change the root password
 - For pubkey authentication, put your public key(s) to /.ssh/authorized_keys
 

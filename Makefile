@@ -251,13 +251,13 @@ package-atom:	atom/squashfs-root
 	make -C packages/x86
 
 atom-brconfig:
-	@make -C packages/x86/buildroot userconfig
+	@make -C packages/x86/buildroot$(BR_VERSION) userconfig
 	@echo
 	@echo +++ run \"make package-atom\" to generate application image with modified configuration.
 	@echo
 
 arm-brconfig:
-	@make -C packages/arm/buildroot userconfig
+	@make -C packages/arm/buildroot$(BR_VERSION) userconfig
 	@echo
 	@echo +++ run \"make package-arm\" to generate application image with modified configuration.
 	@echo

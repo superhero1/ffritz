@@ -1,14 +1,9 @@
-
-BUILDROOT   = $(shell cd ../buildroot/build; pwd)
+ARCHDIR=$(shell while test -f arch.mk && echo $$PWD && exit 0; test $$PWD != /; do cd ..; done)
+include $(ARCHDIR)/../paths.mk
 
 ###############################################################################
 
-TOPDIR=$(shell pwd)
-TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
-
-TGTLIB=$(shell cd ../../../atom/squashfs-root/lib/; pwd)
-
-CROSS_COMPILE=i686-buildroot-linux-gnu-
+TGTLIB=$(SQ_ROOT)/lib/
 
 WARN = -Wall -Wformat=0 -Werror
 

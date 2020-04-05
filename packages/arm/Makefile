@@ -32,10 +32,10 @@ stage:
 	make -C dropbear install DESTDIR=$(STAGEDIR) INSTDIR=$(STAGEDIR)
 #	make -C athtool install DESTDIR=$(STAGEDIR)/usr INSTDIR=$(STAGEDIR)/usr
 	make -C ffdaemon install INSTDIR=$(STAGEDIR)/usr
-#	cd buildroot/build/output/target/usr/bin; cp `ls -f tcp* gdb* strace ltrace` $(FFBIN)
-#	cd buildroot/build/output/target/usr/sbin; cp `ls -f tcp*` $(FFBIN)
-#	cd buildroot/build/output/target/lib; cp -af libuClibc-* $(FFLIB)
-#	cd buildroot/build/output/target/usr/lib; cp -af `ls -f libpcap* libelf* libstdc++* libdw* libncurses*` $(FFLIB)
+#	cd $(BUILDROOT)/output/target/usr/bin; cp `ls -f tcp* gdb* strace ltrace` $(FFBIN)
+#	cd $(BUILDROOT)/output/target/usr/sbin; cp `ls -f tcp*` $(FFBIN)
+#	cd $(BUILDROOT)/output/target/lib; cp -af libuClibc-* $(FFLIB)
+#	cd $(BUILDROOT)/output/target/usr/lib; cp -af `ls -f libpcap* libelf* libstdc++* libdw* libncurses*` $(FFLIB)
 	if [ -d $(STAGEDIR)/usr/local/bin ]; then mv $(STAGEDIR)/usr/local/bin/* $(FFBIN); fi
 	if [ -d $(STAGEDIR)/usr/local/sbin ]; then mv $(STAGEDIR)/usr/local/sbin/* $(FFBIN); fi
 	if [ -d $(STAGEDIR)/usr/sbin ]; then mv $(STAGEDIR)/usr/sbin/* $(FFBIN); fi
