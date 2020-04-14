@@ -47,10 +47,10 @@ patches: $(PATCHST) .pkg.applied
 	cp mod/*_defconfig build/configs
 ifneq ($(PARALLEL),)
 	echo 'BR2_PER_PACKAGE_DIRECTORIES=y' >> build/configs/ffritz_defconfig
-	echo 'BR2_PER_PACKAGE_DIRECTORIES=y' >> build/configs/ffritz_sdk_defconfig
+#	echo 'BR2_PER_PACKAGE_DIRECTORIES=y' >> build/configs/ffritz_sdk_defconfig
 else
 	sed -ie 's/BR2_PER_PACKAGE_DIRECTORIES=y/BR2_PER_PACKAGE_DIRECTORIES=n/' build/configs/ffritz_defconfig
-	sed -ie 's/BR2_PER_PACKAGE_DIRECTORIES=y/BR2_PER_PACKAGE_DIRECTORIES=n/' build/configs/ffritz_sdk_defconfig
+#	sed -ie 's/BR2_PER_PACKAGE_DIRECTORIES=y/BR2_PER_PACKAGE_DIRECTORIES=n/' build/configs/ffritz_sdk_defconfig
 endif
 	touch $@
 
