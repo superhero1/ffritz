@@ -1,16 +1,13 @@
-include ../toolchain.mk
+ARCHDIR=$(shell while test -f arch.mk && echo $$PWD && exit 0; test $$PWD != /; do cd ..; done)
+include $(ARCHDIR)/../paths.mk
 
-###############################################################################
-
-TOPDIR=$(shell pwd)
-TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
 DESTDIR	    = $(TOPDIR)/output
 
 export PATH := $(TOOLCHAIN):$(PATH)
 
-vpath %.c ../../common/athtool
+vpath %.c $(PKGTOP)/common/athtool
 
-CFLAGS += -DATOM_BUILD -DPROC_FILE_ACCESS -I../../common/athtool
+CFLAGS += -DATOM_BUILD -DPROC_FILE_ACCESS -I$(PKGTOP)/common/athtool
 
 ###############################################################################
 

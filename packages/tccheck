@@ -1,0 +1,40 @@
+#!/bin/sh
+#
+# Script to check if the toolchain (buildroot version) used to compile
+# in the current directory matches the configured toolchain.
+# If the current directory is clean, store the path to the configured
+# toolchain in .tc.stamp.
+#
+# Returns 0 if the current toolchain matches (or does not exist).
+# Returns 1 if the the current toolchain does match the configured tc.
+#
+# Parameters:
+#	Configured $BUILDROOT
+#	directory where to place .tc.stamp
+
+req_toolchain=$1
+stamp=$2
+
+
+if [ ! -r $stamp ]; then
+	if [ -d $req_toolchain ]; then
+		echo $req_toolchain > $stamp
+	fi
+	exit 0
+fi
+
+compiled_toolchain=`cat $stamp`
+
+if [ $req_toolchain != $compiled_toolchain ]; then
+	(
+	echo '***'
+	echo '*** Toolchain mismatch in     : ' `pwd`
+	echo '*** Configured toolchain      : ' $req_toolchain
+	echo '*** Previously used toolchain : ' $compiled_toolchain
+	echo
+	echo '*** Suggest a "make clean" here, or change BR_VERSION in the '
+	echo '*** top-level conf.mk'
+	echo '***'
+	) 1>&2
+	exit 1
+fi

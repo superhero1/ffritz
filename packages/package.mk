@@ -25,20 +25,7 @@
 # 
 
 ARCHDIR=$(shell while test -f arch.mk && echo $$PWD && exit 0; test $$PWD != /; do cd ..; done)
-
-## Standard definitions 
-#
-include $(ARCHDIR)/arch.mk
-
-PKGTOP	= $(shell cd $(ARCHDIR)/..; pwd)
-DLDIR	= $(PKGTOP)/dl
-
-TOPDIR	    = $(shell pwd)
-BUILDROOT   = $(shell cd $(ARCHDIR)/buildroot/build; pwd)
-TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
-SYSROOT	    = $(BUILDROOT)/output/host/usr/$(HOST)/sysroot
-TGTDIR	    = $(BUILDROOT)/output/target
-
+include $(ARCHDIR)/../paths.mk
 
 CC	:= $(CROSS)gcc
 CONFIGURE_FLAGS	= --target=$(HOST) --host=$(HOST)
@@ -81,6 +68,13 @@ ifeq ($(CONFTYPE),)
 CONFTYPE=autoconf
 endif
 
+ifeq ($(BUILDDIR),)
+BUILDDIR=build$(BR_VERSION)
+endif
+
+TC_STAMP=$(BUILDDIR)/.fftc.stamp
+.PHONY:	$(TC_STAMP)
+
 AUTORECONF=
 ifeq ($(CONFTYPE),autoconf)
 ALL_DEP	= $(BUILDDIR)/config.status
@@ -93,6 +87,8 @@ MAKE_OPTIONS += CC=$(CC)
 ALL_DEP = $(BUILDDIR)$(MAKE_SUBDIR)/Makefile
 endif
 endif
+
+ALL_DEP += $(TC_STAMP)
 
 ifeq ($(FORCE_MAKE_INSTALL),)
 ifneq ($(INSTALL_BIN),)
@@ -125,11 +121,9 @@ ifeq ($(MAKE_INSTALL_TGT),)
 MAKE_INSTALL_TGT = install
 endif
 
-ifeq ($(BUILDDIR),)
-BUILDDIR=build
-endif
 
 _INST=$(shell echo "if [ -f $(1) ]; then install -vDC $(1) $(2)/`basename $(1)`; else mkdir -p $(2); cp -arv $(1) $(2); fi;")
+
 
 #------------------------------------
 ifneq ($(FILE),)
@@ -160,6 +154,9 @@ $(BUILDDIR):	$(REPO)
 	cd $(BUILDDIR); $(AUTORECONF)
 endif
 
+
+$(TC_STAMP):
+	 $(PKGTOP)/tccheck $(BUILDROOT) $(TC_STAMP)
 
 all-pkg:	$(ALL_DEP) $(CUSTOM_DEP)
 	PATH=$(TOOLCHAIN):$(PATH) make -C $(BUILDDIR)$(MAKE_SUBDIR) $(MAKE_OPTIONS)

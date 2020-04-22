@@ -1,6 +1,11 @@
+ARCHDIR=$(shell while test -f arch.mk && echo $$PWD && exit 0; test $$PWD != /; do cd ..; done)
+include $(ARCHDIR)/../paths.mk
 
-#KERNELS	= 3.12.59 3.12.74 4.9.175
+ifeq ($(BR_VERSION),-2019.05)
 KERNELS	= 3.12.59 3.12.74
+else
+KERNELS	= 4.9.199
+endif
 MODULES = wireguard
 
 ifeq ($(DESTDIR),)
@@ -11,12 +16,14 @@ TMPDIR = $(shell pwd)/modules/$(KERNEL)
 
 KDIRS	= $(KERNELS:%=../kernel_%)
 
+BUILDDIR = build$(BR_VERSION)
+
 .PHONY:	$(KDIRS)
 
 all:	$(KDIRS)
 	for k in $(KERNELS); do \
 	 for m in $(MODULES); do \
-	  make KERNEL=$$k MODULE=$$m module; \
+	  make -j KERNEL=$$k MODULE=$$m module; \
          done; \
 	done
 
@@ -24,12 +31,12 @@ $(KDIRS):
 	make -C $@
 
 module:
-	test -d ../kernel_$(KERNEL)/build
+	test -d ../kernel_$(KERNEL)/$(BUILDDIR)
 	mkdir -p $(TMPDIR)
-	make -C ../$(MODULE) KERNELDIR=$(shell cd ../kernel_$(KERNEL)/build; pwd) DESTDIR=$(TMPDIR) BUILDDIR=build_$(KERNEL) install
+	make -j -C ../$(MODULE) KERNELDIR=$(realpath ../kernel_$(KERNEL)/$(BUILDDIR)) DESTDIR=$(TMPDIR) BUILDDIR=build_$(KERNEL)$(BR_VERSION) install
 
 cleanmodule:
-	make -C ../$(MODULE) KERNELDIR=$(shell cd ../kernel_$(KERNEL)/build; pwd) DESTDIR=$(TMPDIR) BUILDDIR=build_$(KERNEL) clean
+	make -C ../$(MODULE) KERNELDIR=$(realpath ../kernel_$(KERNEL)/$(BUILDDIR)) DESTDIR=$(TMPDIR) BUILDDIR=build_$(KERNEL)$(BR_VERSION) clean
 
 install: all
 	mkdir -p $(DESTDIR)/bin

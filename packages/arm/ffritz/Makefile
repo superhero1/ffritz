@@ -5,29 +5,20 @@
 #	FFAD    relative path to ffad tool
 #       NOSTRIP Set to 1 to not strip binaries (for debugging)
 #
-TOPDIR	    = $(shell pwd)
-PKGDIR	    = $(shell cd ..; pwd)
+ARCHDIR=$(shell while test -f arch.mk && echo $$PWD && exit 0; test $$PWD != /; do cd ..; done)
+include $(ARCHDIR)/../paths.mk
 
-SQ_ROOT     = ../../../atom/squashfs-root
-
-BR_TGT	    = $(shell readlink -f ../buildroot/build/output/target)
+BR_TGT	    = $(realpath $(BUILDROOT)/output/target)
 BR_TGT_LIB1 = $(BR_TGT)/lib
 BR_TGT_LIB  = $(BR_TGT)/usr/lib
 BR_TGT_BIN  = $(BR_TGT)/usr/bin
 BR_TGT_SBIN = $(BR_TGT)/usr/sbin
 
-#BINFILES    = src/sndlist src/usbplay src/usbplayd src/ffdaemon
-#BINFILES   += ../shairport/build/shairport
 BINFILES   += $(wildcard bin/*)
-#ETCFILES    = etc/ffritz-env.sh etc/mpd.conf etc/ff_atom_startup etc/ffservices etc/mkusers
-#ETCFILES   += etc/lirc_options_dfl.conf
-#ETCFILES   += etc/upmpdcli.conf-dist
-#ETCFILES   += etc/usrmount etc/fflogrotate etc/ffshutdown
-#ETCFILES   += etc/init.d
-#ETCFILES   += etc/shairport-sync.conf.dfl
-#ETCFILES   += etc/exports
+BINFILES   += $(wildcard $(CMNDIR)/ffritz/bin/*)
 
-STAGEDIR    = $(TOPDIR)/output/ffritz-arm
+OUTPUTDIR   = $(TOPDIR)/output$(BR_VERSION)
+STAGEDIR    = $(OUTPUTDIR)/ffritz-arm
 
 BRCOPY       = $(STAGEDIR)/buildroot
 
@@ -73,7 +64,7 @@ endif
 all:	buildroot $(INSTDIR) $(SUBDIRS) $(IMAGE)
 
 buildroot:
-	make -C ../buildroot
+	make -C $(BRBUILDDIR)
 
 $(INSTDIR):
 	mkdir -p $(INSTDIR)
@@ -86,36 +77,19 @@ $(INSTDIR):
 	cd $(INSTDIR); ln -s buildroot/usr/lib .
 
 $(SUBDIRS):	
-	mkdir -p ../../dl
+	mkdir -p $(DLDIR)
 	make -C $@
 
 $(INSTDIRS):
 	make -C `dirname $@` install DESTDIR=$(STAGEDIR) INSTDIR=$(STAGEDIR)
 
 $(IMAGE): $(BINFILES) $(ETCFILES) stage
-	cd output; tar cfz $(IMAGE) .
+	cd $(OUTPUTDIR); tar cfz $(IMAGE) .
 	@echo
 	@echo +++ DONE +++
 	@echo "ARM image file: $(IMAGE)"
 	@echo
 
-$(IMAGE)XX: ffimage.bin
-	sha256sum ffimage.bin | sed -e 's/ .*//' > $(CSUM)
-	cp ../../../*.md .
-#	cp ../libdvbfi/README.txt README-dvb.txt 
-#	cp ../libdvbfi/fwd .
-	cp $(CSUM) ffimage.sha256sum
-	tar cf $(IMAGE) ffimage.bin ffimage.sha256sum *.md glibc-version
-	rm -f ffimage.sha256sum
-	@echo
-	@echo +++ DONE +++
-	@echo "ARM image file: $(TOPDIR)/$(IMAGE)"
-	@echo "Image checksum:  `cat $(CSUM)`"
-	@echo
-
-ffimage.bin: $(BINFILES) $(ETCFILES) stage
-	rm -f $@
-	cd output; mksquashfs ffritz ../$@ -all-root -no-progress -no-exports -no-sparse -b 65536 
 
 # Install everything to target
 # LD_LIBRARY_PATH needs to be set correctly for binaries. This is done by the ffwrap wrapper script,
@@ -124,44 +98,42 @@ ffimage.bin: $(BINFILES) $(ETCFILES) stage
 #
 stage: $(BINFILES) $(ETCFILES) $(INSTDIRS)
 	cp -a $(BINFILES) $(INSTDIR)/bin
-	mv $(INSTDIR)/usr/bin/* $(INSTDIR)/usr/sbin/* $(INSTDIR)/bin
-#	cp -r $(ETCFILES) $(INSTDIR)/etc
-#	cp -ar etc/openvpn $(INSTDIR)/etc
-#	sed -i -e 's@^rundir=.*@rundir=/var/media/ftp/ffritz@' $(INSTDIR)/etc/ff_atom_startup
+	mv -v $(INSTDIR)/usr/bin/* $(INSTDIR)/usr/sbin/* $(INSTDIR)/bin
 	cd $(BRCOPY)/usr/lib; ln -s ../../lib/libutil* . || true
 	mv $(INSTDIR)/bin/ffwrap $(BRCOPY)/usr/bin
+	cp $(BRCOPY)/usr/bin/ffwrap $(BRCOPY)/usr/sbin
 	# Move our binaries to buildroot
 	@cd $(INSTDIR)/bin; \
 	    for f in `ls | xargs file | grep ELF | grep -v cash_wrap.so | sed -e 's/:.*//'`; do\
 		test `basename $$f` != cash -a $(NOSTRIP) -eq 0 && strip $$f;\
 		mv $$f $(BRCOPY)/usr/bin/$$f;\
 	    done
-	# Make buldroot usr/(s)bin available for host
+	# Make buildroot usr/bin available for host
 	@cd $(BRCOPY)/usr/bin; \
 	    for f in `ls | xargs file -L | grep ELF | grep -v cash_wrap.so | sed -e 's/:.*//'`; do\
-		ln -sv ../buildroot/usr/bin/ffwrap ../../../bin/$$f;\
+		test -e ../../../bin/$$f || ln -sv ../buildroot/usr/bin/ffwrap ../../../bin/$$f;\
 	    done
+	# /usr/bin non-ELF
+	@cd $(BRCOPY)/usr/bin; \
+	    for f in `ls | xargs file -L | grep -v ELF | sed -e 's/:.*//'`; do\
+		test -e ../../../bin/$$f || ln -sv ../buildroot/usr/bin/$$f ../../../bin/$$f;\
+	    done
+	# Make buildroot usr/sbin available for host
 	@cd $(BRCOPY)/usr/sbin; \
-	    cp ../bin/ffwrap .; \
 	    for f in `ls | xargs file -L | grep ELF | sed -e 's/:.*//'`; do\
-		ln -sv ../buildroot/usr/sbin/ffwrap ../../../bin/$$f;\
+		test -e ../../../bin/$$f || ln -sv ../buildroot/usr/sbin/ffwrap ../../../bin/$$f;\
 	    done
-	# strip libraries
-#	@if [ $(NOSTRIP) -eq 0 ]; then \
-#	    cd $(INSTDIR)/lib; \
-#	    for l in `ls | xargs file | grep ELF | sed -e 's/:.*//'`; do\
-#		strip $$l;\
-#	    done; fi
-	# shairport does not like those
-#	rm -f $(INSTDIR)/bin/avahi*
+	# /usr/sbin non-ELF
+	@cd $(BRCOPY)/usr/sbin; \
+	    for f in `ls | xargs file -L | grep -v ELF | sed -e 's/:.*//'`; do\
+		test -e ../../../bin/$$f || ln -sv ../buildroot/usr/sbin/$$f ../../../bin/$$f;\
+	    done
 	cd $(INSTDIR)/share; ln -s ../buildroot/usr/share/terminfo .
-	# buildroot binaries link against /lib/libc.so.0
-#	cd $(BRCOPY)/usr/lib; ln -s ../../lib/libuClibc-1.0.*.so libc.so.0; ln -s ../../lib/libuClibc-1.0.*.so libc.so.1
 	readlink ${BR_TGT}/lib/libc.so.* | xargs basename > glibc-version || exit 1
 	
 clean: 
-	rm -rf output $(IMAGE) ffimage.bin
+	rm -rf $(OUTPUTDIR) $(IMAGE) ffimage.bin
 	for d in $(SUBDIRS) $(INSTDIRS:%/install=%); do make -k -C $$d clean || true; done
 
 cleanall: clean
-	make -C ../buildroot clean
+	make -C $(BUILDROOT) clean

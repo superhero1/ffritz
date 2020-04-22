@@ -2,10 +2,13 @@
 #
 # Build ffritz package, which builds other packages on demand
 #
+ARCHDIR=$(shell while test -f arch.mk && echo $$PWD && exit 0; test $$PWD != /; do cd ..; done)
+include $(ARCHDIR)/../paths.mk
+
 MODDIR		= $(shell readlink -f ../../atom/mod)
 STAGEDIR	= $(shell readlink -f .)/staging
 
-BASE_PACKAGES=buildroot dropbear privatekeypassword #unionfs-fuse
+BASE_PACKAGES=$(BRBASEDIR) dropbear privatekeypassword #unionfs-fuse
 
 .PHONY:	$(BASE_PACKAGES)
 
@@ -28,17 +31,17 @@ stage:
 	mkdir -p $(FFEXEC)
 	mkdir -p $(FFBIN)
 	mkdir -p $(STAGEDIR)/var/empty
-	make -e -C buildroot/build/output/build/libopenssl* install INSTALL_PREFIX=$(STAGEDIR) DESTDIR=$(STAGEDIR)
+	make -e -C $(BUILDROOT)/output/build/libopenssl* install INSTALL_PREFIX=$(STAGEDIR) DESTDIR=$(STAGEDIR)
 	rm -f  $(STAGEDIR)/usr/bin/c_rehash $(STAGEDIR)/etc/ssl/openssl.cnf
 	rm -f  $(STAGEDIR)/usr/lib/*.a
 	rm -rf  $(STAGEDIR)/etc/ssl/man
 	make -C privatekeypassword install DESTDIR=$(STAGEDIR)/usr
 	make -C dropbear install DESTDIR=$(STAGEDIR) prefix=/usr
 	mv $(STAGEDIR)/usr/lib/lib* $(FFLIB)
-	cp -a buildroot/build/output/target/usr/lib/libtirpc* $(FFLIB)
-	cp -a buildroot/build/output/target/lib/libutil* $(FFLIB)
-	cp -a buildroot/build/output/target/lib/libatomic* $(FFLIB)
-	cp buildroot/build/output/target/bin/busybox $(FFBIN)/busybox-i686
+	cp -a $(BUILDROOT)/output/target/usr/lib/libtirpc* $(FFLIB)
+	cp -a $(BUILDROOT)/output/target/lib/libutil* $(FFLIB)
+	cp -a $(BUILDROOT)/output/target/lib/libatomic* $(FFLIB)
+	cp $(BUILDROOT)/output/target/bin/busybox $(FFBIN)/busybox-i686
 	if [ -d $(STAGEDIR)/usr/local/bin ]; then mv $(STAGEDIR)/usr/local/bin/* $(FFBIN); fi
 	if [ -d $(STAGEDIR)/usr/local/sbin ]; then mv $(STAGEDIR)/usr/local/sbin/* $(FFBIN); fi
 	if [ -d $(STAGEDIR)/usr/sbin ]; then mv $(STAGEDIR)/usr/sbin/* $(FFBIN); fi

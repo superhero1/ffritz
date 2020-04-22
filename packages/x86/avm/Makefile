@@ -13,18 +13,14 @@
 #   kernel-config   - Configure kernel (optional)
 #   toolchain	    - Build toolchain
 #
+ARCHDIR=$(shell while test -f arch.mk && echo $$PWD && exit 0; test $$PWD != /; do cd ..; done)
+include $(ARCHDIR)/../paths.mk
 
-TOPDIR	    = $(shell pwd)
-DESTDIR	    = $(TOPDIR)/output
-
-
-BUILDROOT   = $(shell cd ../buildroot/build; pwd)
-TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
-
-URLFILE = ../../url-avm-toolchain-atom
+DESTDIR = $(TOPDIR)/output
+URLFILE = $(PKGTOP)/url-avm-toolchain-atom
 
 URL	= $(shell cat $(URLFILE))
-FILE	= ../../dl/$(shell basename $(URL))
+FILE	= $(DLDIR)/$(shell basename $(URL))
 
 ## _CROSS is the cross compiler used. By default we use our own, but if required
 ## the avm toolchain can be used as well.
@@ -67,7 +63,7 @@ kernel-modules: avm-prep.stamp
 	make -C $(KERNEL_BUILD_DIR) ARCH=x86 CROSS_COMPILE=$(_CROSS) -j8 modules
 
 $(FILE): $(URLFILE)
-	cd ../../dl; wget $(URL)
+	cd $(DLDIR); wget $(URL)
 	touch $(FILE)
 
 avm-prep.stamp: $(FILE)

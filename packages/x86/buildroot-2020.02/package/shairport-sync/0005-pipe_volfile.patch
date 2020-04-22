@@ -1,0 +1,53 @@
+--- shairport-sync-3.2.1.o/audio_pipe.c	2018-07-13 04:30:42.000000000 -0400
++++ shairport-sync-3.2.1/audio_pipe.c	2019-05-10 17:15:34.159464470 -0400
+@@ -42,6 +42,7 @@
+ static int fd = -1;
+ 
+ char *pipename = NULL;
++static char *volfilename = NULL;
+ int warned = 0;
+ 
+ static void start(__attribute__((unused)) int sample_rate,
+@@ -81,6 +82,22 @@
+   //    close(fd);
+ }
+ 
++static void volume(double vol)
++{
++    FILE *fh;
++
++    if (!volfilename)
++	return;
++
++    fh = fopen(volfilename, "w");
++    if (!fh)
++	return;
++
++    fprintf (fh, "%d", (int)(vol * (double)100.0));
++
++    fclose (fh);
++}
++
+ static int init(int argc, char **argv) {
+   debug(1, "pipe init");
+   //  const char *str;
+@@ -118,6 +135,11 @@
+ 
+   debug(1, "Pipename is \"%s\"", pipename);
+ 
++  if (argc  == 2) {
++    volfilename = strdup(argv[1]);
++    debug(1, "Volumename is \"%s\"", volfilename);
++  }
++
+   return 0;
+ }
+ 
+@@ -137,6 +159,6 @@
+                            .flush = NULL,
+                            .delay = NULL,
+                            .play = &play,
+-                           .volume = NULL,
++                           .volume = &volume,
+                            .parameters = NULL,
+                            .mute = NULL};

@@ -1,6 +1,6 @@
 
 CONFTYPE	= autoreconf
 
-INSTALL_BIN=build/unfsd
+INSTALL_BIN=$(BUILDDIR)/unfsd
 
 include ../../package.mk

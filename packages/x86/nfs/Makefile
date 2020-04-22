@@ -1,40 +1,36 @@
-PKGTOP	= $(shell cd ../..; pwd)
-DLDIR	= $(PKGTOP)/dl
+ARCHDIR=$(shell while test -f arch.mk && echo $$PWD && exit 0; test $$PWD != /; do cd ..; done)
+include $(ARCHDIR)/../paths.mk
 
-TOPDIR	    = $(shell pwd)
-BUILDROOT   = $(shell cd ../buildroot/build; pwd)
-TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
 DESTDIR	    = $(TOPDIR)/output
-SYSROOT	    = $(BUILDROOT)/output/host/usr/i686-buildroot-linux-gnu/sysroot
 
 URL	= $(shell cat $(PKGTOP)/url-nfs)
 FILE	= $(DLDIR)/$(shell basename $(URL))
 
-BFILE = build/fuse/fuse-nfs
+BFILE = $(BUILDDIR)/fuse/fuse-nfs
 DFILE = $(DESTDIR)/bin/fuse-nfs
 
-all:	build/config.status
-	@make -C build PATH=$(TOOLCHAIN):$(PATH)
+all:	$(BUILDDIR)/config.status
+	@make -C $(BUILDDIR) PATH=$(TOOLCHAIN):$(PATH)
 
 $(FILE):
 	@cd $(DLDIR); wget $(URL)
 
-build/configure:    $(FILE)
-	@rm -rf build
-	@mkdir -p build
-	@cd build; unzip $(FILE) && mv fuse-nfs-master/* .
-	cd build; ./setup.sh
+$(BUILDDIR)/configure:    $(FILE)
+	@rm -rf $(BUILDDIR)
+	@mkdir -p $(BUILDDIR)
+	@cd $(BUILDDIR); unzip $(FILE) && mv fuse-nfs-master/* .
+	cd $(BUILDDIR); ./setup.sh
 
-build/config.status:	build/configure
-	@cd build; export PATH=$(TOOLCHAIN):$(PATH); ./configure --host=i686-buildroot-linux-gnu --target=i686-buildroot-linux-gnu --prefix=/
+$(BUILDDIR)/config.status:	$(BUILDDIR)/configure
+	@cd $(BUILDDIR); export PATH=$(TOOLCHAIN):$(PATH); ./configure --host=i686-buildroot-linux-gnu --target=i686-buildroot-linux-gnu --prefix=/
 
 install: $(DFILE)
 
 $(DFILE): $(BFILE)
-	@make -C build PATH=$(TOOLCHAIN):$(PATH) install-exec DESTDIR=$(DESTDIR)
+	@make -C $(BUILDDIR) PATH=$(TOOLCHAIN):$(PATH) install-exec DESTDIR=$(DESTDIR)
 
-$(BFILE):	build/config.status
-	@make -C build PATH=$(TOOLCHAIN):$(PATH)
+$(BFILE):	$(BUILDDIR)/config.status
+	@make -C $(BUILDDIR) PATH=$(TOOLCHAIN):$(PATH)
 
 clean:
-	rm -rf build
+	rm -rf $(BUILDDIR)

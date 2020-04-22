@@ -1,12 +1,12 @@
+ARCHDIR=$(shell while test -f arch.mk && echo $$PWD && exit 0; test $$PWD != /; do cd ..; done)
+include $(ARCHDIR)/../paths.mk
+
 TARGET := libmaru.so.0.1
 SONAME := libmaru.so.0
 SONAME_SHORT := libmaru.so
 
 PREFIX = /usr/local
 
-TOPDIR	    = $(shell pwd)
-BUILDROOT   = $(shell cd ../buildroot/build; pwd)
-TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
 export PATH := $(TOOLCHAIN):$(PATH)
 CC=i686-buildroot-linux-gnu-gcc
 

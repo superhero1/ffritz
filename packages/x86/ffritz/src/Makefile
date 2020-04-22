@@ -1,6 +1,6 @@
-TOPDIR	    = $(shell cd ..; pwd)
-BUILDROOT   = $(shell cd ../../buildroot/build; pwd)
-TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
+ARCHDIR=$(shell while test -f arch.mk && echo $$PWD && exit 0; test $$PWD != /; do cd ..; done)
+include $(ARCHDIR)/../paths.mk
+
 export PATH := $(TOOLCHAIN):$(PATH)
 CC	    = i686-buildroot-linux-gnu-gcc
 

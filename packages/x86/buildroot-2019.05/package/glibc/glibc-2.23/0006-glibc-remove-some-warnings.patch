@@ -1,0 +1,58 @@
+--- glibc-glibc-2.23/stdlib/setenv.c	2016-02-18 12:54:00.000000000 -0500
++++ glibc-glibc-2.23_p/stdlib/setenv.c	2019-08-17 16:18:26.373809579 -0400
+@@ -277,6 +277,7 @@
+ 
+   ep = __environ;
+   if (ep != NULL)
++{
+     while (*ep != NULL)
+       if (!strncmp (*ep, name, len) && (*ep)[len] == '=')
+ 	{
+@@ -290,6 +291,7 @@
+ 	}
+       else
+ 	++ep;
++}
+ 
+   UNLOCK;
+ 
+--- glibc-glibc-2.23/sunrpc/rpc_parse.c	2016-02-18 12:54:00.000000000 -0500
++++ glibc-glibc-2.23_p/sunrpc/rpc_parse.c	2019-08-17 16:23:16.804498427 -0400
+@@ -521,7 +521,7 @@
+ get_prog_declaration (declaration * dec, defkind dkind, int num /* arg number */ )
+ {
+   token tok;
+-  char name[10];		/* argument name */
++  char name[20];		/* argument name */
+ 
+   if (dkind == DEF_PROGRAM)
+     {
+--- glibc-glibc-2.23/nis/nis_call.c	2016-02-18 12:54:00.000000000 -0500
++++ glibc-glibc-2.23_p/nis/nis_call.c	2019-08-17 16:24:33.852147471 -0400
+@@ -680,6 +680,7 @@
+   /* Choose which entry should be evicted from the cache.  */
+   loc = &nis_server_cache[0];
+   if (*loc != NULL)
++{
+     for (i = 1; i < 16; ++i)
+       if (nis_server_cache[i] == NULL)
+ 	{
+@@ -690,6 +691,7 @@
+ 	       || ((*loc)->uses == nis_server_cache[i]->uses
+ 		   && (*loc)->expires > nis_server_cache[i]->expires))
+ 	loc = &nis_server_cache[i];
++}
+   old = *loc;
+   *loc = new;
+ 
+--- glibc-glibc-2.23/nis/nss_nisplus/nisplus-alias.c	2016-02-18 12:54:00.000000000 -0500
++++ glibc-glibc-2.23_p/nis/nss_nisplus/nisplus-alias.c	2019-08-17 16:26:34.555595781 -0400
+@@ -291,7 +291,7 @@
+ 	return status;
+     }
+ 
+-  if (name != NULL)
++  if (name == NULL)
+     {
+       *errnop = EINVAL;
+       return NSS_STATUS_UNAVAIL;

@@ -1,14 +1,11 @@
-include ../toolchain.mk
+ARCHDIR=$(shell while test -f arch.mk && echo $$PWD && exit 0; test $$PWD != /; do cd ..; done)
+include $(ARCHDIR)/../paths.mk
 
 ###############################################################################
 
-TOPDIR=$(shell pwd)
-TOOLCHAIN   = $(shell cd $(BUILDROOT)/output/host/usr/bin/; pwd)
 DESTDIR	    = $(TOPDIR)/output
-TGTLIB	    = ../../../arm/squashfs-root/lib
-#TGTLIB	    = ../../../tmp/squashfs-root/lib/
 
-CMN	    = ../../common/athtool
+CMN	    = $(PKGTOP)/common/athtool
 
 export PATH := $(TOOLCHAIN):$(PATH)
 vpath %.c $(CMN)

@@ -1,6 +1,6 @@
 
 CONFTYPE	= legacy
 
-INSTALL_BIN=build/shairport
+INSTALL_BIN=$(BUILDDIR)/shairport
 
 include ../../package.mk

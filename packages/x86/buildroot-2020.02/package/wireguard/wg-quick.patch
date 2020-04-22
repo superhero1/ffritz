@@ -1,0 +1,13 @@
+diff --git a/src/tools/wg-quick/linux.bash b/src/tools/wg-quick/linux.bash
+index e690944..a219a18 100755
+--- a/src/tools/wg-quick/linux.bash
++++ b/src/tools/wg-quick/linux.bash
+@@ -196,7 +196,7 @@ add_default() {
+ 	cmd ip $proto rule add table main suppress_prefixlength 0
+ 	while read -r key _ value; do
+ 		[[ $value -eq 1 ]] && sysctl -q "$key=2"
+-	done < <(sysctl -a -r '^net\.ipv4.conf\.[^ .=]+\.rp_filter$')
++	done < <(sysctl -a | egrep '^net\.ipv4\.conf\.[^ .=]+\.rp_filter =')
+ 	return 0
+ }
+ 
