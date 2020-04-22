@@ -262,6 +262,7 @@ arm-brconfig:
 	@echo +++ run \"make package-arm\" to generate application image with modified configuration.
 	@echo
 
+
 rebuild:
 	make -C packages/x86 base base-install
 

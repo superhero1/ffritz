@@ -39,11 +39,15 @@ PKGNAME     = $(shell basename `pwd`)
 endif
 
 ifeq ($(URL),)
-URL	= $(shell test -r $(PKGTOP)/url-$(PKGNAME) && cat $(PKGTOP)/url-$(PKGNAME))
+URLFILE = $(PKGTOP)/url-$(PKGNAME)
+SHAFILE = $(PKGTOP)/sha-$(PKGNAME)
+URL	= $(shell test -r $(URLFILE) && cat $(URLFILE))
 endif
 
 ifeq ($(GIT),)
-GIT	= $(shell test -r $(PKGTOP)/git-$(PKGNAME) && cat $(PKGTOP)/git-$(PKGNAME))
+GITFILE = $(PKGTOP)/git-$(PKGNAME)
+COMMITFILE = $(PKGTOP)/commit-$(PKGNAME)
+GIT	= $(shell test -r $(GITFILE) && cat $(GITFILE))
 endif
 
 ifneq ($(URL),)
@@ -52,7 +56,7 @@ else
 ifneq ($(GIT),)
 REPO	= $(DLDIR)/$(PKGNAME)_git
 ifeq ($(COMMIT),)
-COMMIT  = $(shell test -r $(PKGTOP)/commit-$(PKGNAME) && cat $(PKGTOP)/commit-$(PKGNAME))
+COMMIT  = $(shell test -r $(COMMITFILE) && cat $(COMMITFILE))
 ifeq ($(COMMIT),)
 COMMIT	= HEAD
 endif
@@ -127,22 +131,24 @@ _INST=$(shell echo "if [ -f $(1) ]; then install -vDC $(1) $(2)/`basename $(1)`;
 
 #------------------------------------
 ifneq ($(FILE),)
-$(FILE):
-	@cd $(DLDIR); wget $(URL)
-	if [ -r $(PKGTOP)/sha-$(PKGNAME) ]; then cd $(DLDIR); sha256sum -c $(PKGTOP)/sha-$(PKGNAME); fi
+$(FILE): $(wildcard $(URLFILE) $(SHAFILE))
+	@cd $(DLDIR); wget $(URL) -O $(FILE)
+	if [ -r $(SHAFILE) ]; then cd $(DLDIR); sha256sum -c $(SHAFILE); fi
+	touch $(FILE)
 endif
 
 ifneq ($(REPO),)
-$(REPO):
+$(REPO): $(wildcard $(GITFILE) $(COMMITFILE))
+	rm -rf $(REPO)
 	git clone --bare $(GIT) $(REPO)
 endif
 
 ifneq ($(FILE),)
-$(BUILDDIR):	$(FILE)
-	@rm -rf $(BUILDDIR)
-	@mkdir -p $(BUILDDIR)
-	@cd $(BUILDDIR); tar xf $(FILE) --strip-components=1
-	@cd $(BUILDDIR); for p in $(PATCHES); do echo Applying $$p ..; patch -p1 < ../$$p || exit 1; done
+$(BUILDDIR):	$(FILE) $(wildcard $(URLFILE) $(SHAFILE))
+	rm -rf $(BUILDDIR)
+	mkdir -p $(BUILDDIR)
+	cd $(BUILDDIR); tar xf $(FILE) --strip-components=1
+	cd $(BUILDDIR); for p in $(PATCHES); do echo Applying $$p ..; patch -p1 < ../$$p || exit 1; done
 	cd $(BUILDDIR); $(AUTORECONF)
 else
 $(BUILDDIR):	$(REPO)
@@ -158,10 +164,12 @@ endif
 $(TC_STAMP):
 	 $(PKGTOP)/tccheck $(BUILDROOT) $(TC_STAMP)
 
+$(ALL_DEP) $(CUSTOM_DEP): $(REPO) $(FILE)
+
 all-pkg:	$(ALL_DEP) $(CUSTOM_DEP)
 	PATH=$(TOOLCHAIN):$(PATH) make -C $(BUILDDIR)$(MAKE_SUBDIR) $(MAKE_OPTIONS)
 
-$(BUILDDIR)$(MAKE_SUBDIR)/Makefile:    $(BUILDDIR)
+$(BUILDDIR)$(MAKE_SUBDIR)/Makefile:    $(BUILDDIR) 
 	@test -f $(BUILDDIR)$(MAKE_SUBDIR)/Makefile && touch $(BUILDDIR)$(MAKE_SUBDIR)/Makefile
 
 $(BUILDDIR)/configure:    $(BUILDDIR)

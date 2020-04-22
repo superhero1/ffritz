@@ -8,8 +8,8 @@ Release puma7-15
 	  (see conf.mk.tpl)
 	- Add PARALLEL option to conf.mk to perform buildroot parallel build.
 - Add non-ELF binaries from buildroot usr/(s)bin to /usr/local/bin.
-- br-2020-02: Added patch for tvheadend (patched out early exit due to stack
-  rlimit failure).
+- tvheadend: Added patch/support for buildroot-2020.02
+- shairport-sync: version 3.3.5
 
 Release puma7-14
 ----------------
