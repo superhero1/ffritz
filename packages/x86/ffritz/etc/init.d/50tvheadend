@@ -1,0 +1,15 @@
+if [ "$1" = "stop" ]; then
+        ffdaemon -K tvheadend
+        exit 0
+fi
+
+mkdir -p /var/log/ffritz
+chown ffritz /var/log/ffritz
+
+#Enable only for debugging, log gets big
+#
+#LOG="-l /var/log/ffritz/tvh.log"
+
+if [ -x /usr/local/bin/tvheadend ]; then
+	ffdaemon tvheadend $LOG -C -u ffritz -c /var/media/ftp/ffritz/.hts 
+fi

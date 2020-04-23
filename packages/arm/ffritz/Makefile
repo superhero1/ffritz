@@ -16,6 +16,7 @@ BR_TGT_SBIN = $(BR_TGT)/usr/sbin
 
 BINFILES   += $(wildcard bin/*)
 BINFILES   += $(wildcard $(CMNDIR)/ffritz/bin/*)
+BINFILES   += $(wildcard $(CMNDIR)/ffritz/bin$(BR_VERSION)/*)
 
 OUTPUTDIR   = $(TOPDIR)/output$(BR_VERSION)
 STAGEDIR    = $(OUTPUTDIR)/ffritz-arm

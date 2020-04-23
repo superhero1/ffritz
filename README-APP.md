@@ -232,6 +232,22 @@ The wireguard service
   /nvram/ffnvram/etc/wireguard/wg0.conf
 - installs an IPv4 UDP forwarding rule for port 51820
 
+tvheadend (tvheadend)
+---------------------
+Basically, the Fritzbox 6591 is powerful enough to run Tvheadend, but i
+consider it still as experimental as i have seen rare box reboot events
+while recording.
+It is only available on FritzOS Version 7.19 or later, and requires the 
+buildroot-2020.02 toolchain image.
+
+I also recommend only using one HD tuner at this time until the SatIP server is
+optimized (the libdvbif patch as it was used for the 6490 is not yet ported).
+
+When enabled, Tvheadend runs as user ffritz, the configuration is stored
+in /var/media/ftp/ffritz/.hts. If you want to enable the recorder you need to
+explicitly set the recorder path in the tvh configuration menu (i recommend using
+an external USB drive).
+
 Building the application image
 ==============================
 

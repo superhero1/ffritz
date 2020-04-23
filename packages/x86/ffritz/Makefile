@@ -14,9 +14,9 @@ BR_TGT_LIB  = $(BR_TGT)/usr/lib
 BR_TGT_BIN  = $(BR_TGT)/usr/bin
 BR_TGT_SBIN = $(BR_TGT)/usr/sbin
 
-BINFILES    = src/sndlist src/usbplay src/usbplayd src/ffdaemon
 BINFILES   += $(wildcard bin/*)
 BINFILES   += $(wildcard $(CMNDIR)/ffritz/bin/*)
+BINFILES   += $(wildcard $(CMNDIR)/ffritz/bin$(BR_VERSION)/*)
 ETCFILES    = etc/ffritz-env.sh etc/mpd.conf etc/ff_atom_startup etc/ffservices etc/mkusers
 ETCFILES   += etc/lirc_options_dfl.conf
 ETCFILES   += etc/upmpdcli.conf-dist
@@ -24,6 +24,16 @@ ETCFILES   += etc/usrmount etc/fflogrotate etc/ffshutdown
 ETCFILES   += etc/init.d
 ETCFILES   += etc/shairport-sync.conf.dfl
 ETCFILES   += etc/exports
+
+## XXX binaries that seem to require /lib as first entry in /LD_LIBRARY_PATH
+## This is the default for <= FritzOS 7.13 / BR2019-05.
+## For FOS 7.19 / BR2020-02, it is not, except some exceptions
+##
+## Maybe this can be properly fixed once the 7.19 OS package is available.
+# 
+## OpenVPN/OpenSSL fails to initialize RNG otherwise
+#
+FFWRAP_FORCE_LIB += openvpn
 
 OUTPUTDIR   = $(TOPDIR)/output$(BR_VERSION)
 STAGEDIR    = $(OUTPUTDIR)/ffritz
@@ -43,13 +53,9 @@ ifeq ($(INSTDIR),)
     INSTDIR=$(STAGEDIR)
 endif
 
-## Packages
-#
-SUBDIRS    += ../libmaru
-SUBDIRS    += src
-
 ## Packages with (build/)install target
 #
+INSTDIRS   += src/install
 INSTDIRS   += ../nfs/install 
 INSTDIRS   += ../bt/install 
 INSTDIRS   += ../prtg/install 
@@ -77,7 +83,7 @@ INSTDIRS   += $(FFAD)/install
 endif
 
 ifeq ($(NOSTRIP),)
-NOSTRIP	    = 0
+NOSTRIP	    = 1
 endif
 
 .PHONY:	$(SUBDIRS) $(INSTDIRS) $(IMAGE) $(INSTDIR)
@@ -133,8 +139,8 @@ stage: $(BINFILES) $(ETCFILES) $(INSTDIRS)
 	cp -ar etc/openvpn $(INSTDIR)/etc
 	sed -i -e 's@^rundir=.*@rundir=/var/media/ftp/ffritz@' $(INSTDIR)/etc/ff_atom_startup
 	cd $(BRCOPY)/usr/lib; ln -s ../../lib/libutil* . || true
-	mv $(INSTDIR)/bin/ffwrap $(BRCOPY)/usr/bin
-	cp $(BRCOPY)/usr/bin/ffwrap $(BRCOPY)/usr/sbin
+	mv $(INSTDIR)/bin/ffwrap* $(BRCOPY)/usr/bin
+	cp $(BRCOPY)/usr/bin/ffwrap* $(BRCOPY)/usr/sbin
 	# Move our binaries to buildroot
 	@cd $(INSTDIR)/bin; \
 	    for f in `ls | xargs file | grep ELF | grep -v cash_wrap.so | sed -e 's/:.*//'`; do\
@@ -144,22 +150,22 @@ stage: $(BINFILES) $(ETCFILES) $(INSTDIRS)
 	# Make buildroot usr/bin available for host
 	@cd $(BRCOPY)/usr/bin; \
 	    for f in `ls | xargs file -L | grep ELF | grep -v cash_wrap.so | sed -e 's/:.*//'`; do\
-		test -e ../../../bin/$$f || ln -sv ../buildroot/usr/bin/ffwrap ../../../bin/$$f;\
-	    done
+		test -e ../../../bin/$$f || ln -s ../buildroot/usr/bin/ffwrap ../../../bin/$$f;\
+	    done;
 	# /usr/bin non-ELF
 	@cd $(BRCOPY)/usr/bin; \
 	    for f in `ls | xargs file -L | grep -v ELF | sed -e 's/:.*//'`; do\
-		test -e ../../../bin/$$f || ln -sv ../buildroot/usr/bin/$$f ../../../bin/$$f;\
+		test -e ../../../bin/$$f || ln -s ../buildroot/usr/bin/$$f ../../../bin/$$f;\
 	    done
 	# Make buildroot usr/sbin available for host
 	@cd $(BRCOPY)/usr/sbin; \
 	    for f in `ls | xargs file -L | grep ELF | sed -e 's/:.*//'`; do\
-		test -e ../../../bin/$$f || ln -sv ../buildroot/usr/sbin/ffwrap ../../../bin/$$f;\
+		test -e ../../../bin/$$f || ln -s ../buildroot/usr/sbin/ffwrap ../../../bin/$$f;\
 	    done
 	# /usr/sbin non-ELF
 	@cd $(BRCOPY)/usr/sbin; \
 	    for f in `ls | xargs file -L | grep -v ELF | sed -e 's/:.*//'`; do\
-		test -e ../../../bin/$$f || ln -sv ../buildroot/usr/sbin/$$f ../../../bin/$$f;\
+		test -e ../../../bin/$$f || ln -s ../buildroot/usr/sbin/$$f ../../../bin/$$f;\
 	    done
 	# strip libraries
 	@if [ $(NOSTRIP) -eq 0 ]; then \
@@ -167,8 +173,14 @@ stage: $(BINFILES) $(ETCFILES) $(INSTDIRS)
 	    for l in `ls | xargs file | grep ELF | sed -e 's/:.*//'`; do\
 		strip $$l;\
 	    done; fi
+	# LD_LIBRARY_PATH fixups
+	@cd $(INSTDIR)/bin; for f in $(FFWRAP_FORCE_LIB); do \
+		if [ -L $$f ]; then nlink=`readlink $$f`-hlib; \
+		if [ -r $$nlink ]; then ln -sfv $$nlink $$f; fi; fi; \
+	done
 	# shairport does not like those
 	rm -f $(INSTDIR)/bin/avahi*
+	# Provide terminfo database
 	cd $(INSTDIR)/share; ln -s ../buildroot/usr/share/terminfo .
 	readlink ${BR_TGT}/lib/libc.so.* | xargs basename > glibc-version || exit 1
 	

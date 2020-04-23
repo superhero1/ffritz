@@ -263,8 +263,13 @@ arm-brconfig:
 	@echo
 
 
+ifeq ($(BR_VERSION),)
 rebuild:
 	make -C packages/x86 base base-install
+else
+rebuild:
+	@echo Rebuilding default binaries is not supported for BR_VERSION=$(BR_VERSION)
+endif
 
 help:
 	@echo 'Make targets:'

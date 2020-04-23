@@ -550,7 +550,7 @@ main (int argc, char **argv)
     int do_rate_convert = 0;
     char fifo_name[100];
     int rate;
-    const char *logfile;
+    const char *logfile = NULL;
 
     int c;
 

@@ -14,7 +14,7 @@ TGT=$(BUILDROOT)/output/target/usr/lib
 TLIB=$(TGT)/usr/lib
 TINC=$(TGT)/usr/include
 
-CFLAGS += -O2 -g -pthread -fPIC -std=gnu99 -Wall -I.. -I$(TINC)
+CFLAGS += -O2 -g -pthread -fPIC -std=gnu99 -Wall -I.. #-I$(TINC)
 LDFLAGS += -shared -pthread -fPIC -lrt -L$(TLIB) -lusb-1.0 -Wl,-no-undefined -Wl,-soname,$(SONAME)
 
 SOURCES := $(wildcard *.c)

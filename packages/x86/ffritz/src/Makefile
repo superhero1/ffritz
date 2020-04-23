@@ -4,28 +4,52 @@ include $(ARCHDIR)/../paths.mk
 export PATH := $(TOOLCHAIN):$(PATH)
 CC	    = i686-buildroot-linux-gnu-gcc
 
-CFLAGS += -I../../libmaru -I../../../common/ffdaemon
-LDFLAGS += ../../libmaru/libmaru.a -lusb-1.0 -pthread
+CFLAGS += -I$(ARCHDIR)/libmaru -I$(ARCHDIR) -I$(CMNDIR)/ffdaemon
+LDFLAGS += -lusb-1.0 -pthread
 
-vpath %.c ../../../common/ffdaemon
+ifeq ($(DESTDIR),)
+DESTDIR = $(TOPDIR)/output
+endif
+
+TARGETS = sndlist usbplay usbplayd ffdaemon
+
+LIBMARU = eventfd.o libmaru.o fifo.o
+
+vpath %.c $(CMNDIR)/ffdaemon ../ $(ARCHDIR)/libmaru
 
 .c.o:
-	$(CC) -Wall -c $< -std=c99 $(CFLAGS)
+	$(CC) -Wall -c $< -std=c99 -O2 -pthread -Wall $(CFLAGS)
 
-all:	sndlist usbplay usbplayd ffdaemon
+all:	$(BUILDDIR)
+	make -C $(BUILDDIR) tools
+
+$(BUILDDIR):
+	mkdir -p $(BUILDDIR)
+	cd $(BUILDDIR); ln -sf ../Makefile .
+
+install: all
+	mkdir -p $(DESTDIR)/bin
+	cd $(BUILDDIR); cp -a $(TARGETS) $(DESTDIR)/bin
+
+clean:
+	rm -rf $(BUILDDIR)
+
+libmaru.o fifo.o:	CFLAGS += -std=gnu99
+
+################
+
+tools:	$(TARGETS)
+	mkdir -p bin
+	cp -a $(TARGETS) bin
 
 ffdaemon:	ffdaemon.o daemon.o
 	$(CC) -o $@ $^ -std=c99 
 
-sndlist:    sndlist.o ../../libmaru/libmaru.a
+sndlist:    sndlist.o $(LIBMARU)
 	$(CC) -o $@ $^ -std=c99 $(LDFLAGS)
 
-usbplay:    usbplay.o ../../libmaru/libmaru.a
+usbplay:    usbplay.o $(LIBMARU)
 	$(CC) -o $@ $^ -std=c99 $(LDFLAGS)
 
-usbplayd:    usbplayd.o daemon.o ../../libmaru/libmaru.a
+usbplayd:    usbplayd.o daemon.o $(LIBMARU)
 	$(CC) -o $@ $^ -std=c99 $(LDFLAGS) -lsamplerate
-
-clean:
-	rm -f sndlist usbplay usbplayd *.o
-

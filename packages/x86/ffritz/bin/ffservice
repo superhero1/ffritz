@@ -33,6 +33,17 @@ fi
 service_fname=`basename $service_file`
 
 case $op in
+	edit)	tmpfile=/tmp/$$.`basename $service_file`
+		cp $service_file $tmpfile || exit 1
+		vi $tmpfile || exit 1
+		diff $tmpfile $service_file >/dev/null && exit 0
+		if [ -L $service_file ]; then
+			link=`readlink -f $service_file`
+			rm -f $service_file || exit 1
+			echo $service_file is modified, future changes from $link are ignored.
+		fi
+		mv $tmpfile $service_file || exit 1
+		;;
 	start)	$service_file start || echo $service started;;
 	stop)   $service_file stop  || echo $service stopped;;
 	enable) ln -sfv ../init.d/$service_fname .; nvsync;;
@@ -40,5 +51,5 @@ case $op in
 	restart) $service_file stop;
 		 sleep 3;
 		 $service_file start || echo $service restarted;;
-	*)	echo "usage: $0 start|stop|restart|enable|disable|list service";;
+	*)	echo "usage: $0 start|stop|restart|enable|disable|list|edit service";;
 esac
