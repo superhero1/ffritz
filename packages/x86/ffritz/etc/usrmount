@@ -32,6 +32,9 @@ grep MOUNT $1 | grep -v '\.\.' | grep nfs:// | while read line; do
 
 	shift
 	mountpoint=/var/media/ftp/$1
+	if [ ! -d $mountpoint ]; then
+		mkdir -p $mountpoint || exit 1
+	fi
 	shift
 	mountopts=$*
 	if [ $do_unmount -eq 0 ]; then

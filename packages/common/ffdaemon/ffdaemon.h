@@ -22,5 +22,6 @@
 void log_put (const char *format, ...);
 void log_set (const char *logf, int consOut);
 int daemon2 (char *pdfile, int delay, int loops, int nochdir, int noclose, char *service_name);
+int do_limits (char *limits, int check_only);
 
 #endif

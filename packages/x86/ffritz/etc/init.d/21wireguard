@@ -1,4 +1,5 @@
 #!/bin/sh
+# Xfeature:getconfig
 #        
 # wireguard startup file
 #                   
@@ -7,6 +8,17 @@
 
 WGDIR=$NVRAM/etc/wireguard
 
+if [ "x$1" = "xgetconfig" ]; then
+	exit 0
+fi
+
+if [ `echo $CONFIG_VERSION | tr -d '.'` -gt 712 ]; then
+	echo 'Sorry, wireguard will not yet run on firmware > 7.12' 1>&2
+	echo 'Sorry, wireguard will not yet run on firmware > 7.12' > /dev/console
+	exit 0
+fi
+
+
 if [ "x$1" = "xstop" ]; then
 	$FFINSTDIR/bin/ffdaemon -K wgforward
 	$FFINSTDIR/bin/wg-quick down $WGDIR/wg0.conf
@@ -14,14 +26,12 @@ if [ "x$1" = "xstop" ]; then
 	exit 0
 fi
 
-if [ ! -f $WGDIR/wg0.conf ]; then
-	echo WireGuard not started, no config file
+if [ "x$1" != "xstart" ]; then
 	exit 0
 fi
 
-if [ `echo $CONFIG_VERSION | tr -d '.'` -gt 712 ]; then
-	echo 'Sorry, wireguard will not yet run on firmware > 7.12' 1>&2
-	echo 'Sorry, wireguard will not yet run on firmware > 7.12' > /dev/console
+if [ ! -f $WGDIR/wg0.conf ]; then
+	echo WireGuard not started, no config file
 	exit 0
 fi
 

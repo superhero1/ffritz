@@ -1,5 +1,0 @@
-[Service]
-Type=forking
-ExecStart=/usr/bin/telnetd
-[Install]
-WantedBy=multi-user.target

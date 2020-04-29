@@ -18,8 +18,43 @@ if [ "$op" = "list" ]; then
 	exit 0
 fi
 
+usage()
+{
+	echo "Usage: `basename $0` start|stop|restart|enable|disable|list|edit|config|purge service"
+}
+
+help()
+{
+	usage
+	echo "list:    List all services, and which ones are enabled at system start."
+	echo "         The order of output matches the (reverse) execution order at"
+	echo "         startup (shutdown)."
+	echo "         The current run state of a service is not known by this tool,"
+	echo "         but ffdaemon -L might give hints"
+	echo "start:   Start service"
+	echo "stop:    Stop service"
+	echo "restart: Restart service"
+	echo "enable:  Enable service at system start"
+	echo "disable: Don't run service at system start"
+	echo "edit:    Edit service file. If the service file (in etc/init.d) is a symlink"
+	echo "         (usually to /usr/local/etc/init.d) then the symlink will be removed and"
+	echo "         the service file is kept locally before starting the editor."
+	echo "         Use the purge command to restore the original symlink"
+	echo "config:  Edit the service configuration, if there is any."
+	echo "         The configuration file (a shell script!) is kept in etc/conf.d."
+	echo "         If none exists yet, and the service supports it, a default/example"
+	echo "         configuration is provided."
+	echo "         Use the purge command to reset the service configuration to its defaults"
+	echo "         (by removing the configuration file)."
+	echo "purge:   - If the service file once was a symlink, restore the symlink."
+	echo "         - Removes the service configuration, which will apply the service defaults."
+	echo "         Both the old service and configuration file will be backed up, if necessary,"
+	echo "         but an already existing backup will get overwritten!"
+	echo "         The backup location will be printed."
+}
+
 if [ -z "$op" -o -z "$service" ]; then
-    echo "usage: $0 start|stop|restart|enable|disable|list service"
+    help
     exit 1
 fi
 
@@ -31,6 +66,10 @@ if [ ! -f "$service_file" ]; then
 fi
 
 service_fname=`basename $service_file`
+conf_file=$NVRAM/etc/conf.d/$service_fname
+if [ -r $conf_file ]; then
+	conf_file_opt=$conf_file
+fi
 
 case $op in
 	edit)	tmpfile=/tmp/$$.`basename $service_file`
@@ -44,12 +83,51 @@ case $op in
 		fi
 		mv $tmpfile $service_file || exit 1
 		;;
-	start)	$service_file start || echo $service started;;
-	stop)   $service_file stop  || echo $service stopped;;
+	start)	$service_file start $conf_file_opt ;;
+	stop)   $service_file stop $conf_file_opt ;;
 	enable) ln -sfv ../init.d/$service_fname .; nvsync;;
 	disable) rm -fv $NVRAM/etc/rc.d/$service_fname; nvsync;; 
-	restart) $service_file stop;
-		 sleep 3;
-		 $service_file start || echo $service restarted;;
-	*)	echo "usage: $0 start|stop|restart|enable|disable|list|edit service";;
+	restart) $service_file stop $conf_file_opt
+		 sleep 3
+		 $service_file start $conf_file_opt
+		 ;;
+	config) mkdir -p $NVRAM/etc/conf.d
+		if [ ! -r "$conf_file" ]; then
+			echo "# Configuration options/script for $service" > $conf_file
+			grep Xfeature:getconfig $service_file >/dev/null
+			if [ $? -eq 0 ]; then
+				echo "# Append/change settings below:" >> $conf_file
+				$service_file getconfig $conf_file_opt >> $conf_file
+			else
+				echo "# (no default configuration found)" >> $conf_file
+				echo "# Append/change settings below:" >> $conf_file
+			fi
+		fi
+		vi $conf_file
+		nvsync
+		;;
+	purge)	if [ -r $conf_file ]; then
+			echo +++ Moving existing config file ro $conf_file.bak
+			mv $conf_file $conf_file.bak || exit 1
+		else
+			echo === Config file: Nothing to do, $conf_file does not exist
+		fi
+		orig_file=/usr/local/etc/init.d/$service_fname
+		if [ -r "$orig_file" ]; then
+			if [ `readlink -f $orig_file` != `readlink -f $service_file` ]; then
+				service_bak=$NVRAM/etc/init.d/.$service_fname
+				echo +++ Saving modified service file to $service_bak
+				cp $service_file $service_bak || exit 1
+				rm -f $service_file || exit 1
+				echo +++ Restoring link to $orig_file
+				ln -s $orig_file $service_file
+			else
+				echo === Service file: Nothing to do
+			fi
+		else
+			echo === Service file: Nothing to do, $orig_file does not exist
+		fi
+		nvsync
+		;;
+	*)	usage;;
 esac

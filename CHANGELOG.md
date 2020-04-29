@@ -1,6 +1,20 @@
 Change history of application package
 =====================================
 
+Release puma7-16
+----------------
+- Add setrlimit options to ffdaemon.
+- usrmount: Try to create mount directory before mounting
+- tvheadend: apply stack and memory limit via ffdaemon
+- ffservice: add edit, config and purge option.
+  Adapted default service files.
+- buildroot: now using ffservice configuration file.
+  Old file (ffbuildroot.conf) is transferred.
+- usbplayd: now using ffservice configuration file.
+  Old config file (usbplayd.conf) no longer used.
+- mpd: service supports options to disable ympd/upmpdcli
+- bluetooth: can set AP name in config options.
+
 Release puma7-15
 ----------------
 - Buildroot version 2020-02 (only for FritzOS 7.19 onwards)
@@ -220,6 +234,10 @@ TODO
 
 Change history of ffritz core integration:
 ==========================================
+
+release 27
+----------
+- [7.19] Add ffritz.target after multi-user.target to prevent services from starting too early
 
 release 26
 ----------

@@ -1,4 +1,5 @@
 #!/bin/sh
+# Xfeature:getconfig
 #
 # (de)construct a chroot'able filesystem out of a buildroot
 #
@@ -10,6 +11,10 @@ BR_ROOT=/usr/local/buildroot
 BR_CONF=$NVRAM/ffbuildroot.conf
 BR_CONF_ACTIVE=/tmp/ffbuildroot.conf
 BR_VAR=/tmp/ffbrvar
+
+if [ ! -z $2 ]; then
+	BR_CONF=$2
+fi
 
 ismounted()
 {
@@ -139,6 +144,22 @@ if [ "x$1" = "xstop" ]; then
 	umount_all
 
 	rm -f $BR_CONF_ACTIVE
+	exit 0
+fi
+
+if [ "x$1" = "xgetconfig" ]; then
+	if [ -r $NVRAM/ffbuildroot.conf ]; then
+		echo "# Data read from old style ffbuildroot.conf:"
+		cat $NVRAM/ffbuildroot.conf
+	else
+		echo "# Options for buildroot service:"
+		echo "# BR_USER_OVERLAY: Users root filesystem overlay (e.g. below /var/media/ftp)"
+	fi
+
+	exit 0
+fi
+
+if [ "x$1" != "xstart" ]; then
 	exit 0
 fi
 

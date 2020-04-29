@@ -1,9 +1,15 @@
 #!/bin/sh
+# Xfeature:getconfig
 #
 # Wrapper to call mpd with the proper libraries and config file
 # Never returns, should be called with nohup
 #
 . /usr/local/etc/ffritz-env.sh || exit 1
+
+ENABLE_UPMPDCLI=1
+ENABLE_YMPD=1
+
+test -z $2 || . $2
 
 BR_DIR=/tmp/br
 
@@ -12,6 +18,19 @@ if [ "x$1" = "xstop" ]; then
     $FFINSTDIR/bin/ffdaemon -K ympd
     $FFINSTDIR/bin/ffdaemon -K mpd
     exit
+fi
+
+if [ "x$1" = "xgetconfig" ]; then
+	echo "# Whether to enable upmpdcli:"
+	echo ENABLE_UPMPDCLI=$ENABLE_UPMPDCLI
+	echo
+	echo "# Whether to enable ympd:"
+	echo ENABLE_YMPD=$ENABLE_YMPD
+	exit 0
+fi
+
+if [ "x$1" != "xstart" ]; then
+	exit 0
 fi
 
 $FFINSTDIR/etc/mkusers || exit 1
@@ -47,18 +66,23 @@ chmod 777 /var/run/mpd
 #
 $FFINSTDIR/bin/ffdaemon -r ffritz $FFINSTDIR/bin/mpd --no-daemon $FFRITZ_HOME/mpd.conf
 
+
 # Run upmpdcli (UPNP frontent to MPD)
 #
 # Use chroot environment from buildroot service
 #
-if [ -d $BR_DIR/usr/share/upmpdcli/ ]; then
-    sleep 1
-    $FFINSTDIR/bin/ffdaemon -i 10 -o $BR_DIR upmpdcli -c $FFRITZ_HOME/upmpdcli.conf 
-else
-    echo upmpdcli not started, requires buildroot service
+if [ $ENABLE_UPMPDCLI -eq 1 ]; then 
+	if [ -d $BR_DIR/usr/share/upmpdcli/ ]; then
+	    sleep 1
+	    $FFINSTDIR/bin/ffdaemon -i 10 -o $BR_DIR upmpdcli -c $FFRITZ_HOME/upmpdcli.conf 
+	else
+	    echo upmpdcli not started, requires buildroot service
+	fi
 fi
 
 # Run ympd (HTTP frontent to MPD)
 #
-sleep 1
-$FFINSTDIR/bin/ffdaemon $FFINSTDIR/bin/ympd -w 82 -u ffritz
+if [ $ENABLE_YMPD -eq 1 ]; then
+	sleep 1
+	$FFINSTDIR/bin/ffdaemon $FFINSTDIR/bin/ympd -w 82 -u ffritz
+fi

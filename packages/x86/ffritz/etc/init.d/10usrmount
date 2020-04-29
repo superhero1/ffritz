@@ -1,12 +1,19 @@
 #!/bin/sh
+# Xfeature:getconfig
 #
 . /usr/local/etc/ffritz-env.sh || exit 1
 
-if [ -f /var/media/ftp/ffritz/.mtab ]; then
-	if [ "x$1" = "xstop" ]; then
-		$FFINSTDIR/etc/usrmount -u /var/media/ftp/ffritz/.mtab
-	else
-		$FFINSTDIR/etc/usrmount /var/media/ftp/ffritz/.mtab
-	fi
+if [ ! -f /var/media/ftp/ffritz/.mtab ]; then
+	exit 0
 fi
 
+if [ "x$1" = "xstop" ]; then
+	$FFINSTDIR/etc/usrmount -u /var/media/ftp/ffritz/.mtab
+	exit 0
+fi
+
+if [ "x$1" != "xstart" ]; then
+	exit 0
+fi
+
+$FFINSTDIR/etc/usrmount /var/media/ftp/ffritz/.mtab

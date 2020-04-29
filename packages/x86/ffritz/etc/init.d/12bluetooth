@@ -1,12 +1,25 @@
 #!/bin/sh
+# Xfeature:getconfig
 #        
 # lircd startup file
 #                   
 . /usr/local/etc/ffritz-env.sh || exit 1
 
+BT_NAME=FritzBox
+test -z $2 || . $2
 
 if [ "x$1" = "xstop" ]; then
 	$FFINSTDIR/bin/ffdaemon -K a2dp_sink_demo
+	exit 0
+fi
+
+if [ "x$1" = "xgetconfig" ]; then
+	echo "# Name of access point:"
+	echo BT_NAME=$BT_NAME
+	exit 0
+fi
+
+if [ "x$1" != "xstart" ]; then
 	exit 0
 fi
 
@@ -27,5 +40,5 @@ else
 	mkdir -p $DBDIR
 	chmod 700 $DBDIR
 	test -d /var/run/bt || ln -s $DBDIR /var/run/bt
-	ffdaemon $FFINSTDIR/bin/a2dp_sink_demo FritzBox /var/tmp/bt.fifo 
+	ffdaemon $FFINSTDIR/bin/a2dp_sink_demo $BT_NAME /var/tmp/bt.fifo 
 fi

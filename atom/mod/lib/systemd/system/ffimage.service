@@ -5,4 +5,4 @@ Type=oneshot
 After=ffinit.service
 RemainAfterExit=yes
 [Install]
-WantedBy=multi-user.target
+WantedBy=ffritz.target

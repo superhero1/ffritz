@@ -1,4 +1,5 @@
 #!/bin/sh
+# Xfeature:getconfig
 #
 . /usr/local/etc/ffritz-env.sh || exit 1
 . /usr/local/etc/mkusers || exit 1
@@ -6,6 +7,10 @@
 if [ "x$1" = "xstop" ]; then
     $FFINSTDIR/bin/ffdaemon -K shairport-sync
     exit 0
+fi
+
+if [ "x$1" != "xstart" ]; then
+	exit 0
 fi
 
 # Make sure usbplayd runs

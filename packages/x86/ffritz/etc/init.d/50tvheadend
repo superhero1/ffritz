@@ -1,6 +1,13 @@
+#!/bin/sh
+# Xfeature:getconfig
+#
 if [ "$1" = "stop" ]; then
         ffdaemon -K tvheadend
         exit 0
+fi
+
+if [ "x$1" != "xstart" ]; then
+	exit 0
 fi
 
 mkdir -p /var/log/ffritz
@@ -11,5 +18,5 @@ chown ffritz /var/log/ffritz
 #LOG="-l /var/log/ffritz/tvh.log"
 
 if [ -x /usr/local/bin/tvheadend ]; then
-	ffdaemon tvheadend $LOG -C -u ffritz -c /var/media/ftp/ffritz/.hts 
+	ffdaemon -H STACK=2m,DATA=150m tvheadend $LOG -C -u ffritz -c /var/media/ftp/ffritz/.hts 
 fi

@@ -39,9 +39,27 @@ The tool "ffservice" provides a simple script to operate services:
 	ffservice start _servicename_
 	ffservice stop _servicename_
 	ffservice restart _servicename_
+		Self explaining
+
 	ffservice enable _servicename_
 	ffservice disable _servicename_
+		Enable/disable a service at startup
+
+	ffservice edit _servicename_
+		Edit the service script in $NVRAM/etc/init.d.
+		If it was a symlink, the link will be "broken".
+		Can be restored via purge.
+
+	ffservice config _servicename_
+		Edit the service configuration file in $NVRAM/etc/conf.d,
+		if supported by the service.
+
+	ffservice purge
+		Restore symlink to original service script, if it existed.
+		Removes service configuration file, defaults will be used.
+
 	ffservice list
+		List services
 
 Most user editable configuration files for these services are located
 below
@@ -78,6 +96,11 @@ daemon-args are:
        -K name         : Kill named service (%all for all)
        -R name         : Restart named service (%all for all)
        -o dir          : Run service after chroot to dir
+       -H [SPEC=NUM],* : Call setrlimit for given RLIMIT_SPEC before executing
+                         client. e.g. STACK=2m,DATA=100m will set hard limit
+			 of RLIMIT_STACK/DATA to 2MB/100MB, as well as the
+                         soft limit if its greater than the hard limit.
+                         See setrlimit(2)
 
 Following is a list of services (service name in brackets).
 
@@ -236,17 +259,22 @@ tvheadend (tvheadend)
 ---------------------
 Basically, the Fritzbox 6591 is powerful enough to run Tvheadend, but i
 consider it still as experimental as i have seen rare box reboot events
-while recording.
+while recording (see below).
 It is only available on FritzOS Version 7.19 or later, and requires the 
 buildroot-2020.02 toolchain image.
-
-I also recommend only using one HD tuner at this time until the SatIP server is
-optimized (the libdvbif patch as it was used for the 6490 is not yet ported).
 
 When enabled, Tvheadend runs as user ffritz, the configuration is stored
 in /var/media/ftp/ffritz/.hts. If you want to enable the recorder you need to
 explicitly set the recorder path in the tvh configuration menu (i recommend using
 an external USB drive).
+
+Caveats:
+- I recommend only using one HD tuner at this time until the SatIP server is
+  optimized (the libdvbif patch as it was used for the 6490 is not yet ported).
+  I have seen cableinfo at 35% CPU load for a single HD stream.
+
+- Don't try to record to some kind of fuse mounted drive (nfs, ovelay, ..).
+  There is a memory leak somewhere which will eventually crash tvheadend or the box.
 
 Building the application image
 ==============================

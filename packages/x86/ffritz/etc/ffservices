@@ -75,9 +75,9 @@ prep_etcdir()
 }
 
 if [ "x$1" = "xstop" ]; then
-    cd $NVRAM/etc/rc.d && for svc in `ls|sort -r`; do
+    cd $NVRAM/etc/rc.d && for svc in `ls|sort -r|sed -e 's/^[0-9]*//'`; do
 	echo Stopping $svc
-    	sh $svc stop
+    	ffservice stop $svc
     done
     exit 0
 fi
@@ -89,9 +89,22 @@ fi
 # wait for all FB services to be up ... :-(
 # Otherwise trouble with USB, OpenVPN, ...
 #
+# In 7.19 onwards there should be supervisor dependency:
+#
+# sysinit.target -> ffinit.service  S91-ffinit
+# -> dropbear.service               S92-ffdropbear
+# -> multi-user.target              final FritzOS target
+#   -> ffritz.target                came later, so check
+#     -> ffimage.service            S93-ffimage
+#       -> ffstart.service          S94-ffstart
+#
 rcsrunning=`ps|grep rc.S|wc -l`
 if [ $rcsrunning -gt 1 ]; then
 	sleep 100
+else
+	if [ ! -r /lib/systemd/system/ffritz.target ]; then
+		sleep 20
+	fi
 fi
 
 # Create/check users/paths
@@ -105,9 +118,9 @@ prep_etcdir
 # Start services
 #
 cd $NVRAM/etc/rc.d || exit 1
-for svc in `ls|sort`; do
+for svc in `ls|sort|sed -e 's/^[0-9]*//'`; do
     echo Starting $svc
-    sh $svc start
+    ffservice start $svc
 done
 
 ) | tee -a $FFLOG 2>&1 &

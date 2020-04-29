@@ -1,4 +1,5 @@
 #!/bin/sh
+# Xfeature:getconfig
 #
 . /usr/local/etc/ffritz-env.sh || exit 1
 
@@ -7,15 +8,23 @@ if [ "x$1" = "xstop" ]; then
     exit 0
 fi
 
-# By default, create an input pipe for mpd and shairport (priority) each
+# Set default/user configuration
 #
-options=
-if [ ! -f $FFRITZ_HOME/usbplayd.conf ]; then
-    options='-P /var/tmp/mpd.fifo:44100 -P /var/tmp/shairport.fifo:44100 -P /var/tmp/bt.fifo:44100'
-    echo USBPLAYD_ARGS=$options > $FFRITZ_HOME/usbplayd.conf
-    chown ffritz:ffritz $FFRITZ_HOME/usbplayd.conf
-else
-    options=`grep USBPLAYD_ARGS $FFRITZ_HOME/usbplayd.conf | sed -e 's/.*=//'`
+USBPLAYD_ARGS="-P /var/tmp/mpd.fifo:44100 -P /var/tmp/shairport.fifo:44100 -P /var/tmp/bt.fifo:44100"
+test -z $2 || . $2
+
+if [ "x$1" = "xgetconfig" ]; then
+	echo
+	echo "# Input pipes with input sample rate"
+	echo "# Precedence is from left to right"
+	echo
+	echo 'USBPLAYD_ARGS="-P /var/tmp/mpd.fifo:44100 -P /var/tmp/shairport.fifo:44100 -P /var/tmp/bt.fifo:44100"'
+	exit 0
+fi
+
+
+if [ "x$1" != "xstart" ]; then
+	exit 0
 fi
 
 # Provide volume file upfront, the clients have no write access right to
@@ -27,4 +36,4 @@ fi
 chmod 666 /var/tmp/volume
 
 umask 0
-ffdaemon $FFINSTDIR/bin/usbplayd -V /var/tmp/volume $options 
+ffdaemon $FFINSTDIR/bin/usbplayd -V /var/tmp/volume $USBPLAYD_ARGS

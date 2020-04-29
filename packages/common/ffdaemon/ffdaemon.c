@@ -29,6 +29,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <time.h>
+#include <sys/resource.h>
 #include <pwd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -45,17 +46,24 @@ int service_status (char *service_name, int *cpid, int *cruns);
 //extern int daemon2 (char *pdfile, int delay, int loops, int nochdir, int noclose);
 
 const char *usage =
-"usage: %s [-nCL] [-r user] [-i interval] [-l loops] [-N|K|R service] [-o dir] command args ...\n"
-"       -n : No daemon mode\n"
-"       -C : Do not close FDs\n"
-"       -r : run as user[:group]\n"
-"       -i : Restart delay after program terminates\n"
-"       -l : Number of loops to run (0 = default = endless)\n"
-"       -N : Name service rather than using the executable name\n"
-"       -L : List all services\n"
-"       -K : Kill named service (%%all for all)\n"
-"       -R : Restart named service (%%all for all)\n"
-"       -o : Run service after chroot to dir\n"
+"usage: %s [-nCL] [-r user] [-i interval] [-l loops] [-N|K|R service] [-o dir] [-H limits] command args ...\n"
+"   -n : No daemon mode\n"
+"   -C : Do not close FDs\n"
+"   -r : run as user[:group]\n"
+"   -i : Restart delay after program terminates\n"
+"   -l : Number of loops to run (0 = default = endless)\n"
+"   -N : Name service rather than using the executable name\n"
+"   -L : List all services\n"
+"   -K : Kill named service (%%all for all)\n"
+"   -R : Restart named service (%%all for all)\n"
+"   -o : Run service after chroot to dir\n"
+"   -H : Hard limits for spawned process as comma separated list of: \n"
+"        SPEC=number\n"
+"        statements, where SPEC is the suffix of a setrlimit(2) resource id:\n"
+"        AS, CORE, CPU, DATA, FSIZE, LOCKS, MEMLOCK, MSGQUEUE, NICE, NOFILE,\n"
+"        NPROC, RSS, RTPRIO, RTTIME, SIGPENDING, STACK\n"
+"        number is a decimal/hexadecimal number with optional k/m/g suffix,\n"
+"        a value of 0 means no limit.\n"
 ;
 
 static char *basename (char *path)
@@ -356,6 +364,120 @@ static int kill_service (char *service_name, int sig)
     return 0;
 }
 
+int do_limits (char *limits, int check_only)
+{
+    int i;
+    struct rlimit rlim;
+    char *s;
+    char *copy;
+    rlim_t lim, mul;
+    int resource;
+
+    static struct
+    {
+	char *name;
+	int resource;
+    }
+    ids[] =
+    {
+    	{ "AS", RLIMIT_AS },
+    	{ "CORE", RLIMIT_CORE },
+    	{ "CPU", RLIMIT_CPU },
+    	{ "DATA", RLIMIT_DATA },
+    	{ "FSIZE", RLIMIT_FSIZE },
+    	{ "LOCKS", RLIMIT_LOCKS },
+    	{ "MEMLOCK", RLIMIT_MEMLOCK },
+    	{ "MSGQUEUE", RLIMIT_MSGQUEUE },
+    	{ "NICE", RLIMIT_NICE },
+    	{ "NOFILE", RLIMIT_NOFILE },
+    	{ "NPROC", RLIMIT_NPROC },
+    	{ "RSS", RLIMIT_RSS },
+    	{ "RTPRIO", RLIMIT_RTPRIO },
+    	{ "RTTIME", RLIMIT_RTTIME },
+    	{ "SIGPENDING", RLIMIT_SIGPENDING },
+    	{ "STACK", RLIMIT_STACK },
+    	{ NULL, 0 }
+    };
+
+    if (!limits)
+	return 0;
+
+    copy = alloca (strlen(limits)+1);
+    strcpy (copy, limits);
+
+    for (s = strtok (copy, "="); s != NULL; s = strtok (NULL, "="))
+    {
+	resource = -1;
+	for (i = 0; ids[i].name != NULL; i++)
+	{
+	    if (!strcmp (ids[i].name, s))
+	    {
+		resource = ids[i].resource;
+		break;
+	    }
+	}
+
+	if (resource == -1)
+	{
+	    fprintf (stderr, "Unknown resource ID: %s\n", s);
+	    return 1;
+	}
+
+	s = strtok (NULL, ",");
+
+	if ((s == NULL) || (strlen(s) == 0))
+	{
+	    fprintf (stderr, "Missing limit for resource ID %s\n", ids[i].name);
+	    return 1;
+	}
+
+	if (check_only)
+	    continue;
+
+	switch (s[strlen(s)-1])
+	{
+	    case 'k':
+	    case 'K':
+	    	mul = 1024;
+		s[strlen(s)-1] = 0;
+		break;
+	    case 'm':
+	    case 'M':
+	    	mul = 1024*1024;
+		s[strlen(s)-1] = 0;
+		break;
+	    case 'g':
+	    case 'G':
+	    	mul = 1024*1024*1024;
+		s[strlen(s)-1] = 0;
+		break;
+	    default:
+	    	mul = 1;
+	}
+	
+        lim = strtoul(s, NULL, 0) * mul;
+
+	if (getrlimit (resource, &rlim))
+	{
+	    fprintf (stderr, "WARNING: getrlimit(%s): %s\n", ids[i].name, strerror(errno));
+	    continue;
+	}
+
+	rlim.rlim_max = lim;
+	if (rlim.rlim_cur > rlim.rlim_max)
+	    rlim.rlim_cur = rlim.rlim_max;
+
+	if (setrlimit (resource, (const struct rlimit*)&rlim))
+	{
+	    fprintf (stderr, "WARNING: setrlimit(%s): %s\n", ids[i].name, strerror(errno));
+	}
+
+	printf ("%s -> 0x%lx 0x%lx\n", ids[i].name, rlim.rlim_cur, rlim.rlim_max);
+    }
+
+    return 0;
+}
+
 /*
  * SU can be given a specific command to exec. UID _must_ be
  * specified for this (ie argc => 3).
@@ -376,6 +498,7 @@ int main(int argc, char **argv)
     int noclose = 0;
     char *service_name = NULL;
     char *chroot_path = NULL;
+    char *limits = NULL;
 
     /* Until we have something better, only root and the shell can use su. */
     myuid = getuid();
@@ -471,6 +594,13 @@ int main(int argc, char **argv)
 		    break;
 		}
 		/* fall through */
+	    case 'H':
+	    	if (i < argc-1)
+		{
+		    limits = argv[++i];
+		    break;
+		}
+		/* fall through */
 	    default:
 	        fprintf (stderr, usage, argv[0]);
 		exit (1);
@@ -481,6 +611,9 @@ int main(int argc, char **argv)
 	fprintf (stderr, usage, argv[0]);
 	exit (1);
     }
+
+    if (do_limits (limits, 1))
+	exit (1);
 
     if (service_name == NULL)
 	service_name = basename (argv[arg_id]);
@@ -524,6 +657,8 @@ int main(int argc, char **argv)
 	}
 	chdir (getenv("HOME"));
     }
+
+    do_limits (limits, 0);
 
     if (uid != -1) {
 	if(setgid(gid) || setuid(uid)) {
