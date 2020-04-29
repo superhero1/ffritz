@@ -2,7 +2,7 @@
 ExecStart=/etc/init.d/S93-ffimage
 ExecStop=/usr/local/etc/ffshutdown
 Type=oneshot
-After=ffinit.service
+After=ffinit.service net.service usb.service
 RemainAfterExit=yes
 [Install]
-WantedBy=ffritz.target
+WantedBy=multi-user.target
