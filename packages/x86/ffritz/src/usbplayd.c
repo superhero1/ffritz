@@ -110,6 +110,21 @@ const char *usage =
 extern char *strdup(const char *s);
 extern int fchmod(int fd, mode_t mode);
 
+char *get_service_info(const char *service_name)
+{
+    return "";
+}
+
+char *get_pidfile(const char *service_name)
+{
+    return "/var/run/usbplayd.pid";
+}
+
+char *get_client_pidfile(const char *service_name)
+{
+    return "/var/run/.usbplayd.pid";
+}
+
 void list_devices(void)
 {
     struct maru_audio_device *list;
@@ -683,7 +698,7 @@ main (int argc, char **argv)
 
     if (daemon_mode)
     {
-	if (daemon2 ("/var/run/usbplayd.pid", 0, 0, 0, 0, "usbplayd"))
+	if (daemon2 (0, 0, 0, 0, "usbplayd"))
 	{
 	    exit (1);
 	}
@@ -862,10 +877,9 @@ main (int argc, char **argv)
 	{
 	    log_put ("!maru_stream_write() failed\n");
 
-	    /* something went wrong badly, abort worker in daemon mode
+	    /* something went wrong badly, abort worker
 	     */
-	    if (daemon_mode)
-		exit (1);
+	    exit (1);
 
 	    continue;
 	}

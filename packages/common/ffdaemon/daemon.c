@@ -48,23 +48,28 @@
 /*================================== GLOBALS ================================*/
 
 /*================================== LOCALS =================================*/
+static int client_pid = 0;
 static int worker_pid = 0;
 static char *pidfile = NULL;
 static char *client_pidfile = NULL;
 static FILE *dflConsOut = NULL;
 static FILE *logFile = NULL;
 static int client_restarts = 0;
+static int last_client_exit = 0;
 static struct timeval client_starttime = {0};
-static uint64_t client_total_runtime = 0;
+static unsigned int client_last_runtime = 0;
+static unsigned int client_total_runtime = 0;
+static const char *service_name = NULL;
 
 /*================================== IMPLEMENTATION =========================*/
 
-static int purge_service (char *service_name, char *pidfile)
+static int purge_service (const char *service_name)
 {
     int fd;
     char tmpstr[100];
     int pid = 0;
     int rc = 0;
+    char *pidfile = get_pidfile (service_name);
 
     /* check existing pidfile */
     fd = open (pidfile, O_RDONLY);
@@ -111,7 +116,6 @@ static int purge_service (char *service_name, char *pidfile)
     /* remove pidfile if no longer running */
 
     return rc;
-
 }
 
 static void stop_worker (int sig)
@@ -128,6 +132,9 @@ static void stop_worker (int sig)
 */
 static void exit_fcn (void)
 {
+    /* nothing to do for client */
+    if (client_pid == 0)
+	return;
 
     if (worker_pid > 0)
     {
@@ -158,10 +165,9 @@ static void cleanup()
 
 /*! \brief Create PID file for this process and make sure its removed at exit
 */
-static void prep_pid_file (char *pdfile)
+static void prep_pid_file ()
 {
     FILE *pf;
-    char *s1, *s2;
 
     atexit (exit_fcn);
     signal (SIGINT, cleanup);
@@ -171,15 +177,15 @@ static void prep_pid_file (char *pdfile)
     signal (SIGTERM, cleanup);
     signal (SIGBUS, cleanup);
 
-    if (pdfile)
+    pidfile = get_pidfile(service_name);
+
+    if (pidfile)
     {
-	pidfile = pdfile;
-	
 	pf = fopen (pidfile, "w");
 
 	if (pf)
 	{
-	    fprintf (pf, "%d", getpid());
+	    fprintf (pf, "%d %s", getpid(), get_service_info(service_name));
 	    fclose (pf);
 	}
 	else
@@ -187,23 +193,17 @@ static void prep_pid_file (char *pdfile)
 	    log_put ("Failed to write PID file %s\n", pidfile);    
 	}
 
-	if ((s1 = strstr (pidfile, "ffd_")) != NULL)
-	{
-	    client_pidfile = malloc(strlen(pidfile) + 1);
-	    strcpy (client_pidfile, pidfile);
-
-	    s2 = strstr(client_pidfile, "ffd_");
-
-	    sprintf (s2, ".%s", s1);
-	}
+	client_pidfile = strdup(get_client_pidfile(service_name));
     }
 }
 
+/* pid > 0  : Client start
+ * pid == 0 : Client has stopped
+ */
 static void client_pid_file (int pid)
 {
     FILE *pf;
     struct timeval tv;
-    time_t client_runtime = 0;
 
     if (pid)
     {
@@ -214,8 +214,9 @@ static void client_pid_file (int pid)
     else if (worker_pid)
     {
 	gettimeofday (&tv, NULL);
-	client_runtime = tv.tv_sec - client_starttime.tv_sec;
-	client_total_runtime += client_runtime;
+	client_last_runtime = tv.tv_sec - client_starttime.tv_sec;
+	client_total_runtime += client_last_runtime;
+	client_starttime.tv_sec = 0;
 	worker_pid = 0;
     }
 
@@ -226,7 +227,13 @@ static void client_pid_file (int pid)
 
     if (pf)
     {
-	fprintf (pf, "%d %d %d\n", pid, client_restarts, client_restarts ? (int)(client_total_runtime / client_restarts) : 0);
+	fprintf (pf, "%d %u %u %u %u %d\n",
+	    pid, 
+	    client_restarts-1,
+	    (unsigned int)client_starttime.tv_sec,
+	    client_last_runtime,
+	    client_total_runtime,
+	    last_client_exit);
 	fclose (pf);
     }
     else
@@ -328,18 +335,19 @@ void log_set (const char *logf, int consOut)
     }
 }
 
-
-int daemon2 (char *pdfile, int interval, int loops, int nochdir, int noclose, char *service_name)
+int daemon2 (int interval, int loops, int nochdir, int noclose,
+	     const char *sv_name)
 {
     int status;
     int rc;
     int loop = 0;
-    int pid;
     
     if (interval == 0)
 	interval = 2;
+
+    service_name = sv_name;
     
-    if (purge_service (service_name, pdfile))
+    if (purge_service (service_name))
 	return 1;
 
     if (daemon (nochdir, noclose))
@@ -348,15 +356,18 @@ int daemon2 (char *pdfile, int interval, int loops, int nochdir, int noclose, ch
         return 1;
     }
 
-    prep_pid_file (pdfile);
+    prep_pid_file ();
 
     /* master process loop
      */
     while (1)
     {
-        pid = fork();
+	/* client_pid is always 0 for the client (important for atexit)
+	 * this is not the case for worker_pid
+	 */
+        client_pid = fork();
 
-        if (pid == -1)
+        if (client_pid == -1)
         {
             log_put ("fork: %s", strerror(errno));
             sleep (interval);
@@ -365,27 +376,29 @@ int daemon2 (char *pdfile, int interval, int loops, int nochdir, int noclose, ch
 
         /* resume with worker process?
          */
-        if (pid == 0)
+        if (client_pid == 0)
 	{
             break;
 	}
-	client_pid_file (pid);
+
+	client_pid_file (client_pid);
 
 	signal (SIGUSR1, stop_worker);
 
 	while (1)
         {
-	    rc = waitpid (pid, &status, 0);
+	    rc = waitpid (client_pid, &status, 0);
 
-	    if (rc == pid)
+	    if (rc == client_pid)
 		break;
 
 	    sleep (1);
 	}
+        last_client_exit = status;
 
         if (status)
             log_put ("worker process terminated with status %d (pid %d)\n", 
-                    status, pid);
+                    status, client_pid);
 
 	client_pid_file (0);
 

@@ -147,6 +147,15 @@ if [ "x$1" = "xstop" ]; then
 	exit 0
 fi
 
+if [ "x$1" = "xinfo" ]; then
+	if [ -r $BR_CONF_ACTIVE ]; then
+		echo STATUS=on
+	else
+		echo STATUS=off
+	fi
+	exit 0
+fi
+
 if [ "x$1" = "xgetconfig" ]; then
 	if [ -r $NVRAM/ffbuildroot.conf ]; then
 		echo "# Data read from old style ffbuildroot.conf:"

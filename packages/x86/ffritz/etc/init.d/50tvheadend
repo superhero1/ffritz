@@ -1,22 +1,103 @@
 #!/bin/sh
-# Xfeature:getconfig
+# This line MUST NOT be removed! Xfeature:getconfig
 #
-if [ "$1" = "stop" ]; then
-        ffdaemon -K tvheadend
-        exit 0
-fi
+# Service script. Will be called by ffservice with the following 
+# parameters:
+#	$1 : command
+#	$2 : Optional name of configuration script file, if it exists.
+#            MUST be sourced to override default settings.
+#
+# List of commands. Unknown/unsupported commands must exit with
+# code 0 and no output!
+#
+# start		Start service
+# stop		Stop service
+# getconfig	Called by "ffservice config" to initialize service
+#		configuration file. It is expected that a configuration
+#		file template with current settings is printed to stdout.
+# info          Provide some information about the service by printing
+#		the following name=value pairs which are suitable for
+#		being interpreted by "eval":
+#		DAEMONS : space separated list of daemon names (as used
+#			  by ffdaemon) started by this process. Can also
+#			  be empty, a value list must be in the format
+#			  \"value1 value 2 ...\"
+#		LOG     : Full path of a log file, if the service has one
+#		STATUS  : on|off (if the service has anything to say
+#			  about this). If empty, the output of DAEMONS
+#			  will be used to determine "on" (at least one
+#			  DAEMON active) or "off" state.
+#
+# The 2nd line containing Xfeature .. must not be removed. It is used
+# to detect old-style service files that might still be lingering around.
+#
+##############################################################################
 
-if [ "x$1" != "xstart" ]; then
-	exit 0
-fi
+# Default settings
+#
+MEM_LIMIT=150m
+
+# Override with user configuration
+#
+test ! -z $2 && . $2
+
+DAEMON="tvheadend"
+
+case $1 in
+	start)
+		break
+		;;
+	stop)
+	        ffdaemon -K $DAEMON
+	        exit 0
+		;;
+	info)	echo DAEMONS=\"$DAEMON\"
+		exit 0
+		;;
+	getconfig)
+cat <<EOF
+# Logging (enable only for debugging, log gets big)
+#
+#LOG='-l /var/media/ftp/ffritz/tvh.log'
+
+# Heap limit for $DAEMON process.
+# This is to prevent the process from becoming too big,
+# which will likely cause the OOM killer to crash the box.
+# A situations where this is known to happen is when
+# recording, and the output medium is too slow ->
+# buffering will blow up the process.
+#
+MEM_LIMIT=$MEM_LIMIT
+
+# IP addresses of additional logical network interfaces,
+# This is required if you want to use more than one tuner
+# The assigned IP address must be on the lan network
+# of the box, and they must not conflict with the DHCP range.
+# The names of the generated virtual interfaces are 
+# lan:2, lan:3 and lan:4
+#
+#NET2=192.168.178.2
+#NET3=192.168.178.3
+#NET4=192.168.178.4
+EOF
+		exit 0
+		;;
+
+	*)	exit 0
+		;;
+
+esac
 
 mkdir -p /var/log/ffritz
 chown ffritz /var/log/ffritz
 
-#Enable only for debugging, log gets big
-#
-#LOG="-l /var/log/ffritz/tvh.log"
+# Additional network names for running multiple sessions
+test ! -z $NET2 &&  /sbin/ifconfig lan:2 $NET2
+test ! -z $NET3 &&  /sbin/ifconfig lan:3 $NET3
+test ! -z $NET4 &&  /sbin/ifconfig lan:4 $NET4
 
-if [ -x /usr/local/bin/tvheadend ]; then
-	ffdaemon -H STACK=2m,DATA=150m tvheadend $LOG -C -u ffritz -c /var/media/ftp/ffritz/.hts 
+test -z $MEM_LIMIT && MEM_LIMIT=150m
+
+if [ -x /usr/local/bin/$DAEMON ]; then
+	ffdaemon -H STACK=2m,DATA=$MEM_LIMIT $DAEMON $LOG -C -u ffritz -c /var/media/ftp/ffritz/.hts 
 fi

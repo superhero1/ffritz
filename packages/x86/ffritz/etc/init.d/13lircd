@@ -6,11 +6,16 @@
 . /usr/local/etc/ffritz-env.sh || exit 1
 
 if [ "x$1" = "xstop" ]; then
-    $FFINSTDIR/bin/ffdaemon -K irexec
-    $FFINSTDIR/bin/ffdaemon -K lircd
+    ffdaemon -K irexec
+    ffdaemon -K lircd
     exit 0
 fi
                                              
+if [ "x$1" = "xinfo" ]; then
+	echo DAEMONS=\"lircd irexec\"
+	exit 0
+fi
+
 if [ "x$1" != "xstart" ]; then
 	exit 0
 fi
@@ -39,6 +44,6 @@ if [ ! -f $FFRITZ_HOME/irexec.lircrc ]; then
     chown ffritz:ffritz $FFRITZ_HOME/irexec.lircrc
 fi                                                    
 
-$FFINSTDIR/bin/ffdaemon -i 10 $FFINSTDIR/bin/lircd -n -L $FFLOG -U $FFINSTDIR/lib/lirc/plugins -O $FFRITZ_HOME/lirc_options.conf -e ffritz $FFRITZ_HOME/etc/lirc/lircd.conf
+ffdaemon -i 10 $FFINSTDIR/bin/lircd -n -L $FFLOG -U $FFINSTDIR/lib/lirc/plugins -O $FFRITZ_HOME/lirc_options.conf -e ffritz $FFRITZ_HOME/etc/lirc/lircd.conf
 sleep 5
-$FFINSTDIR/bin/ffdaemon -i 10 -r ffritz $FFINSTDIR/bin/irexec $FFRITZ_HOME/irexec.lircrc
+ffdaemon -i 10 -r ffritz $FFINSTDIR/bin/irexec $FFRITZ_HOME/irexec.lircrc

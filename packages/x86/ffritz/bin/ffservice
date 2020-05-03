@@ -6,17 +6,8 @@
 . /usr/local/etc/ffritz-env.sh
 
 op=$1
-service=$2
-
-cd $NVRAM/etc/rc.d || exit 1
-
-if [ "$op" = "list" ]; then
-	echo Available:
-	cd ../init.d; ls | sort | sed -e 's/^[0-9]*/    /'
-	echo Enabled:
-	cd ../rc.d; ls | sort | sed -e 's/^[0-9]*/    /'
-	exit 0
-fi
+shift
+service=$*
 
 usage()
 {
@@ -26,50 +17,89 @@ usage()
 help()
 {
 	usage
-	echo "list:    List all services, and which ones are enabled at system start."
-	echo "         The order of output matches the (reverse) execution order at"
-	echo "         startup (shutdown)."
-	echo "         The current run state of a service is not known by this tool,"
-	echo "         but ffdaemon -L might give hints"
-	echo "start:   Start service"
-	echo "stop:    Stop service"
-	echo "restart: Restart service"
-	echo "enable:  Enable service at system start"
-	echo "disable: Don't run service at system start"
-	echo "edit:    Edit service file. If the service file (in etc/init.d) is a symlink"
-	echo "         (usually to /usr/local/etc/init.d) then the symlink will be removed and"
-	echo "         the service file is kept locally before starting the editor."
-	echo "         Use the purge command to restore the original symlink"
-	echo "config:  Edit the service configuration, if there is any."
-	echo "         The configuration file (a shell script!) is kept in etc/conf.d."
-	echo "         If none exists yet, and the service supports it, a default/example"
-	echo "         configuration is provided."
-	echo "         Use the purge command to reset the service configuration to its defaults"
-	echo "         (by removing the configuration file)."
-	echo "purge:   - If the service file once was a symlink, restore the symlink."
-	echo "         - Removes the service configuration, which will apply the service defaults."
-	echo "         Both the old service and configuration file will be backed up, if necessary,"
-	echo "         but an already existing backup will get overwritten!"
-	echo "         The backup location will be printed."
+cat <<EOF
+list:    List all services, and which ones are enabled at system start.
+         The order of output matches the (reverse) execution order at
+         startup (shutdown).
+         The current run state of a service is not known by this tool,
+         but ffdaemon -L might give hints
+start:   Start service
+stop:    Stop service
+restart: Restart service
+enable:  Enable service at system start
+disable: Don't run service at system start
+edit:    Edit service file. If the service file (in etc/init.d) is a symlink
+         (usually to /usr/local/etc/init.d) then the symlink will be removed and
+         the service file is kept locally before starting the editor.
+         Use the purge command to restore the original symlink
+config:  Edit the service configuration, if there is any.
+         The configuration file (a shell script!) is kept in etc/conf.d.
+         If none exists yet, and the service supports it, a default/example
+         configuration is provided.
+         Use the purge command to reset the service configuration to its
+	 defaults (by removing the configuration file).
+defconfig: Reset the service configuration, if there is any, to defaults.
+purge:   - If the service file once was a symlink, restore the symlink.
+         - Removes the service configuration, which will apply the service
+           defaults.
+         Both the old service and configuration file will be backed up, if
+         necessary, but an already existing backup will get overwritten!
+         The backup location will be printed.
+status   Print status information on service.
+EOF
 }
+
+#################################################################
+
+prefix='[0-9][0-9]'
+
+cd $NVRAM/etc/rc.d || exit 1
+
+case $op in
+	list)	echo Available:
+		ls $NVRAM/etc/init.d/$prefix* | sed -e "s@.*/$prefix@    @"
+		echo Enabled:
+		ls $NVRAM/etc/rc.d/$prefix* | sed -e "s@.*/$prefix@    @"
+		exit 0
+		;;
+	status) test -z $service && service='*'
+		;;
+esac
 
 if [ -z "$op" -o -z "$service" ]; then
     help
     exit 1
 fi
 
-service_file=`ls $NVRAM/etc/init.d/[0-9]*$service 2>/dev/null`
 
-if [ ! -f "$service_file" ]; then
+svl=`echo " $service" | sed -e 's/ *[0-9][0-9]/ /g' -e 's/ / [0-9][0-9]/g'`
+services=`cd $NVRAM/etc/init.d; ls $svl` 2>/dev/null
+
+cnt=`echo $services | wc -w`
+
+if [ $cnt -eq 0 -o -z $cnt ]; then
     echo no such service: $service
     exit 1
 fi
+
+if [ $cnt -gt 1 ]; then
+	for s in $services; do
+		$0 $op $s
+	done
+	exit 0
+fi
+
+# from here on we work with a single services list
+
+service_file=$NVRAM/etc/init.d/$services
 
 service_fname=`basename $service_file`
 conf_file=$NVRAM/etc/conf.d/$service_fname
 if [ -r $conf_file ]; then
 	conf_file_opt=$conf_file
 fi
+
+service_name=`echo $service_fname | sed -e 's/^[0-9]*//'`
 
 case $op in
 	edit)	tmpfile=/tmp/$$.`basename $service_file`
@@ -106,12 +136,7 @@ case $op in
 		vi $conf_file
 		nvsync
 		;;
-	purge)	if [ -r $conf_file ]; then
-			echo +++ Moving existing config file ro $conf_file.bak
-			mv $conf_file $conf_file.bak || exit 1
-		else
-			echo === Config file: Nothing to do, $conf_file does not exist
-		fi
+	purge)	$0 defconfig $service
 		orig_file=/usr/local/etc/init.d/$service_fname
 		if [ -r "$orig_file" ]; then
 			if [ `readlink -f $orig_file` != `readlink -f $service_file` ]; then
@@ -129,5 +154,65 @@ case $op in
 		fi
 		nvsync
 		;;
+	defconfig)
+		if [ -r $conf_file ]; then
+			echo +++ Moving existing config file ro $conf_file.bak
+			mv $conf_file $conf_file.bak || exit 1
+		else
+			echo === Config file: Nothing to do, $conf_file does not exist
+		fi
+		nvsync
+		;;
+	status)
+		if [ ! -z `which tput` ]; then
+			bold=`tput bold 2>/dev/null`
+			rev=`tput rev 2>/dev/null`
+			norm=`tput sgr0 2>/dev/null`
+			red=`tput setaf 1 2>/dev/null`
+			green=`tput setaf 2 2>/dev/null`
+			yellow=`tput setaf 3 2>/dev/null`
+		fi
+		echo ${rev}$service_name${norm}:
+		grep Xfeature:getconfig $service_file >/dev/null
+		if [ $? -ne 0 ]; then
+			echo " ${yellow}Old script, no status available${norm}"
+			exit 0
+		fi
+		DAEMONS=
+		LOG=
+		STATUS=
+		eval `$service_file info $conf_file_opt | grep =` 2>/dev/null
+		dnum=0
+		don=0
+		test "$DAEMONS" != "" && echo " Daemons: $DAEMONS"
+		for daemon in $DAEMONS; do
+			dnum=$((dnum + 1))
+			ffdaemon -v -I $daemon 2>/dev/null && don=$((don + 1))
+		done > /tmp/$$.f
+		if [ "$STATUS" = "" -a "$DAEMONS" = "" ]; then
+			echo " Service status: ${yellow}unknown${norm}"
+			exit 0
+		fi
+		svstat1=off
+		svstat2=
+		test $don -gt 0 && svstat1=on
+		test ! -z $STATUS && svstat1=$STATUS
+		test "$svstat1" != "off" -a $don -eq $dnum && svstat2=/good
+		test "$svstat1" != "off" -a $don -lt $dnum && svstat2=/FAIL
+		test ! -z $LOG && echo " Log file: $LOG"
+		echo " Service status: $svstat1$svstat2" |
+			sed -e "s/on/${bold}on${norm}/g" \
+			    -e "s/good/${bold}${green}good${norm}/g" \
+			    -e "s/FAIL/${bold}${red}FAIL${norm}/g"
+		test "$svstat1" = "on" && nr=${bold}${red}
+		cat /tmp/$$.f | sed -e "s/^/  /" \
+		    -e "s/Not running/${nr}Not running${norm}/" \
+		    -e "s/\(restarts=[^0][0-9]*\)/${bold}${yellow}\1${norm}/" \
+		    -e "s/\(exit([^0][0-9]*)\)/${red}\1${norm}/" \
+		    -e "s/\(signal([0-9]*)\)/${red}\1${norm}/" \
+		    -e "s/\(coredump\)/${red}${bold}\1${norm}/"
+		rm -f /tmp/$$.f
+		;;
+		
 	*)	usage;;
 esac

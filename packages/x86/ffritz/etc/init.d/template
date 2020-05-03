@@ -1,0 +1,91 @@
+#!/bin/sh
+# This line MUST NOT be removed! Xfeature:getconfig
+#
+# Service script. Will be called by ffservice with the following 
+# parameters:
+#	$1 : command
+#	$2 : Optional name of configuration script file, if it exists.
+#            MUST be sourced to override default settings.
+#
+# List of commands. Unknown/unsupported commands must exit with
+# code 0 and no output!
+#
+# start		Start service
+# stop		Stop service
+# getconfig	Called by "ffservice config" to initialize empty service
+#		configuration file. It is expected that a configuration
+#		file template with current settings is printed to stdout.
+# info          Provide some information about the service by printing
+#		the following name=value pairs which are suitable for
+#		being interpreted by "eval":
+#		DAEMONS : space separated list of daemon names (as used
+#			  by ffdaemon) started by this process. Can also
+#			  be empty, a value list must be in the format
+#			  \"value1 value 2 ...\"
+#		LOG     : Full path of a log file, if the service has one
+#		STATUS  : on|off (if the service has anything to say
+#			  about this). If empty, the output of DAEMONS
+#			  will be used to determine "on" (at least one
+#			  DAEMON active) or "off" state.
+#
+##############################################################################
+
+# Default settings
+#
+DAEMON1_ARGS=-abc
+DAEMON1_CONFIG=-r ffritz -i 10
+MY_SETTING2="val1 val2 val3"
+
+# Override with user configuration
+#
+test ! -z $2 && . $2
+
+DAEMON1=daemon1
+DAEMON2=daemon2
+
+DAEMONS="$DAEMON1 $DAEMON2"
+
+case $1 in
+	start)
+		break
+		;;
+	stop)
+	        ffdaemon -K $DAEMON1
+	        ffdaemon -K $DAEMON2
+	        exit 0
+		;;
+	info)	echo DAEMONS=\"$DAEMONS\"
+		echo LOG=/var/log/service.log
+		exit 0
+		;;
+	getconfig)
+cat <<EOF
+# My service default configuration
+#
+# Arguments for DAEMON1
+#
+DAEMON1_ARGS=$MY_SETTING1
+
+# Runtime configuration for DAEMON1
+#
+DAEMON1_CONFIG=$DAEMON1_CONFIG
+
+# Documentation for SETTING2
+#
+MY_SETTING2=$MY_SETTING2
+
+EOF
+		exit 0
+		;;
+
+	*)	exit 0
+		;;
+
+esac
+
+########################################################################
+# Service startup ..
+
+
+ffdaemon $DAEMON1_CONFIG $DAEMON1 $DAEMON1_ARGS
+ffdaemon $DAEMON2

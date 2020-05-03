@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <linux/limits.h>
 #include <dirent.h>
 #include <errno.h>
 #include <unistd.h>
@@ -35,15 +36,24 @@
 #include <sys/stat.h>
 #include <signal.h>
 #include <alloca.h>
+#include <time.h>
+#include <sys/time.h>
 
 #include "ffdaemon.h"
 
+struct client_status
+{
+    pid_t		cpid;
+    unsigned int	restarts;
+    unsigned int        start_time;
+    unsigned int	last_runtime;
+    unsigned int	total_runtime;
+    int			last_exit_code;
+    char		args[ARG_MAX];
+};
 
-#define SNAME "ffd_service_name"
-
-int service_status (char *service_name, int *cpid, int *cruns);
-
-//extern int daemon2 (char *pdfile, int delay, int loops, int nochdir, int noclose);
+static int service_status (char *service_name, struct client_status *st);
+static char service_args[ARG_MAX] = "";
 
 const char *usage =
 "usage: %s [-nCL] [-r user] [-i interval] [-l loops] [-N|K|R service] [-o dir] [-H limits] command args ...\n"
@@ -54,6 +64,7 @@ const char *usage =
 "   -l : Number of loops to run (0 = default = endless)\n"
 "   -N : Name service rather than using the executable name\n"
 "   -L : List all services\n"
+"   -I : List a specific service services\n"
 "   -K : Kill named service (%%all for all)\n"
 "   -R : Restart named service (%%all for all)\n"
 "   -o : Run service after chroot to dir\n"
@@ -64,6 +75,7 @@ const char *usage =
 "        NPROC, RSS, RTPRIO, RTTIME, SIGPENDING, STACK\n"
 "        number is a decimal/hexadecimal number with optional k/m/g suffix,\n"
 "        a value of 0 means no limit.\n"
+"   -v : Verbose output for -I/-L.\n"
 ;
 
 static char *basename (char *path)
@@ -80,20 +92,46 @@ static char *basename (char *path)
     return rc;
 }
 
-static char *get_pidfile(char *service_name)
+static void svc_info (const char *fmt, int val, char **str)
+{
+    int l;
+    char *p = &service_args[strlen(service_args)];
+
+    l = sizeof(service_args) - strlen(service_args) - 2;
+
+    if (str)
+	l = snprintf (p, l, fmt, (*str == NULL) ? "none" : *str);
+    else
+	l = snprintf (p, l, fmt, val);
+
+    strcat (service_args, " ");
+
+    if (l >= sizeof(service_args))
+    {
+	fprintf (stderr, "service_args too long: %d, max %d\n", l, sizeof(service_args));
+	exit (1);
+    }
+}
+
+char *get_service_info(const char *service_name)
+{
+    return service_args;
+}
+
+char *get_pidfile(const char *service_name)
 {
     static char pf[1000];
 
-    sprintf (pf, "/var/run/ffd_%s.pid", service_name);
+    sprintf (pf, "%s/%s%s.pid", SN_DIR, SN_PREFIX, service_name);
 
     return pf;
 }
 
-static char *get_client_pidfile(char *service_name)
+char *get_client_pidfile(const char *service_name)
 {
     static char pf[1000];
 
-    sprintf (pf, "/var/run/.ffd_%s.pid", service_name);
+    sprintf (pf, "%s/.%s%s.pid", SN_DIR, SN_PREFIX, service_name);
 
     return pf;
 }
@@ -164,33 +202,46 @@ char *get_service_name (int pid)
     return rc;
 }
 
-int service_status (char *service_name, int *cpid, int *cruns)
+/* returns
+* 0  - service does not exist
+* -1 - error (reading pid file, malloc, ...)
+* >0 - PID of control process
+*/
+static int service_status (char *service_name, struct client_status *st)
 {
-    int fd;
-    char tmpstr[100];
+    FILE *fd;
     char *buf = NULL;
     int pid = 0;
     char *pidfile = get_pidfile (service_name);
     char *cpidfile = get_client_pidfile (service_name);
-    int len;
+    size_t count;
 
     /* check existing pidfile */
-    fd = open (pidfile, O_RDONLY);
+    fd = fopen (pidfile, "r");
 
-    if (fd == -1)
+    if (fd == NULL)
 	return 0;
 
-    /* check process */
-    if ((len = read(fd, tmpstr, sizeof(tmpstr))) > 0)
-    {
-	tmpstr[len] = '\0';
-
-	pid = atoi(tmpstr);
-    }
-    close (fd);
+    if (fscanf (fd, "%d", &pid) != 1)
+	return 0;
 
     if (!pid)
 	return -1;
+
+    if (!st)
+	return pid;
+
+    memset ((void*)st, 0, sizeof(st));
+
+    /* skip leading space */
+    fread (st->args, 1, 1, fd);
+	
+    count = fread (st->args, 1, sizeof(service_args), fd);
+    st->args[count] = '\0';
+    if (strstr(st->args, "=") == NULL)
+	strcpy (st->args, "[bad service args]");
+
+    fclose (fd);
 
     /* check if ffd_service_name environment variable of process matches */
     buf = get_service_name (pid);
@@ -203,36 +254,132 @@ int service_status (char *service_name, int *cpid, int *cruns)
 
     free (buf);
 
-    /* check existing client pidfile */
-    if (cpid && cruns)
+    fd = fopen (cpidfile, "r");
+
+    if (fd != NULL)
     {
-	*cpid = 0;
+	fscanf (fd, "%d %u %u %u %u %d",
+		&st->cpid, 
+		&st->restarts, 
+		&st->start_time,
+		&st->last_runtime, 
+		&st->total_runtime, 
+		&st->last_exit_code);
 
-	fd = open (cpidfile, O_RDONLY);
-
-	if (fd != -1)
-	{
-	    /* check process */
-	    if ((len = read(fd, tmpstr, sizeof(tmpstr))) > 0)
-	    {
-		tmpstr[len] = '\0';
-
-		sscanf (tmpstr, "%d %d", cpid, cruns);
-	    }
-	    close (fd);
-	}
+	fclose (fd);
     }
 
     return pid;
 }
 
-static void list_services(void)
+static char *pid_info (int pid, int args)
 {
-    DIR *dir = opendir ("/var/run");
+    static char buffer[ARG_MAX];
+    char fname[PATH_MAX];
+    char *rc = "na";
+    char *cmd, *arg;
+    int fd = -1;
+    int len;
+    int i;
+
+    sprintf (fname, "/proc/%d/cmdline", pid);
+    fd = open (fname, O_RDONLY);
+
+    if (fd == -1)
+	goto out;
+
+    if ((len = read (fd, buffer, sizeof(buffer))) == -1)
+    {
+	perror ("read");
+	goto out;
+    }
+
+    cmd = buffer;
+    arg = buffer + strlen(buffer) + 1;
+
+    for (i = strlen(cmd)+1+strlen(arg); i < len;)
+    {
+	if (i+1 >= len)
+	    break;
+
+	buffer[i] = ' ';
+	i += strlen(&buffer[i]);
+    }
+
+    rc = (args == 0) ? cmd : arg;
+
+out:
+    if (fd != -1)
+	close (fd);
+
+    return rc;
+}
+
+static int service_info (char *service_name, int verbose)
+{
+    int status;
+    struct client_status st;
+    struct timeval tv;
+    unsigned int cur_runtime;
+
+    status = service_status (service_name, &st);
+
+    printf ("%-14s : ", service_name); 
+
+    if (status == 0)
+    {
+	printf ("Not running\n");
+	return 1;
+    }
+
+    if (status == -1)
+    {
+	printf ("STALE\n");
+	return 1;
+    }
+
+    gettimeofday (&tv, NULL);
+    cur_runtime = st.start_time ? tv.tv_sec - st.start_time : 0;
+
+    printf ("PID=%-5d", status);
+    printf (" cpid=%d times=%d/%d/%d/%d restarts=%d ",
+    	st.cpid, 
+	cur_runtime,
+	st.last_runtime,
+	st.total_runtime + cur_runtime,
+	(st.total_runtime + cur_runtime) / (st.restarts + 1),
+	st.restarts);
+
+    if (st.restarts)
+    {
+	if (WIFEXITED(st.last_exit_code))
+	    printf ("exit(%d)", WEXITSTATUS(st.last_exit_code));
+	if (WIFSIGNALED(st.last_exit_code))
+	    printf ("signal(%d)", WTERMSIG(st.last_exit_code));
+	if (__WCOREDUMP(st.last_exit_code))
+	    printf ("coredump");
+	if (WIFSTOPPED(st.last_exit_code))
+	    printf ("stopped(%d)", WSTOPSIG(st.last_exit_code));
+	if (WIFCONTINUED(st.last_exit_code))
+	    printf ("resumed");
+    }
+ 
+    printf ("\n");
+
+    if (verbose)
+    {
+	printf ("%-14s : %s\n", service_name, st.args);
+	printf ("%-14s : CMD=%s\n", service_name, pid_info (st.cpid, 0));
+	printf ("%-14s : ARGS=%s\n", service_name, pid_info (st.cpid, 1));
+    }
+    return 0;
+}
+ 
+static void list_services(int verbose)
+{
+    DIR *dir = opendir (SN_DIR);
     struct dirent *de = NULL;
     char service_name[256];
-    int status;
-    int cpid, cruns;
 
     if (!dir)
     {
@@ -242,7 +389,7 @@ static void list_services(void)
 
     while ((de = readdir(dir)) != NULL)
     {
-	if (strncmp (de->d_name, "ffd_", 4) ||
+	if (strncmp (de->d_name, SN_PREFIX, strlen(SN_PREFIX)) ||
 	    (strstr(de->d_name, ".pid") == NULL))
 	    continue;
 
@@ -250,25 +397,7 @@ static void list_services(void)
 
 	*strstr(service_name, ".pid") = '\0';
 
-	status = service_status (service_name, &cpid, &cruns);
-
-	if (status == 0)
-	    continue;
-
-	printf ("%-15s : ", service_name); 
-
-	if (status == -1)
-	{
-	    printf ("STALE\n");
-	}
-	else
-	{
-	    printf ("PID=%-6d", status);
-
-	    printf (" cpid=%d restarts=%d", cpid, cruns);
-
-	    printf ("\n");
-	}
+	service_info (service_name, verbose);
     }; 
 
     closedir (dir);
@@ -276,7 +405,7 @@ static void list_services(void)
 
 static void iterate_services(int (*cb)(char *service_name, int arg), int arg)
 {
-    DIR *dir = opendir ("/var/run");
+    DIR *dir = opendir (SN_DIR);
     struct dirent *de = NULL;
     char service_name[256];
     int status;
@@ -289,7 +418,7 @@ static void iterate_services(int (*cb)(char *service_name, int arg), int arg)
 
     while ((de = readdir(dir)) != NULL)
     {
-	if (strncmp (de->d_name, "ffd_", 4) ||
+	if (strncmp (de->d_name, SN_PREFIX, strlen(SN_PREFIX)) ||
 	    (strstr(de->d_name, ".pid") == NULL))
 	    continue;
 
@@ -297,7 +426,7 @@ static void iterate_services(int (*cb)(char *service_name, int arg), int arg)
 
 	*strstr(service_name, ".pid") = '\0';
 
-	status = service_status (service_name, NULL, NULL);
+	status = service_status (service_name, NULL);
 
 	if (status > 0)
 	    (void)cb (service_name, arg);
@@ -310,7 +439,7 @@ static int purge_service (char *service_name)
 {
     int pid = 0;
 
-    pid = service_status (service_name, NULL, NULL);
+    pid = service_status (service_name, NULL);
 
     if (pid > 0)
     {
@@ -347,7 +476,7 @@ static int kill_service (char *service_name, int sig)
 	return 0;
     }
 
-    pid = service_status (service_name, NULL, NULL);
+    pid = service_status (service_name, NULL);
 
     if (pid <= 0)
     {
@@ -499,6 +628,7 @@ int main(int argc, char **argv)
     char *service_name = NULL;
     char *chroot_path = NULL;
     char *limits = NULL;
+    int verbose = 0;
 
     /* Until we have something better, only root and the shell can use su. */
     myuid = getuid();
@@ -506,6 +636,8 @@ int main(int argc, char **argv)
         fprintf(stderr,"su: uid %d not allowed to su\n", myuid);
         return 1;
     }
+
+    strcpy (service_args, "");
 
     for (i = 1; (i < argc) && (arg_id == 0); i++)
     {
@@ -516,8 +648,11 @@ int main(int argc, char **argv)
 	}
 	switch (argv[i][1])
 	{
+	    case 'v':
+		verbose = 1;
+		break;
 	    case 'L':
-	        list_services();
+	        list_services(verbose);
 		exit (0);
 	    case 'C':
 		noclose = 1;
@@ -601,6 +736,12 @@ int main(int argc, char **argv)
 		    break;
 		}
 		/* fall through */
+	    case 'I':
+	    	if (i < argc-1)
+		{
+		    return (service_info (argv[++i], verbose));
+		}
+		/* fall through */
 	    default:
 	        fprintf (stderr, usage, argv[0]);
 		exit (1);
@@ -618,7 +759,13 @@ int main(int argc, char **argv)
     if (service_name == NULL)
 	service_name = basename (argv[arg_id]);
 
-    /* exec ourselves to make sure ffd_service_name appears in 
+    if (service_name == NULL)
+	exit(1);
+
+    if (purge_service(service_name))
+	exit(1);
+
+   /* exec ourselves to make sure ffd_service_name appears in 
      * /proc/pid/environ
      */
     if (getenv(SNAME) == NULL)
@@ -635,15 +782,35 @@ int main(int argc, char **argv)
     /* but dont inherit to other exec'ed children */
     unsetenv (SNAME);
 
-    if (service_name == NULL)
-	exit(1);
-
-    if (purge_service(service_name))
-	exit(1);
-
+    /* set config info to be stored in pidfile */
+    svc_info ("VERB=%d", verbose, NULL);
+    svc_info ("NOCLOSE=%d", noclose, NULL);
+    svc_info ("DAEMON=%d", daemon_mode, NULL);
+    svc_info ("INTERVAL=%d", interval, NULL);
+    svc_info ("LOOPS=%d", loops, NULL);
+    svc_info ("UID=%d", uid, NULL);
+    svc_info ("GID=%d", uid, NULL);
+    svc_info ("CHROOT=%s", 0, &chroot_path);
+    svc_info ("RLIM=%s", 0, &limits);
+ 
     if (daemon_mode) {
-	if (daemon2 (strdup(get_pidfile(service_name)), interval, loops, 0, noclose, service_name))
-	    exit (1);
+	switch (daemon2 (interval, loops, 0, noclose, service_name))
+	{
+	    case 0:
+	    	/* running as slave */
+	    	break;
+	    case 2:
+	    	/* client exit, eceeded loops.
+		 * Don't exit so that the service stats are still
+		 * available
+		 */
+		while (1)
+		    sleep (1000);
+		break;
+	    default:
+	    	/* fatal error */
+	    	exit (1);
+	}
     }
 
     /* now running as slave */
@@ -673,7 +840,7 @@ int main(int argc, char **argv)
     /* User specified command for exec. */
     if (nargs == 1 ) {
         if (execlp(argv[arg_id], argv[arg_id], NULL) < 0) {
-            fprintf(stderr, "su: exec failed for %s Error:%s\n", argv[arg_id],
+            fprintf(stderr, "exec failed for %s : %s\n", argv[arg_id],
                     strerror(errno));
             return -errno;
         }
@@ -683,7 +850,7 @@ int main(int argc, char **argv)
         memset(exec_args, 0, sizeof(exec_args));
         memcpy(exec_args, &argv[arg_id], sizeof(exec_args));
         if (execvp(argv[arg_id], exec_args) < 0) {
-            fprintf(stderr, "su: exec failed for %s Error:%s\n", argv[arg_id],
+            fprintf(stderr, "exec failed for %s : %s\n", argv[arg_id],
                     strerror(errno));
             return -errno;
         }

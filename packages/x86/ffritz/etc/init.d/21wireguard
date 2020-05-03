@@ -12,6 +12,17 @@ if [ "x$1" = "xgetconfig" ]; then
 	exit 0
 fi
 
+if [ "x$1" = "xinfo" ]; then
+	echo DAEMONS=\"wgforward\"
+	/sbin/ifconfig wg0 >/dev/null 2>&1
+	if [ $? -eq 0 ]; then
+		echo STATUS=on
+	else
+		echo STATUS=off
+	fi
+	exit 0
+fi
+
 if [ `echo $CONFIG_VERSION | tr -d '.'` -gt 712 ]; then
 	echo 'Sorry, wireguard will not yet run on firmware > 7.12' 1>&2
 	echo 'Sorry, wireguard will not yet run on firmware > 7.12' > /dev/console
@@ -20,8 +31,8 @@ fi
 
 
 if [ "x$1" = "xstop" ]; then
-	$FFINSTDIR/bin/ffdaemon -K wgforward
-	$FFINSTDIR/bin/wg-quick down $WGDIR/wg0.conf
+	ffdaemon -K wgforward
+	wg-quick down $WGDIR/wg0.conf
 #	rmmod wireguard
 	exit 0
 fi
@@ -52,4 +63,4 @@ insmod $module
 #
 ffdaemon -i 90 -N wgforward pcplisten udp $lanip 51820 100 wg
 
-$FFINSTDIR/bin/wg-quick up $WGDIR/wg0.conf
+wg-quick up $WGDIR/wg0.conf

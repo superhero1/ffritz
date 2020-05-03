@@ -10,7 +10,17 @@
 EXPORTS=$NVRAM/etc/exports
 
 if [ "x$1" = "xstop" ]; then
-	$FFINSTDIR/bin/ffdaemon -K unfsd
+	ffdaemon -K unfsd
+	exit 0
+fi
+
+if [ "x$1" = "xgetconfig" ]; then
+	echo "# Nothing to do here, exports file is in $EXPORTS"
+	exit 0
+fi
+
+if [ "x$1" = "xinfo" ]; then
+	echo DAEMONS=unfsd
 	exit 0
 fi
 
@@ -33,4 +43,4 @@ fi
 #
 portmap -i $lanip
 
-ffdaemon $FFINSTDIR/bin/unfsd -d -e $EXPORTS 
+ffdaemon unfsd -d -e $EXPORTS 

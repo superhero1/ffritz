@@ -5,8 +5,13 @@
 . /usr/local/etc/mkusers || exit 1
 
 if [ "x$1" = "xstop" ]; then
-    $FFINSTDIR/bin/ffdaemon -K shairport-sync
+    ffdaemon -K shairport-sync
     exit 0
+fi
+
+if [ "x$1" = "xinfo" ]; then
+	echo DAEMONS=shairport-sync
+	exit 0
 fi
 
 if [ "x$1" != "xstart" ]; then
@@ -29,4 +34,4 @@ ip route add 224.0.0.251/32 dev lan
 
 # Run the shairport daemon
 #
-ffdaemon $FFINSTDIR/bin/shairport-sync -u -c $NVRAM/etc/shairport-sync.conf
+ffdaemon shairport-sync -u -c $NVRAM/etc/shairport-sync.conf

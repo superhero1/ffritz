@@ -12,6 +12,10 @@ if [ "x$1" = "xstop" ]; then
 	exit 0
 fi
 
+if [ "x$1" = "xinfo" ]; then
+	exit 0
+fi
+
 if [ "x$1" != "xstart" ]; then
 	exit 0
 fi

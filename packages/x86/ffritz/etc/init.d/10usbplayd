@@ -22,6 +22,10 @@ if [ "x$1" = "xgetconfig" ]; then
 	exit 0
 fi
 
+if [ "x$1" = "xinfo" ]; then
+	echo DAEMONS=usbplayd
+	exit 0
+fi
 
 if [ "x$1" != "xstart" ]; then
 	exit 0
@@ -36,4 +40,4 @@ fi
 chmod 666 /var/tmp/volume
 
 umask 0
-ffdaemon $FFINSTDIR/bin/usbplayd -V /var/tmp/volume $USBPLAYD_ARGS
+ffdaemon usbplayd -V /var/tmp/volume $USBPLAYD_ARGS

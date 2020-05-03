@@ -14,9 +14,9 @@ test -z $2 || . $2
 BR_DIR=/tmp/br
 
 if [ "x$1" = "xstop" ]; then
-    $FFINSTDIR/bin/ffdaemon -K upmpdcli
-    $FFINSTDIR/bin/ffdaemon -K ympd
-    $FFINSTDIR/bin/ffdaemon -K mpd
+    ffdaemon -K upmpdcli
+    ffdaemon -K ympd
+    ffdaemon -K mpd
     exit
 fi
 
@@ -26,6 +26,14 @@ if [ "x$1" = "xgetconfig" ]; then
 	echo
 	echo "# Whether to enable ympd:"
 	echo ENABLE_YMPD=$ENABLE_YMPD
+	exit 0
+fi
+
+if [ "x$1" = "xinfo" ]; then
+	DAEMONS=mpd
+	test $ENABLE_UPMPDCLI -eq 1 && DAEMONS="$DAEMONS upmpdcli"
+	test $ENABLE_YMPD -eq 1 && DAEMONS="$DAEMONS ympd"
+	echo DAEMONS=\"$DAEMONS\"
 	exit 0
 fi
 
@@ -64,7 +72,7 @@ chmod 777 /var/run/mpd
 
 # Run mpd (as respawning daemon)
 #
-$FFINSTDIR/bin/ffdaemon -r ffritz $FFINSTDIR/bin/mpd --no-daemon $FFRITZ_HOME/mpd.conf
+ffdaemon -r ffritz mpd --no-daemon $FFRITZ_HOME/mpd.conf
 
 
 # Run upmpdcli (UPNP frontent to MPD)
@@ -74,7 +82,7 @@ $FFINSTDIR/bin/ffdaemon -r ffritz $FFINSTDIR/bin/mpd --no-daemon $FFRITZ_HOME/mp
 if [ $ENABLE_UPMPDCLI -eq 1 ]; then 
 	if [ -d $BR_DIR/usr/share/upmpdcli/ ]; then
 	    sleep 1
-	    $FFINSTDIR/bin/ffdaemon -i 10 -o $BR_DIR upmpdcli -c $FFRITZ_HOME/upmpdcli.conf 
+	    ffdaemon -i 10 -o $BR_DIR upmpdcli -c $FFRITZ_HOME/upmpdcli.conf 
 	else
 	    echo upmpdcli not started, requires buildroot service
 	fi
@@ -84,5 +92,5 @@ fi
 #
 if [ $ENABLE_YMPD -eq 1 ]; then
 	sleep 1
-	$FFINSTDIR/bin/ffdaemon $FFINSTDIR/bin/ympd -w 82 -u ffritz
+	ffdaemon $FFINSTDIR/bin/ympd -w 82 -u ffritz
 fi

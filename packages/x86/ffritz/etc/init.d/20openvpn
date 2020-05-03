@@ -9,8 +9,13 @@
 VPNDIR=/var/tmp/root-ssh/openvpn
 
 if [ "x$1" = "xstop" ]; then
-	$FFINSTDIR/bin/ffdaemon -K openvpn
-	$FFINSTDIR/bin/ffdaemon -K pcplisten
+	ffdaemon -K openvpn
+	ffdaemon -K pcplisten
+	exit 0
+fi
+
+if [ "x$1" = "xinfo" ]; then
+	echo DAEMONS=\"openvpn pcplisten\"
 	exit 0
 fi
 
@@ -32,4 +37,4 @@ ffdaemon -i 90 pcplisten udp $lanip 1194 100 vpn
 
 ln -s $FFINSTDIR/etc/openvpn/tap-up $VPNDIR
 
-$FFINSTDIR/bin/ffdaemon $FFINSTDIR/bin/openvpn --writepid /var/run/openvpn.pid --config $VPNDIR/openvpn.conf --cd $VPNDIR --script-security 2
+ffdaemon $FFINSTDIR/bin/openvpn --writepid /var/run/openvpn.pid --config $VPNDIR/openvpn.conf --cd $VPNDIR --script-security 2

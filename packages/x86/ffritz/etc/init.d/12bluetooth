@@ -9,7 +9,7 @@ BT_NAME=FritzBox
 test -z $2 || . $2
 
 if [ "x$1" = "xstop" ]; then
-	$FFINSTDIR/bin/ffdaemon -K a2dp_sink_demo
+	ffdaemon -K a2dp_sink_demo
 	exit 0
 fi
 
@@ -19,13 +19,18 @@ if [ "x$1" = "xgetconfig" ]; then
 	exit 0
 fi
 
+if [ "x$1" = "xinfo" ]; then
+	echo DAEMONS=a2dp_sink_demo
+	exit 0
+fi
+
 if [ "x$1" != "xstart" ]; then
 	exit 0
 fi
 
 # Make sure usbplayd runs
 #
-$FFINSTDIR/etc/init.d/*usbplayd start
+ffservice start usbplayd
 
 # where to store pairing data
 #
@@ -40,5 +45,5 @@ else
 	mkdir -p $DBDIR
 	chmod 700 $DBDIR
 	test -d /var/run/bt || ln -s $DBDIR /var/run/bt
-	ffdaemon $FFINSTDIR/bin/a2dp_sink_demo $BT_NAME /var/tmp/bt.fifo 
+	ffdaemon a2dp_sink_demo $BT_NAME /var/tmp/bt.fifo 
 fi

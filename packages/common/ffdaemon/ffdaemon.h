@@ -19,9 +19,18 @@
 #ifndef _INCFFDAEMONH_
 #define _INCFFDAEMONH_
 
+#define SN_DIR "/var/run"
+#define SN_PREFIX "ffd_"
+#define SNAME SN_PREFIX "service_name"
+
 void log_put (const char *format, ...);
 void log_set (const char *logf, int consOut);
-int daemon2 (char *pdfile, int delay, int loops, int nochdir, int noclose, char *service_name);
+int daemon2 (int delay, int loops, int nochdir, int noclose, const char *service_name);
 int do_limits (char *limits, int check_only);
+char *get_pidfile(const char *service_name);
+char *get_client_pidfile(const char *service_name);
+char *get_service_info(const char *service_name);
+
+
 
 #endif
