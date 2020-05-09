@@ -8,7 +8,7 @@
 BR_DIR=/var/tmp/br
 BR_OVERLAY=$NVRAM/rootfs-overlay
 BR_ROOT=/usr/local/buildroot
-BR_CONF=$NVRAM/ffbuildroot.conf
+BR_CONF=$NVRAM/etc/conf.d/05buildroot
 BR_CONF_ACTIVE=/tmp/ffbuildroot.conf
 BR_VAR=/tmp/ffbrvar
 
@@ -21,7 +21,7 @@ ismounted()
 	dir=`readlink -f $1`
 
 	while read line; do
-		set $line
+		set $line __x
 		if [ "$dir" = "$2" ]; then
 		    	return 0
 		fi
@@ -58,6 +58,16 @@ mtab_flash()
 	echo /var/media/ftp REDIR /var/media/ftp
 }
 
+# Mount table for rootfs, using (verified) $1 as root
+mtab_redir()
+{
+	echo / REDIR $1
+	echo /dev devtmpfs
+	echo /proc proc
+	echo /sys sysfs
+	echo /var/media/ftp REDIR /var/media/ftp
+}
+
 mtab()
 {
 	if [ "$BR_USER_OVERLAY" != "" ]; then
@@ -67,9 +77,26 @@ mtab()
 			echo user overlay $BR_USER_OVERLAY does not exist 1>&2
 			exit 1
 		fi
-	else
-		mtab_ram
+		exit 0
 	fi
+	if [ "$BR_USER_COPY" != "" ]; then
+		if [ ! -d $BR_USER_COPY ]; then
+			if [ ! -d `dirname $BR_USER_COPY` ]; then
+				echo Parent of user copy $BR_USER_COPY does not exist 1>&2
+				exit 1
+			fi
+			cp -a /usr/local/buildroot $BR_USER_COPY
+			if [ $? -ne 0 ]; then
+				rm -rf $BR_USER_COPY
+				echo Error bootstrapping to $BR_USER_COPY 1>&2
+				exit 1
+			fi
+		fi
+		mtab_redir $BR_USER_COPY
+		exit 0
+	fi
+
+	mtab_ram
 }
 
 # Reverse mount table
@@ -82,7 +109,7 @@ umount_all()
 {
 	for loop in 1 2; do
 		mtab_r | while read line; do
-			set $line
+			set $line __x
 
 			ismounted $BR_DIR/$1 && umount $BR_DIR/$1
 		done
@@ -148,7 +175,7 @@ if [ "x$1" = "xstop" ]; then
 fi
 
 if [ "x$1" = "xinfo" ]; then
-	if [ -r $BR_CONF_ACTIVE ]; then
+	if [ -r "$BR_CONF_ACTIVE" ]; then
 		echo STATUS=on
 	else
 		echo STATUS=off
@@ -161,10 +188,31 @@ if [ "x$1" = "xgetconfig" ]; then
 		echo "# Data read from old style ffbuildroot.conf:"
 		cat $NVRAM/ffbuildroot.conf
 	else
-		echo "# Options for buildroot service:"
-		echo "# BR_USER_OVERLAY: Users root filesystem overlay (e.g. below /var/media/ftp)"
+cat <<EOF
+# Options for buildroot service:
+#
+## Path to users root filesystem overlay (e.g. below /var/media/ftp).
+##
+## A writeable overlay filesystem using unionfs. This is more flexible
+## than the default method, since the whole / filesystem is writable.
+## Modified/new files are stored in the overlay path.
+## Beware, this is quite slow ..
+#
+#BR_USER_OVERLAY=/var/media/ftp/my-disc/root-overlay
+#
+## Alternative: Path to users root filesystem copy.
+##
+## If this directory does NOT exist, it will be generated with a copy
+## of /usr/local/buildroot (the parent directory MUST exist).
+## From this point on, future changes to the buildroot filesystem in
+## /usr/local/buildroot that come with updated application packages
+## are not synchronized!
+## This method provides a fast chroot environment.
+#
+#BR_USER_COPY=/var/media/ftp/my-disc/buildroot
+#
+EOF
 	fi
-
 	exit 0
 fi
 
@@ -215,7 +263,7 @@ fi
 mkdir -p $BR_DIR
 
 mtab | while read line; do
-	set $line
+	set $line __x
 	mkdir -p $BR_DIR/$1
 	if [ "$2" = "NVRAM" ]; then
 		mkdir -p $BR_OVERLAY/$1 || abort
