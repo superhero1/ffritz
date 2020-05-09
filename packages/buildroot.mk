@@ -35,14 +35,22 @@ endif
 DEFCONF = $(shell basename $(DEFCONF_FILE))
 DEFCONF_TGT = $(BUILDDIR)/configs/$(DEFCONF)
 
-PACKAGE_MODS = $(shell find package -type f)
+PACKAGE_MODS = $(shell find package | grep -v '^package$$')
 PACKAGE_MOD_TGT = $(PACKAGE_MODS:%=build/%)
 
 all:	$(BUILDDIR) $(PACKAGE_MOD_TGT) $(DEFCONF_TGT)
 ifeq ($(DEFCONF),user_defconfig)
 	@touch mod/ffritz_defconfig
 endif
-	@if [ -r .clean ]; then make -C build `sort -u .clean`; fi
+	@if [ -r .clean ]; then \
+		for d in `sort -u .clean`; do \
+			echo Re-generating build/package/$$d ..;\
+			test -z $$d || rm -rf build/package/$$d; \
+			tar xf $(FILE) --strip-components=1 -C $(BUILDDIR) --wildcards ''\*/package/$$d'';\
+			cp -r package/$$d build/package; \
+		done;\
+		make -C build `sort -u .clean | sed -e 's/$$/-dirclean/'`; \
+	fi
 	@rm -f .clean
 	@make -C build $(BR_FLAGS)
 	@if [ "$(BUILDROOT_TARGETS)" != "" ]; \
@@ -59,11 +67,8 @@ endif
 	@make -C $(BUILDDIR) $(DEFCONF)
 
 $(PACKAGE_MOD_TGT): $(PACKAGE_MODS)
-	@mkdir -p `dirname $@`
-	@if ! diff $(@:build/%=%) $@ 2>&1 > /dev/null; then \
-		install $(@:build/%=%) $@; \
-		echo $@ | \
-		 sed -e 's@build/package/\([^/]*\).*@\1-dirclean@' >> .clean;\
+	@if [ $(@:build/%=%) -nt $@ ]; then \
+		echo $@ | sed -e 's@build/package/\([^/]*\).*@\1@' >> .clean;\
 	fi
 
 base:	$(BUILDDIR) $(DEFCONF_TGT) $(PACKAGE_MOD_TGT)
@@ -75,14 +80,14 @@ endif
 	touch $@
 
 userconfig: $(BUILDDIR) $(PACKAGE_MOD_TGT)
-	if [ ! -f build/configs/user_defconfig ]; then cp build/configs/ffritz_defconfig build/configs/user_defconfig; fi
-	make -C build user_defconfig 
-	make -C build menuconfig
-	make -C build savedefconfig
-	cp build/configs/user_defconfig user_defconfig;
-	echo
-	echo +++ new config saved to `pwd`/user_defconfig
-	echo 
+	@if [ ! -f build/configs/user_defconfig ]; then cp build/configs/ffritz_defconfig build/configs/user_defconfig; fi
+	@make -C build user_defconfig 
+	@make -C build menuconfig
+	@make -C build savedefconfig
+	@cp build/configs/user_defconfig user_defconfig;
+	@echo
+	@echo +++ new config saved to `pwd`/user_defconfig
+	@echo 
 
 $(FILE):
 	cd $(DLDIR); wget $(URL)
@@ -92,8 +97,8 @@ $(BUILDDIR): $(FILE) $(PATCHES)
 	@cd $(BUILDDIR); tar xf $(FILE) --strip-components=1
 	@cd build; for p in $(PATCHES); do \
 		patch -p1 < ../$$p |\
-		grep 'patching file package' |\
-		sed -e 's@.*package/\([^/]*\).*@\1-dirclean@' >> ../.clean;\
+		grep 'patching file package/' |\
+		sed -e 's@.*package/\([^/]*\).*@\1@' >> ../.clean;\
 	done
 	@touch $(BUILDDIR)
 
