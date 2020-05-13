@@ -1,0 +1,18 @@
+#!/bin/sh
+# Xfeature:getconfig
+
+if [ "$1" = "stop" ]; then
+        ffdaemon -K iperf3
+        exit 0
+fi
+
+if [ "x$1" = "xinfo" ]; then
+	echo DAEMONS=iperf3
+	exit 0
+fi
+
+if [ "x$1" != "xstart" ]; then
+	exit 0
+fi
+
+ffdaemon iperf3 -s

@@ -1,0 +1,47 @@
+#!/bin/sh
+# Xfeature:getconfig
+
+
+DEV=sda1
+MDIR=/tmp/storage
+
+test -z $2 || . $2
+
+if [ "$1" = "stop" ]; then
+	exit 0
+fi
+
+if [ "x$1" = "xgetconfig" ]; then
+cat <<EOF
+
+# A service that will (re)mount a specific block device
+# to a specific directory. Intended to override the 
+# default mount point of FritzOS below /var/media/ftp.
+
+## The disc device to check
+# DEV=$DEV
+
+## The mount point
+#
+#MDIR=$MDIR
+EOF
+	exit 0
+fi
+
+if [ "x$1" = "xinfo" ]; then
+	cd $MDIR || { echo STATUS=off; exit 0; }
+	df -h . | grep "^/dev/$DEV" >/dev/null || { echo STATUS=off; exit 0; }
+	echo STATUS=on
+	exit 0
+fi
+
+if [ "$1" != "start" ]; then
+	exit 0
+fi
+
+grep $DEV /proc/partitions || exit 1
+
+mkdir -p $MDIR || exit 1
+
+umount /dev/$DEV 
+mount -o rw /dev/$DEV $MDIR || exit 1
