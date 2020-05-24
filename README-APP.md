@@ -119,10 +119,11 @@ To use this filesystem, just use chroot:
 
 or just "br" as an alias.
 
-There are two flavours for the constructed filesystem:
+There are three flavours for the constructed filesystem:
 
 1. Keeping most of the filesystem read-only
 2. Using a writeable overlay for the whole filesystem
+3. Using a writable copy of the filesystem
 
 Option (1):
 
@@ -139,7 +140,7 @@ Option (1):
 
 Option (2):
 
--	Create/edit the file /nvram/ffnvram/ffbuildroot.conf
+-	Edit service configuration ("ffservice config buildroot")
 -	Add the line BR_USER_OVERLAY=/var/media/ftp/my-root
 -	This option will use /var/media/ftp/my-root to store
 	new or changed contents of the buildroot filesystem
@@ -149,13 +150,32 @@ Option (2):
 -	NOTE: Be aware that storing files below /var/media/ftp
 	exposes them via the NAS service of the box, if enabled!!
 
+Option (3):
+
+-	Edit service configuration ("ffservice config buildroot")
+-	Add the line BR_USER_COPY=/var/media/ftp/my-root
+-   If the directory does not exist it will be created and 
+    populated with a copy of the buildroot template
+	(usr/local/buildroot).
+-   From this time on it will be used as (writable) root filesystem
+    for the buildroot service.
+
 Option 1 is a lightweight mechanism to just start some tools or services that
 do not require write access to /usr or other locations which are read-only.
 
 Option 2 is useful when more sophisticated tools shall be used, e.g. when
-you want to use python or node.js and add your own modules.
+you want to use python or node.js and add your own modules. But using the
+fuse/unionfs makes it quite slow.
 
-All binaries and libraries from the buildroot directory (usr/bin,
+Option 3 is a fast alternative for (2), but future updates to the builtroot
+template that come with application package updates will not be synchronized
+automatically.
+
+For options 2/3 it might be a good idea to use the "remount" service to mount
+an external driver to somewhere else than the NAS directlry (e.g. into /tmp/..).
+
+
+All binaries and libraries from the buildroot template directory (usr/bin,
 usr/lib) are available to FritzOS via symlinks in /usr/local/bin,
 /usr/local/lib.
 Specific tools and services might require executing them in the chroot
@@ -183,7 +203,7 @@ Music Player Daemon (mpd)
 	- ympd (http frontend at port 82) 
 - Refer to AUDIO.md for details
 
-ShairPort Daemon (shairport-sync)
+ShairPort-sync Daemon (shairport)
 ---------------------------------
 - Acts as AirPort receiver
 - Refer to AUDIO.txt for details
@@ -258,8 +278,7 @@ The wireguard service
 tvheadend (tvheadend)
 ---------------------
 Basically, the Fritzbox 6591 is powerful enough to run Tvheadend, but i
-consider it still as experimental as i have seen rare box reboot events
-while recording (see below).
+consider it still as experimental.
 It is only available on FritzOS Version 7.19 or later, and requires the 
 buildroot-2020.02 toolchain image.
 
@@ -274,7 +293,8 @@ Caveats:
   I have seen cableinfo at 35% CPU load for a single HD stream.
 
 - Don't try to record to some kind of fuse mounted drive (nfs, ovelay, ..).
-  There is a memory leak somewhere which will eventually crash tvheadend or the box.
+  It is too slow and memory buffers will eventually lead to the daemon exceeding
+  its memory limit (-> crash).
 
 Building the application image
 ==============================
