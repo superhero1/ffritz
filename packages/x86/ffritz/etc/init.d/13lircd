@@ -22,6 +22,7 @@ fi
 
 mkdir -p /var/lock/lockdev                   
 chmod 777 /var/lock/lockdev
+chmod 777 /var/lock
 mkdir -p /var/run/lirc     
 chmod 777 /var/run/lirc
                        
