@@ -20,6 +20,8 @@ ifeq ($(HOSTTOOLS),)
 HOSTTOOLS=$(TOPDIR)/host/$(HOST)
 endif
 
+ARM_MAX_FS=19922432
+
 all: release
 
 RELDIR  = release$(VERSION)
@@ -138,7 +140,12 @@ arm/filesystem.image: arm/.applied.fs
 	@rm -f arm/filesystem.image
 	@$(SUDO) chmod 755 arm/squashfs-root
 	@echo "PACK  arm/squashfs-root"
-	@cd arm; $(SUDO) $(HOSTTOOLS)/mksquashfs4-avm-be squashfs-root filesystem.image -all-root -info -no-progress -no-exports -no-sparse -b 65536 -processors 1 >/dev/null
+	@cd arm; $(SUDO) $(HOSTTOOLS)/mksquashfs4-avm-be squashfs-root filesystem.image -comp xz -all-root -info -no-progress -no-exports -no-sparse -b 65536 -processors 1 >/dev/null
+	@if [ `wc -c arm/filesystem.image | sed -e 's/ .*//'` -ge $(ARM_MAX_FS) ]; then \
+		echo '*** ERROR: Arm filesystem is getting too large!'; \
+		echo '*** Consider editing conf.mk and remove ARM extensions (FFRITZ_ARM_PACKAGE)'; \
+		echo "***  size=`wc -c arm/filesystem.image | sed -e 's/ .*//'`  max=$(ARM_MAX_FS)"; \
+		false; fi
 
 arm-package: packages/arm/ffritz/ffritz-arm-$(ARM_VER).tar.gz
 
