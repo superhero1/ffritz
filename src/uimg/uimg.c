@@ -1,22 +1,21 @@
 /* 
- * Copyright (C) 2019 - Felix Schmidt
+ * A simple tool to handle uimg images
  *
- * This file is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * Copyright (C) 2019,2020 - Felix Schmidt
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
-/* A simple tool to handle uimg images */
 
 /* ========================================================================= */
 #include <stdio.h>
@@ -26,6 +25,8 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <string.h>
+#include <time.h>
+#include <ctype.h>
 
 #include "uimg.h"
 
@@ -46,17 +47,18 @@ dev_to_name[] =
 };
 
 const char *help =
-" uimg -u|p [-n <name>] uimg-file\n"
-"   -u   unpack all partitions and write them to .bin files named\n"
-"        name_nn[_suffix].bin, where\n"
+" uimg -u|p|i [-n <name>] uimg-file\n"
+"   -u   unpack all partitions and write them to write-protected .bin\n"
+"        files named name_nn[_suffix].bin, where\n"
 "        - name is the given name or uimg-file (including the path, without\n"
 "          file extension).\n"
 "        - nn is the logical partition number.\n"
 "        - suffix is the name of the partition content, if known by the tool.\n"
-"   -p   pack all partition files with -n prefix and write to uimg-file.\n"
+"   -p   pack all partition files with -n prefix and write to write-protected uimg-file.\n"
 "        All file names matching the above file format are added as partition.\n"
 "        The file name can be with content _suffix (default) or without.\n"
-"   -n   name prefix for output files (default: input file name without suffix)\n"
+"   -i   Show info on image file\n"
+"   -n   name prefix for input/output files (default: input file name without suffix)\n"
 ;
 
 #define UPDC32(octet,crc) (crc_32_tab[((crc)\
@@ -115,7 +117,7 @@ uint32_t crc32(char *buf, size_t len, uint32_t *old)
 {
 	uint32_t oldcrc32;
 
-    oldcrc32 = old ? *old : 0xFFFFFFFF;
+	oldcrc32 = old ? *old : 0xFFFFFFFF;
 
 	for ( ; len; --len, ++buf)
 	{
@@ -123,9 +125,68 @@ uint32_t crc32(char *buf, size_t len, uint32_t *old)
 	}
 
 	if (old)
+	{
 		*old = oldcrc32;
+	}
 
-    return ~oldcrc32;
+	return ~oldcrc32;
+}
+
+uint64_t timestamp(void)
+{
+	struct tm tm;
+	time_t t = time(NULL);
+	uint64_t rv = 0;
+
+	if (NULL == localtime_r (&t, &tm))
+		return 0;
+
+	/* The timestamp format is guessed .. */
+	rv |= ((((uint64_t)tm.tm_year) >> 8) & 0xffULL) << (32+24);
+	rv |= (((uint64_t)tm.tm_year) & 0xffULL) << (32+16);
+	rv |= (((uint64_t)tm.tm_mon) & 0xffULL) << (32+8);
+	rv |= (((uint64_t)tm.tm_mday) & 0xffULL) << (32+0);
+	rv |= (((uint64_t)tm.tm_hour) & 0xffULL) << 16;
+	rv |= (((uint64_t)tm.tm_min) & 0xffULL) << 8;
+	rv |= (((uint64_t)tm.tm_sec) & 0xffULL) << 0;
+
+	return rv;
+}
+
+void show_ts(struct uimg_head *head)
+{
+	struct tm tm;
+	char name[UIMG_NAME_LEN+1];
+	uint32_t ts1 = BE_TO_HOST(head->ts1);
+	uint32_t ts2 = BE_TO_HOST(head->ts2);
+	int i;
+
+	tm.tm_year = (ts1 >> 16) & 0xffff;
+	tm.tm_mon = (ts1 >> 8) & 0xff;
+	tm.tm_mday = (ts1) & 0xff;
+
+	tm.tm_hour = (ts2 >> 16) & 0xff;
+	tm.tm_min = (ts2 >> 8) & 0xff;
+	tm.tm_sec = (ts2 >> 0) & 0xff;
+
+	strncpy (name, head->name, UIMG_NAME_LEN);
+	name[UIMG_NAME_LEN] = 0;
+
+	printf ("Identifier: %s\n", name);
+	printf ("Vermagic: 0x%08x (", head->magic);
+	for (i = 0; i < 4; i++)
+	{
+		char c = ((char*)&head->magic)[i];
+		printf ("%c", isprint(c) ? c : '.');
+	}
+	printf (")\n");
+	printf ("Timestamp (dd.mm.yyyy hh:mm:ss): %02d.%02d.%04d %02d:%02d:%02d\n",
+		tm.tm_mday,
+		tm.tm_mon,
+		tm.tm_year + 1900,
+		tm.tm_hour,
+		tm.tm_min,
+		tm.tm_sec);
 }
 
 void generate(char *fname, char *prefix)
@@ -141,8 +202,8 @@ void generate(char *fname, char *prefix)
 	int part_idx = 0;
 	uint32_t crc;
 	uint32_t size = sizeof(head);
-
 	int out_fd, in_fd;
+	uint64_t ts = timestamp();
 
 	out_fd = open(fname, O_WRONLY|O_CREAT, 0444);
 	if (out_fd == 0)
@@ -169,7 +230,8 @@ void generate(char *fname, char *prefix)
 		{
 			if (i == dev_to_name[j].dev)
 			{
-				sprintf (in_name_verb, "%s_%02d_%s.bin", prefix, i, dev_to_name[j].name);
+				sprintf (in_name_verb, "%s_%02d_%s.bin",
+					prefix, i, dev_to_name[j].name);
 				break;
 			}
 		}
@@ -228,18 +290,18 @@ void generate(char *fname, char *prefix)
 	/* update header */
 	head.magic = UIMG_MAGIC;
 	strcpy (head.name, "Intel_Unified_Image");
-	head.unknown1 = 0x00770a15;
-	head.unknown2 = 0x000d1015;
-	head.unknown3_ver = 3;
+	head.ts1 = (uint32_t)(ts >> 32);
+	head.ts2 = (uint32_t)(ts & 0xffffffff);
+	head.ver = 3;
 	head.num_part = part_idx;
 	head.size = size;
 	head.data_crc = img_crc;
 
 	/* Adjust endianess */
 	head.magic = BE_TO_HOST(head.magic);
-	head.unknown1 = BE_TO_HOST(head.unknown1);
-	head.unknown2 = BE_TO_HOST(head.unknown2);
-	head.unknown3_ver = BE_TO_HOST(head.unknown3_ver);
+	head.ts1 = BE_TO_HOST(head.ts1);
+	head.ts2 = BE_TO_HOST(head.ts2);
+	head.ver = BE_TO_HOST(head.ver);
 	head.num_part = BE_TO_HOST(head.num_part);
 	head.size = BE_TO_HOST(head.size);
 	head.data_crc = BE_TO_HOST(head.data_crc);
@@ -260,7 +322,7 @@ void generate(char *fname, char *prefix)
 	close (out_fd);
 }
 
-void extract(char *fname, char *prefix)
+void extract(char *fname, char *prefix, int info)
 {
 	int in_fd;
 	int out_fd;
@@ -281,6 +343,8 @@ void extract(char *fname, char *prefix)
 		perror (fname);
 		exit (1);
 	}
+
+	show_ts (&head);
 
 	for (i = 0; i < UIMG_NUM_PARTITIONS; i++)
 	{
@@ -304,51 +368,54 @@ void extract(char *fname, char *prefix)
 		}
 		strcat (part_label, ".bin");
 
-		out_fd = open (part_label, O_WRONLY|O_CREAT, 0444);
-		if (out_fd == 0)
+		if (!info)
 		{
-			perror (part_label);
-			exit (1);
-		}
+			out_fd = open (part_label, O_WRONLY|O_CREAT, 0444);
+			if (out_fd == 0)
+			{
+				perror (part_label);
+				exit (1);
+			}
 
-		buffer = malloc (psize);
-		if (buffer == NULL)
-		{
-			fprintf (stderr, "failed to allocate 0x%x bytes for %s\n",
-					 psize, part_label);
-			exit (1);
-		}
+			buffer = malloc (psize);
+			if (buffer == NULL)
+			{
+				fprintf (stderr, "failed to allocate 0x%x bytes for %s\n",
+						 psize, part_label);
+				exit (1);
+			}
 
-		if (read (in_fd, buffer, psize) != psize)
-		{
-			fprintf (stderr, "failed to read 0x%x bytes for %s\n",
-					 psize, part_label);
-			exit (1);
+			if (read (in_fd, buffer, psize) != psize)
+			{
+				fprintf (stderr, "failed to read 0x%x bytes for %s\n",
+						 psize, part_label);
+				exit (1);
 
-		}
+			}
 
-		if (write (out_fd, buffer, psize) != psize)
-		{
-			perror (part_label);
-			exit (1);
+			if (write (out_fd, buffer, psize) != psize)
+			{
+				perror (part_label);
+				exit (1);
+			}
+
+			close (out_fd);
+			free (buffer);
 		}
 
 		printf (" %s size=%d crc=0x%08x\n", part_label, psize,
 			BE_TO_HOST(head.part_csum[i]));
-
-		close (out_fd);
-		free (buffer);
 	}
 }
 
 int main (int argc, char **argv)
 {
-	enum { none, unpack, pack } mode = none;
+	enum { none, info, unpack, pack } mode = none;
 	char *prefix = NULL;
 	char *fname = NULL;
 	int i, c;
 
-	while ((c = getopt(argc, argv, "pun:h")) != -1)
+	while ((c = getopt(argc, argv, "ipun:h")) != -1)
 	{
 		switch (c)
 		{
@@ -356,8 +423,12 @@ int main (int argc, char **argv)
 			printf (help);
 			printf ("\n Known content names:\n");
 			for (i = 0; dev_to_name[i].name != NULL; i++)
-				printf ("  Num=%02d Name=%s\n", dev_to_name[i].dev, dev_to_name[i].name);
+				printf ("  Num=%02d Name=%s\n",
+					dev_to_name[i].dev, dev_to_name[i].name);
 			exit (0);
+		case 'i':
+			mode = info;
+			break;
 		case 'p':
 			mode = pack;
 			break;
@@ -368,12 +439,16 @@ int main (int argc, char **argv)
 			prefix = strdup(optarg);
 			break;
 		default:
+			fprintf (stderr, "Usage: %s", help);
 			exit(1);
 		}
 	}
 
-	if (optind >= argc)
-		exit (1);
+        if (optind >= argc)
+	{
+		fprintf (stderr, "Usage: %s", help);
+                exit (1);
+	}
 
 	fname = argv[optind];
 
@@ -392,13 +467,17 @@ int main (int argc, char **argv)
 
 	switch (mode)
 	{
+		case info:
+			extract (fname, "partition", 1);
+			break; 
 		case unpack:
-			extract (fname, prefix);
+			extract (fname, prefix, 0);
 			break; 
 		case pack:
 			generate (fname, prefix);
 			break; 
-		default:
+		case none:
+			fprintf (stderr, "Usage: %s", help);
 			return 1;
 	}
 	return 0;

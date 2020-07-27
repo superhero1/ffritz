@@ -1,22 +1,21 @@
 /* 
- * Copyright (C) 2019 - Felix Schmidt
+ * A simple tool to handle uimg images
  *
- * This file is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * Copyright (C) 2019,2020 - Felix Schmidt
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
-/* A simple tool to handle uimg images */
 
 #ifndef _uimg_h_
 #define _uimg_h_
@@ -32,9 +31,9 @@ struct uimg_head
 {
 	uint32_t magic;
 	char     name[UIMG_NAME_LEN];
-	uint32_t unknown1;
-	uint32_t unknown2;
-	uint32_t unknown3_ver;
+	uint32_t ts1;
+	uint32_t ts2;
+	uint32_t ver;
 	uint32_t size;
 	uint32_t num_part;
 	uint32_t head_crc; /* CRC32 of head with head_crc = 0 */

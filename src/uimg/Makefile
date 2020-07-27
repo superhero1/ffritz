@@ -1,8 +1,25 @@
+#
+# Options:
+#  INSTDIR   [/usr/local]
+#  BUILDDIR  [.]
+#
 
-all: uimg
+CFLAGS += -Wall -Wno-format-security -O2
 
-uimg:	uimg.c uimg.h
-	cc -Wall -Wno-format-security -O2 -o uimg uimg.c
+INSTDIR  ?= /usr/local
+BUILDDIR ?= .
+
+all: $(BUILDDIR)/uimg
+
+uimg.c:	uimg.h
+
+$(BUILDDIR)/uimg:	uimg.c
+	@mkdir -p $(BUILDDIR)
+	$(CC) $(CFLAGS) -o $@ $<
 
 clean:
-	rm -f uimg
+	rm -f $(BUILDDIR)/uimg
+
+install: all
+	@mkdir -p $(INSTDIR)/bin
+	cp $(BUILDDIR)/uimg $(INSTDIR)/bin
