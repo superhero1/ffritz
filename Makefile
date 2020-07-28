@@ -54,7 +54,7 @@ $(ORIG):
 endif
 
 FWVER=$(shell echo $(ORIG) | sed -e 's/.*\([0-9]*.\.[0-9]*\).*\.image/\1/')
-BETA=$(shell echo $(ORIG) | sed -e 's/.*-\([0-9]*\)-LabBETA.*/-\1/' | grep -v image)
+BETA=$(shell echo $(ORIG) | sed -e 's/.*-\([0-9]*\)-Lab.*/-\1/' | grep -v image)
 MODEL=$(shell echo $(ORIG) | sed -e 's/.*_\(....\)_Cable.*/\1/')
 FWNUM=$(subst .,,$(FWVER))
 
