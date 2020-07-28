@@ -17,6 +17,10 @@ cat <<EOF
 # A service that will (re)mount a specific block device
 # to a specific directory. Intended to override the 
 # default mount point of FritzOS below /var/media/ftp.
+#
+# NOTE: This clumsy hack is replaced by the udev hook
+# /nvram/ffnvram/etc/hotplug/udev-mount-sd
+# (ffritz base image >= version 27, see readme)!
 
 ## The disc device to check
 # DEV=$DEV

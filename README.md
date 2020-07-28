@@ -129,10 +129,28 @@ openssl
 ---------------------------
 - /usr/bin/openssl is a wrapper to make sure openssl uses the correct libraries.
 
-User defined startup script
----------------------------
-The file /nvram/ffnvram/etc/init.d/rc.user can be used to add your own startup
-commands.
+User defined startup scripts
+----------------------------
+- The file /nvram/ffnvram/etc/init.d/rc.user can be used to add your own startup
+  commands.
+
+- The file /nvram/ffnvram/etc/hotplug/udev-mount-sd can be created to re-define the 
+  path where external USB storages are mounted to. A use case is when data that shall 
+  not be exposed via the FritzBox NAS there (e.g. a buildroot filesystem overlay
+  used by the application package).
+
+  The script (must be executable) is a hook in /etc/hotplug/udev-mount-sd,
+  which is called via udev when a new storage is detected.
+  The easiest way is to redefine the variable FTPDIR to a directory below which
+  the mount points will be created, e.g.
+
+        FTPDIR=/tmp/storage
+        NOEXEC=
+
+  Undefining NOEXEC will prevent the noexec mount option.
+
+  This is meant as a replacement for the remount service of the application image.
+  That one should be disabled.
 
 Software Packages
 =================

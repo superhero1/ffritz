@@ -238,6 +238,8 @@ Change history of ffritz core integration:
 release 27
 ----------
 - [7.19] Add ffritz.target after multi-user.target to prevent services from starting too early
+- Add /nvram/ffnvram/etc/hotplug/udev-mount-sd hook to control where USB storage devices
+  are mounted to. This is meant to replace the "remount" service.
 
 release 26
 ----------

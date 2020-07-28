@@ -163,8 +163,10 @@ ATOM_PATCHES = profile.patch $(shell cd atom; ls user-*.patch 2>/dev/null | sort
 
 ifeq ($(shell test $(FWMAJ) -eq 7 -a $(FWMIN) -lt 19 ; echo $$?),0)
 ATOM_PATCHES += 50-udev-default.patch
+ATOM_PATCHES += hotplug-remap-v1.patch
 else
 ATOM_PATCHES += 10-console.rules.patch
+ATOM_PATCHES += hotplug-remap-v2.patch
 endif
 
 ATOM_PATCHST=$(ATOM_PATCHES:%=atom/.applied.%)

@@ -1,0 +1,44 @@
+--- orig/etc/hotplug/udev-mount-sd	2020-01-29 17:28:36.000000000 +0100
++++ squashfs-root/etc/hotplug/udev-mount-sd	2020-07-28 09:29:29.885853362 +0200
+@@ -10,6 +10,11 @@
+ FRITZNASDBCONTROL=/etc/fritznasdb_control
+ TR069START=/bin/tr069starter
+ SYSFS=/sys
++
++## ffritz: allow remapping of storage paths/methods
++NOEXEC=noexec
++test -x /nvram/ffnvram/etc/hotplug/udev-mount-sd && . /nvram/ffnvram/etc/hotplug/udev-mount-sd
++
+ cleanup_locked() {
+ for NODE in `grep -o "/dev/sd[a-z][0-9]*" /proc/mounts `; do
+ DEV=`echo $NODE | grep -o sd[a-z]*`
+@@ -171,25 +176,25 @@
+ ;;
+ squashfs)
+ echo "MOUNT: mount -t 'squashfs' $DEVNODE $MNTPATH" >/dev/console
+-if mount -t squashfs -o ro,noexec $DEVNODE "$MNTPATH"; then
++if mount -t squashfs -o ro,$NOEXEC $DEVNODE "$MNTPATH"; then
+ new_filesystem=true
+ fi
+ ;;
+ vfat)
+ echo "MOUNT: mount -t 'vfat' $DEVNODE $MNTPATH" >/dev/console
+-if mount -t vfat -o $READMODE,noatime,shortname=winnt,uid=$FTPUID,gid=$FTPGID,utf8,$FMASK,$DMASK,noexec $DEVNODE "$MNTPATH"; then
++if mount -t vfat -o $READMODE,noatime,shortname=winnt,uid=$FTPUID,gid=$FTPGID,utf8,$FMASK,$DMASK,$NOEXEC $DEVNODE "$MNTPATH"; then
+ new_filesystem=true
+ fi
+ ;;
+ ntfs)
+ echo "MOUNT: mount -t 'antfs' $DEVNODE $MNTPATH" >/dev/console
+-if mount -t antfs -o $READMODE,noatime,utf8,noexec $DEVNODE "$MNTPATH"; then
++if mount -t antfs -o $READMODE,noatime,utf8,$NOEXEC $DEVNODE "$MNTPATH"; then
+ new_filesystem=true
+ fi
+ ;;
+ ext2|ext3|ext4)
+ echo "MOUNT:mount -t 'extX' $DEVNODE $MNTPATH" >/dev/console
+-if mount -t $filesystem_type -o noexec $DEVNODE "$MNTPATH"; then
++if mount -t $filesystem_type -o ,$NOEXEC $DEVNODE "$MNTPATH"; then
+ new_filesystem=true
+ chmod 777 "$MNTPATH"
+ fi
