@@ -7,7 +7,7 @@ package adding further services (mainly for operating the box as audio/media
 player).
 
 This README covers the first topic. For information on the application
-image see README-APP.md.
+image see [README-APP.md](README-APP.md).
 
 I take no responsibility for broken devices or other problems (e.g. with
 your provider).  Use this at your own risk.
@@ -158,7 +158,7 @@ Software Packages
 Application CPU (Atom)
 ----------------------
 In addition to the core features it is possible to install an application image
-to the Atom core. See README-APP.md for details.
+to the Atom core. See [README-APP.md](README-APP.md) for details.
 
 ARM CPU
 -------
@@ -225,5 +225,5 @@ Thanks to
 - flole for helping with gaining shell access to 6591
 - Themaister for libmaru [https://github.com/Themaister/libmaru]
 - Bluekitchen for the user space bluetooth stack [https://github.com/bluekitchen]
+- freetz project
 - AVM, after all
-

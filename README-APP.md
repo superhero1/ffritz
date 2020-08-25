@@ -193,7 +193,7 @@ For example, to start a http server on port 81:
 User space player for USB DACs (usbplayd)
 -----------------------------------------
 - Accepts inputs from mpd, shairport-sync and bluetooth.
-- Details in AUDIO.md
+- Refer to [AUDIO.md](AUDIO.md) for details.
 
 Music Player Daemon (mpd)
 -------------------------
@@ -201,18 +201,18 @@ Music Player Daemon (mpd)
 - Additional services are
 	- upmpdcli (UPNP/DLNA renderer) 
 	- ympd (http frontend at port 82) 
-- Refer to AUDIO.md for details
+- Refer to [AUDIO.md](AUDIO.md) for details
 
 ShairPort-sync Daemon (shairport)
 ---------------------------------
 - Acts as AirPort receiver
-- Refer to AUDIO.txt for details
+- Refer to [AUDIO.md](AUDIO.md) for details
 
 Bluetooth a2dp sink (bluetooth)
 ------------------------------------
 - Reports itself as "FritzBox"
 - Tested with Logitech BT stick (CSR chipset)
-- Refer to AUDIO.txt for details
+- Refer to [AUDIO.md](AUDIO.md) for details.
 
 nfs mounter
 -----------
@@ -260,7 +260,7 @@ lirc can be used to operate an IR transceiver connected to the fritzbox
 OpenVPN (openvpn)
 -----------------
 
-See OPENVPN.md
+See [OPENVPN.md](OPENVPN.md).
 
 Wireguard (wireguard)
 ---------------------

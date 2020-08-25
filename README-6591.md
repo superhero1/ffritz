@@ -9,7 +9,15 @@ This can be be patched in the firmware image by just ignoring the firmware_versi
 variable. There is some information in the IPPF forum on how to do this if you
 look for it.
 
-Completely removing the branding is possible, very dangerous and i will not document it.
+Basically, what you need to do is to copy the file user-oem.patch before building an update image:
+
+        cp user-oem.patch atom/
+        cp user-oem.patch arm/
+        make
+
+This will allow to boot the image on a branded box, but various features might not be available.
+
+Completely removing the branding is possible, dangerous and i will not document it.
 
 Checking BIOS version
 ---------------------
@@ -23,8 +31,8 @@ for recovering a bricked box!
 
 Once the .txt file is downloaded look for the BIOS strings as listed below:
 
-For BIOS < CGM2.86C.627075.R.1910091149 10/09/2019 - Update via serial console
-------------------------------------------------------------------------------
+For BIOS older CGM2.86C.627075.R.1910091149 10/09/2019 - Update via serial console
+----------------------------------------------------------------------------------
 
 This requires opening the box and connecting a UART adapter. Unless you break the
 box by doing so, this method is relatively safe since it uses the standard AVM
@@ -38,16 +46,22 @@ Update via EVA (BIOS CGM2.86C.627075.R.1910091149 10/09/2019)
 This is the more or less well known method via the EVA bootloader, using a ftp client
 to push the four required eMMC partition contents.
 
-There might be LATER BIOS VERSION .. i can't tell if/how it works there, so check twice
+There might be LATER BIOS VERSION .. i cant tell if/how it works there, so check twice
 before proceeding!
 
-Required is a ftp client which supports passive mode. Also recommended is a switch between
-your PC and the box to avoid the link going down when the box restarts. And/or the IP address
-of your host on the box network (192.168.178) should be configured statically.
+Required is a ftp client which supports passive mode. A know issue with some ftp clients
+is that they sometimes seem to time out during flash update (e.g. ncftp). I never had
+problems with the native Debian/Ubuntu ftp client.  
+Most of the linux ftp clients have problems with the line endings provided by the
+ftp server of the box. Don't be confused if reponses seem to no longer match to a command.  
+Also recommended is a switch between your PC and the box to avoid the link going down when
+the box restarts. And/or the IP address of your host on the box network (192.168.178)
+should be configured statically.
 
-1. Generate the update image as described in README.md. 
+Steps:
 
-   Once complete, there will be some image files in the subdirectory tmp/uimage:
+1.  Generate the update image as described in README.md.  
+    Once complete, there will be some image files in the subdirectory tmp/uimage:
 
         ffritz$ cd tmp/uimage/
         ffritz/tmp/uimage$ ls -l
@@ -56,31 +70,38 @@ of your host on the box network (192.168.178) should be configured statically.
         -r--r--r-- 1 felix osboxes  2335056 Apr 13 07:36 part_08_ARM_KERNEL.bin
         -rw-r--r-- 1 felix osboxes 17981440 Apr 13 07:37 part_09_ARM_ROOTFS.bin
 
-2. Repower the box and connect via ftp client after ca. 5 seconds:
+    If you have an existing update image you want to install, you can extract these bin
+    files from it using the uimg tool. For example:
+
+        make -C src/uimg
+        tar xf FRITZ.Box_6591_Cable-07.19-80492-Labor.image ./var/firmware-update.uimg
+        src/uimg/uimg -u -n part ./var/firmware-update.uimg
+
+2.  Repower the box and connect via ftp client after ca. 5 seconds:  
 
         ffritz/tmp/uimage$ ftp 192.168.178.1
 
-   user/password is adam2/adam2
+    user/password is adam2/adam2
 
-3. Configure ftp (binary/pasive)
+3.  Configure ftp (binary/pasive)  
 
         bin
         quote MEDIA FLSH
         passive
 
-4. Determine the current boot partition set:
+4.  Determine the current boot partition set:  
 
         quote GETENV linux_fs_start
 
-   This will provide the currently active partition set (0 or 1). We always
-   want to write the one which is not active, and switch to it afterwards.
+    This will provide the currently active partition set (0 or 1). We always
+    want to write the one which is not active, and switch to it afterwards.
 
-   The next steps, if done wrong, can overwrite the eMMC in a way that the
-   box can no longer start!
-   The write operations (especially part_03_ATOM_ROOTFS.bin) take some
-   minutes, so be patient.
+    The next steps, if done wrong, can overwrite the eMMC in a way that the
+    box can no longer start!
+    The write operations (especially part_03_ATOM_ROOTFS.bin) take some
+    minutes, so be patient.
 
-   To write and switch to partition set I=0 (if linux_fs_start = 1):
+    To write and switch to partition set I=0 (if linux_fs_start = 1):
 
         put part_03_ATOM_ROOTFS.bin mtd0
         put part_02_ATOM_KERNEL.bin mtd1
@@ -88,7 +109,7 @@ of your host on the box network (192.168.178) should be configured statically.
         put part_08_ARM_KERNEL.bin mtd7
         quote SETENV linux_fs_start 0
 
-   To write and switch to partition set I=1 (if linux_fs_start = 0):
+    To write and switch to partition set I=1 (if linux_fs_start = 0):
 
         put part_03_ATOM_ROOTFS.bin mtd;
         put part_02_ATOM_KERNEL.bin mtd<
@@ -96,15 +117,68 @@ of your host on the box network (192.168.178) should be configured statically.
         put part_08_ARM_KERNEL.bin mtd>
         quote SETENV linux_fs_start 1
 
-5. Reboot
+
+5.  Reboot
 
         quote REBOOT
 
-   The modified image should now start, and telnet/ssh login should be possible as described
-   in README.md. Subsequent updates can be done using the burnuimg tool.
+    The modified image should now start, and telnet/ssh login should be possible as described
+    in README.md. Subsequent updates can be done using the burnuimg tool.
 
-   If something went wrong, the box will either automatically switch back to the old boot bank,
-   or you need to change back linux_fs_start manually, or ....
+    If something went wrong, the box will either automatically switch back to the old boot bank,
+    or you need to change back linux_fs_start manually, or ....
+
+
+NOTE: Under certain circumstances (i have not yet tried to figure out when/why exactly) the bootbank
+switch does not seem to work. It is generally also OK to write to the ACTIVE partition and not
+change linux_fs_start.
+
+Getting Access to the EFI shell
+===============================
+
+This is only if you know what you can/want to do with it (and you have a serial
+connector attached)...
+
+The generic method for getting access to the EFI shell is to modify the ATOM_KERNEL
+image, which is a EFI boot partition (DOS filesystem). It contains the file
+EFI/BOOT/startup.nsh, which you need to edit.
+
+Note that this works as well for the old firmware which has console access, but
+there it is easier to just type "exit" after the "EVA hack ready" message appears
+on the console.
+
+Steps:
+
+1.  Unpack the boot image  
+
+        make -C src/uimg
+        tar xf FRITZ.Box_6591_Cable-07.19-80492-Labor.image ./var/firmware-update.uimg
+        src/uimg/uimg -u -n part ./var/firmware-update.uimg
+
+2.  Mount the boot partition  
+
+        sudo su
+        mkdir mnt
+        mount -o loop part_02_ATOM_KERNEL.bin mnt
+
+3.  Save/replace startup.nsh  
+
+        cp mnt/EFI/BOOT/startup.nsh mnt/EFI/BOOT/startorg.nsh
+        echo "mm 0xfed94810 0x00914b49 -w 4" > mnt/EFI/BOOT/startup.nsh
+        echo "mm 0xfed94820 0x00914b49 -w 4" >> mnt/EFI/BOOT/startup.nsh
+        umount mnt
+
+    This change will enable the serial output, but not load/start the linux kernel 
+    and drop to the EFI shell instead.  
+    The backup of the original (startorg.nsh) can be used to boot FritzOS from the shell.
+
+4.  Repack the image  
+
+        src/uimg/uimg -p -n part out.img
+
+5.  Program the image  
+    You can either program the whole out.img from the shell, or only update 
+    part_02_ATOM_KERNEL.bin via EVA/ftp as described above.
 
 FB6591 eMMC partition information
 =================================
@@ -130,9 +204,35 @@ P  I Content           Type         Start End    Size   Start    End
 12 1 GW_FS1           tar          7E800 927FF  14000  FD00000  124FFE00
 13   APP_CPU_NVRAM    ext4         92800 967FF  4000   12500000 12CFFE00
 14   NP_CPU_NVRAM     ext4         96800 9A7FF  4000   12D00000 134FFE00
-15   AVM_TFFS1        tffs         9A800 9E7FF  4000   13500000 13CFFE00   could be mtd2
+15   AVM_TFFS1        tffs         9A800 9E7FF  4000   13500000 13CFFE00
 16   AVM_TFFS2        tffs         9E800 A27FF  4000   13D00000 144FFE00
 17   AVM_UPD_TMP      ???          A2800 E27FF  40000  14500000 1C4FFE00
 18   AVM_MEDIA        ext4         E2800 75FFDE 67D7DF 1C500000 EBFFBC00
 ~~~
+
+SPI Flash layout
+================
+
+Old BIOS:
+
+~~~
+device		offset		size		end		Name
+--------------- --------------- --------------- --------------- ---------
+mtdblock0	0x000000	0x001000	0x001000	Descriptor
+mtdblock2	0x001000	0x0e0000	0x0e1000	ME   
+mtdblock3	0x0e1000	0x043000	0x124000	PDR
+mtdblock1	0x124000	0x0dc000	0x200000	BIOS
+~~~
+
+New BIOS:
+
+~~~
+device		offset		size		end		Name
+--------------- --------------- --------------- ---------------	---------
+mtdblock0	0x000000	0x001000	0x001000	Descriptor
+mtdblock2	0x001000	0x0d8000	0x0d9000	ME   
+mtdblock3	0x0d9000	0x04b000	0x124000	PDR
+mtdblock1	0x124000	0x0dc000	0x200000	BIOS
+~~~
+
 
