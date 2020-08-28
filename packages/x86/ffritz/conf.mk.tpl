@@ -1,4 +1,3 @@
-
 ## Additional modules in package/x86 to build and install
 #
 MODULES   += nfs
@@ -8,6 +7,8 @@ MODULES   += modules
 MODULES   += wireguard-tools
 MODULES   += shairport-sync
 MODULES   += unfs
+MODULES   += cash
+MODULES   += ffad
 
 # Options for pihole. Requires BR_VERSION other than 2019-05 in toplevel conf.mk
 ifneq ($(BR_VERSION),-2019.05)

@@ -1,8 +1,6 @@
 # Generates application image for atom
 #
 # Options: 
-#	CASH    relative path to cash tool
-#	FFAD    relative path to ffad tool
 #       NOSTRIP Set to 1 to not strip binaries (for debugging)
 #
 ARCHDIR=$(shell while test -f arch.mk && echo $$PWD && exit 0; test $$PWD != /; do cd ..; done)
@@ -63,6 +61,8 @@ MODULES   += modules
 MODULES   += wireguard-tools
 MODULES   += shairport-sync
 MODULES   += unfs
+MODULES   += cash
+MODULES   += ffad
 ifneq ($(BR_VERSION),-2019.05)
 MODULES   += ftl
 MODULES   += libmultid
@@ -74,24 +74,6 @@ endif
 #
 INSTDIRS   += src/install
 INSTDIRS   += $(MODULES:%=../%/install)
-
-ifeq ($(CASH),)
-CASH=$(shell ls -d ../cash/build/.. 2>/dev/null)
-endif
-
-ifneq ($(CASH),)
-SUBDIRS    += $(CASH)
-INSTDIRS   += $(CASH)/install
-endif
-
-ifeq ($(FFAD),)
-FFAD=$(shell ls -d ../ffad/build/.. 2>/dev/null)
-endif
-
-ifneq ($(FFAD),)
-SUBDIRS    += $(FFAD)
-INSTDIRS   += $(FFAD)/install
-endif
 
 ifeq ($(NOSTRIP),)
 NOSTRIP	    = 1
