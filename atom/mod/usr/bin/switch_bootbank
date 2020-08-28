@@ -44,7 +44,8 @@ if [ -f var/content ]; then
 	fi
 	eval `grep Version= var/content`
 	eval `grep Type= var/content`
-	echo "RUNNING firmware version: $Version $Type  [$this]  $mod"
+	eval `grep Build= var/content`
+	echo "RUNNING firmware version: $Version $Type $Build  [$this]  $mod"
 elif [ -f /etc/version ]; then
         mod=
         if [ -d /usr/lib/ff ]; then
@@ -68,7 +69,8 @@ if [ -f var/content ]; then
 	fi
 	eval `grep Version= var/content`
 	eval `grep Type= var/content`
-	echo "BACKUP firmware version: $Version $Type  [$other]  $mod"
+	eval `grep Build= var/content`
+	echo "BACKUP firmware version: $Version $Type $Build  [$other]  $mod"
 elif [ -f /mnt/etc/version ]; then
         mod=
         if [ -d /mnt/usr/lib/ff ]; then
