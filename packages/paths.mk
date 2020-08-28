@@ -14,7 +14,7 @@
 #	TGTDIR		buildroot target directory (BR/output/target)
 #	CMNDIR		real path of common sources
 
--include $(ARCHDIR)/../../conf.mk
+include $(ARCHDIR)/../../defaults.mk
 URL=
 include $(ARCHDIR)/arch.mk
 

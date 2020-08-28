@@ -1,6 +1,18 @@
 Change history of application package
 =====================================
 
+NEXT
+====
+- Merge with 6490 Branch (work in progress, not tested)
+ - Select URL in conf.mk should build an image for legacy (7.12) and
+   7.20 (completely untested)
+ - Toolchain build works
+
+ - TODO
+  - rebuild of binaries
+  - rebuild of application image
+
+
 Release puma7-17
 ----------------
 - Merge pihole branch (see [README-pihole.md](README-pihole.md))

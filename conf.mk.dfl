@@ -2,6 +2,9 @@
 # Configuration
 ################################################################################
 #
+
+##                   >> Puma7 based boxes (6591/6660) <<
+##
 ## The original firmware .image/.zip URL (or directly put the file to packages/dl)
 ##
 ## Labor images:
@@ -14,6 +17,12 @@
 #
 #URL=http://download.avm.de/firmware/6591/79013767/FRITZ.Box_6591_Cable-07.12-72501-Release.image
 URL=http://download.avm.de/firmware/6591/213215464/FRITZ.Box_6591_Cable-07.13.image
+
+##                   >> Puma6 based boxes (6490/6590) <<
+##
+#URL=http://download.avm.de/firmware/6590/96980342/FRITZ.Box_6590_Cable.de-en-es-it-fr-pl.148.07.00.image
+#URL=http://download.avm.de/firmware/6490/758467098/FRITZ.Box_6490_Cable-07.12.image
+#URL=https://download.avm.de/firmware/6490/9764886654/FRITZ.Box_6490_Cable-07.20.image
 
 ## Keep original rootfs for diff?
 ## dirdiff arm/orig/ arm/squashfs-root/
@@ -43,9 +52,14 @@ HOSTTOOLS=$(TOPDIR)/host/$(HOST)
 
 ## Toolchain option
 ## Use this option to use a newer buildroot version for the application package.
-## -2019.05   - default (no need to set here)
-## -2020.02   - Binaries will only work for FritzOS 07.19 onwards
-#
+##
+## puma6 Platforms (6490/6590)
+## -2019.05-p6      - default (no need to set here)
+##
+## puma7 Platforms (6591/6660)
+## -2019.05         - default (no need to set here)
+## -2020.02         - Binaries will only work for FritzOS 07.19 onwards
+
 #BR_VERSION=-2020.02
 
 ## Undefine this to enable parallel make for buildroot (BR2_PER_PACKAGE_DIRECTORIES).

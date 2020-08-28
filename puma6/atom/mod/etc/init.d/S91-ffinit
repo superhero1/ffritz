@@ -1,0 +1,190 @@
+#! /bin/sh
+#
+# Startup preparations for ffritz on atom.
+#
+#	- creating/transferring passwords and users
+#	- creating dropbear host keys if required
+#	- transferring dropbear host keys from persistent memory
+#	- transferring roots .ssh from persistent memory
+#	
+#
+
+export FFINSTDIR=/usr/local
+export FFRITZ_HOME=/var/media/ftp/ffritz
+export FFLOG=/var/log/ffritz.log
+
+if [ -f /lib/libc.so.1 ]; then
+    UCLIB_VERSION=`readlink -f /lib/libc.so.1 | sed -e 's/.*-\([0-9]\).*/\1/'`
+elif [ -f /lib/libc.so.0 ]; then
+    UCLIB_VERSION=`readlink -f /lib/libc.so.0 | sed -e 's/.*-\([0-9]\).*/\1/'`
+else
+    UCLIB_VERSION=1
+fi
+
+
+if [ $UCLIB_VERSION -gt 0 ]; then
+        REL=-${UCLIB_VERSION}
+fi
+
+DATADIR=$FFRITZ_HOME/data
+
+NVRAM_FILE=$DATADIR/ffstore.dat
+BINFILE=$DATADIR/ffimage${REL}.bin
+PRIVKEY=/var/flash/websrv_ssl_key.pem
+
+NVRAM_COPY=/var/tmp/ffnvram
+
+KEY_ENC=$DATADIR/key.enc
+KEY_PLAIN=/tmp/key.bin
+
+echo `date` :: ffinit >>$FFLOG
+
+## Temporarily start telnetd
+##
+/usr/bin/telnetd -l /sbin/ar7login
+nohup sh -c "sleep 300; echo killing telnetd > /dev/console; sleep 10; killall telnetd" &
+
+## Decrypt persistent storage image to /var/tmp/ffnvram
+##
+## Exit code: 0 on success, 1 otherwise
+##
+decrypt_nvram()
+{
+## look for encrypted storage
+	if [ ! -r $NVRAM_FILE -o ! -r $KEY_ENC ]; then
+		echo Encrypted storage $NVRAM_FILE or key $KEY_ENC not present >>$FFLOG
+		return 1
+	fi
+
+### Decrypt the key
+	privatekeypassword | openssl rsautl -passin stdin -decrypt -inkey $PRIVKEY -in $KEY_ENC -out $KEY_PLAIN
+
+	if [ $? -ne 0 ]; then
+		echo failed to decrypt key $PRIVKEY >>$FFLOG
+		return 1
+	fi
+
+### if found, try to decrypt it into ramfs using our private key
+	openssl enc -d -pass file:$KEY_PLAIN -pbkdf2 -iter 1000 -aes-256-cbc -in $NVRAM_FILE -out $NVRAM_COPY/nv.tar
+	rc=$?
+
+### if the first attempt fails, try again with md5 algorithm
+### (default message digest algorithm changed from md5 to sha256). So rety to re-encrypt.
+### nvsync still saves with md5, but i might changes this. For now i dont want to break
+### backwards compatibility ...
+
+	if [ $rc -ne 0 ]; then
+	    openssl enc -d -md md5 -pass file:$KEY_PLAIN -aes-256-cbc -in $NVRAM_FILE -out $NVRAM_COPY/nv.tar
+	    rc=$?
+	fi
+
+	rm -f $KEY_PLAIN
+
+	if [ $rc -ne 0 ]; then
+		echo failed to decrypt $NVRAM_FILE >>$FFLOG
+		return 1
+	fi
+
+### unpack it to ramfs
+	cd $NVRAM_COPY	|| return 1
+	tar xf $NVRAM_COPY/nv.tar || return 1
+	rm -f $NVRAM_COPY/nv.tar
+	chmod 700 $NVRAM_COPY
+}
+
+#####################################
+
+## Make users
+grep ffritz /etc/passwd >/dev/null || echo ffritz:x:8000:8000:ffritz:/var/media/ftp/ffritz:/bin/sh >> /etc/passwd
+grep ffritz /etc/group >/dev/null  || echo ffritz:x:8000: >> /etc/group
+grep usb /etc/group >/dev/null     || echo usb:x:8001:ffritz >> /etc/group
+
+# The upmpdcli user is required by the upmpdcli daemon
+#
+grep upmpdcli /etc/passwd >/dev/null || echo upmpdcli:x:8001:8000:upmpdcli:/var/media/ftp/ffritz:/bin/sh >> /etc/passwd
+
+if [ ! -d ~ffritz/.mpd ]; then
+    mkdir -p ~ffritz/.mpd
+fi
+if [ ! -d ~ffritz/etc ]; then
+    mkdir -p ~ffritz/etc
+fi
+
+chown ffritz:ffritz ~ffritz
+chown ffritz:ffritz ~ffritz/.mpd
+chown ffritz:ffritz ~ffritz/etc
+chmod 775 ~ffritz
+chmod 775 ~ffritz/.mpd
+chmod 775 ~ffritz/etc
+
+## begin log
+touch $FFLOG
+chmod 666 $FFLOG
+
+## Make a RAM copy that contains the contents of the encrypted storage
+rm -rf $NVRAM_COPY
+mkdir -p $NVRAM_COPY  
+chmod 700 $NVRAM_COPY
+
+touch /var/tmp/openssl.cnf
+
+decrypt_nvram
+
+## If something went wrong with decrypting nvram storage, try legacy mode
+## (copy from /nvram on ARM)
+#
+# XXX Dont do this any more, rpc issues might cause boot hang/reset
+#
+#if [ $? -ne 0 ]; then
+#	echo failed to decrypt nvram image, copying /nvram data >>$FFLOG
+#	rpc tar cf - nvram/shadow nvram/root-ssh_x86 nvram/dropbear_x86 | (cd $NVRAM_COPY; tar xf -)
+#	mv $NVRAM_COPY/nvram/shadow $NVRAM_COPY
+#	mv $NVRAM_COPY/nvram/root-ssh_x86 $NVRAM_COPY/root-ssh
+#	mv $NVRAM_COPY/nvram/dropbear_x86 $NVRAM_COPY/dropbear
+#	rmdir $NVRAM_COPY/nvram
+#fi
+
+# by default, /var/tmp/shadow is the default from var.tar, use it if we don't have one
+#
+if [ ! -r $NVRAM_COPY/shadow ]; then
+	touch /var/tmp/shadow
+	cp /var/tmp/shadow $NVRAM_COPY/shadow
+fi
+chmod 600 $NVRAM_COPY/shadow
+
+## install data to correct places
+rm -f /var/tmp/shadow
+ln -s $NVRAM_COPY/shadow /var/tmp/shadow
+
+# Assign a default password (guess what) if none is assigned (default shadow entry)
+# Not
+### sed -i -e 's@root:\*:@root:vtkAjfLuCv31E:@' /etc/shadow
+
+rm -rf /var/tmp/dropbear
+mkdir -p $NVRAM_COPY/dropbear
+chmod 700 $NVRAM_COPY/dropbear
+ln -s $NVRAM_COPY/dropbear /var/tmp/dropbear
+
+rm -rf /var/tmp/root-ssh
+mkdir -p $NVRAM_COPY/root-ssh
+chmod 700 $NVRAM_COPY/root-ssh
+ln -s $NVRAM_COPY/root-ssh /var/tmp/root-ssh
+
+## create dropbear RSA private key
+## This is supposed to work even if all of the above failed to be able to start
+## a dropbear daemon. The final fallback is the temporary telnet daemon ..
+##
+if [ ! -f /var/tmp/dropbear/dropbear_rsa_host_key.cvt -o ! -f /var/tmp/dropbear/rsa_key_dontoverwrite ]; then
+	privatekeypassword | openssl rsa -passin stdin -in $PRIVKEY -out /tmp/websrv_ssl_key_dec.pem && \
+		dropbearconvert openssh dropbear /tmp/websrv_ssl_key_dec.pem /var/tmp/dropbear/dropbear_rsa_host_key.cvt
+	rm -f /tmp/websrv_ssl_key_dec.pem
+
+	## install as private rsa key. If this fails, dropbear will either use an existing one from 
+	## /nvram or fail to start. We dont want to use random host keys for each startup.
+	if [ -r /var/tmp/dropbear/dropbear_rsa_host_key.cvt ]; then
+		mv /var/tmp/dropbear/dropbear_rsa_host_key.cvt /var/tmp/dropbear/dropbear_rsa_host_key
+	else
+		echo failed to convert box private key to dropbear private key >>$FFLOG
+	fi
+fi
+

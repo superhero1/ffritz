@@ -1,0 +1,87 @@
+diff -urN lirc-tools-0.10.1/Makefile.am lirc-tools-0.10.1.p/Makefile.am
+--- lirc-tools-0.10.1/Makefile.am	2017-09-10 04:52:19.000000000 -0400
++++ lirc-tools-0.10.1.p/Makefile.am	2019-05-10 16:41:59.491762760 -0400
+@@ -139,7 +139,7 @@
+ 	    $(DESTDIR)$(lirc_confdir)/lirc_options.conf
+ 	cp -pr $(srcdir)/contrib $(DESTDIR)$(pkgdatadir)
+ 	chmod u+w $(DESTDIR)$(includedir)
+-	cd $(DESTDIR)$(includedir)/lirc; ln -s include/media .
++	cd $(DESTDIR)$(includedir)/lirc; ln -s include/media . || true
+ 
+ uninstall-hook:
+ 	-chmod -R u+w $(DESTDIR)/$(pkgdatadir)/contrib
+diff -urN lirc-tools-0.10.1/Makefile.in lirc-tools-0.10.1.p/Makefile.in
+--- lirc-tools-0.10.1/Makefile.in	2017-09-10 04:52:38.000000000 -0400
++++ lirc-tools-0.10.1.p/Makefile.in	2019-05-10 16:42:11.539675045 -0400
+@@ -1584,7 +1584,7 @@
+ 	    $(DESTDIR)$(lirc_confdir)/lirc_options.conf
+ 	cp -pr $(srcdir)/contrib $(DESTDIR)$(pkgdatadir)
+ 	chmod u+w $(DESTDIR)$(includedir)
+-	cd $(DESTDIR)$(includedir)/lirc; ln -s include/media .
++	cd $(DESTDIR)$(includedir)/lirc; ln -s include/media . || true
+ 
+ uninstall-hook:
+ 	-chmod -R u+w $(DESTDIR)/$(pkgdatadir)/contrib
+diff -urN lirc-tools-0.10.1/plugins/irtoy.c lirc-tools-0.10.1.p/plugins/irtoy.c
+--- lirc-tools-0.10.1/plugins/irtoy.c	2017-09-10 04:52:19.000000000 -0400
++++ lirc-tools-0.10.1.p/plugins/irtoy.c	2019-05-10 16:43:16.171230842 -0400
+@@ -202,6 +202,8 @@
+ 	ssize_t rc;
+ 	size_t numread = 0;
+ 	struct pollfd pfd = {.fd = fd, .events = POLLIN, .revents = 0};
++	struct stat st;
++	int loop = 0;
+ 
+ 	rc = read(fd, (char*)buf, count);
+ 
+@@ -209,6 +211,7 @@
+ 		numread += rc;
+ 
+ 	while ((rc == -1 && errno == EAGAIN) || (rc >= 0 && numread < count)) {
++		loop++;
+ 
+ 		rc = curl_poll(&pfd, 1, to_usec / 1000);
+ 
+@@ -219,10 +222,26 @@
+ 			/* continue for EAGAIN case */
+ 			continue;
+ 
++		errno = 0;
+ 		rc = read(fd, ((char*)buf) + numread, count - numread);
+ 
+-		if (rc > 0)
++		if (rc > 0) {
+ 			numread += rc;
++			loop = 0;
++		}
++		else if ((errno == ENXIO) ||
++			 (fstat (fd, &st) == -1) ||
++			 (loop > 50)) {
++			/* This is what happens if i unplug irtoy at runtime:
++			 * - poll (select variant) returns successfully,
++			 * - fstat succeeds (/dev/ttyACM0 still exists (?)
++			 * - Read returns 0 (no error, would expect ENXIO)
++			 * -> endless loop at full CPU load (terminated after 50 here)
++			 */
++			log_error("irtoy: Hardware disconnect? Exiting. (loop=%d, %s)\n",
++				loop, strerror(errno));
++			exit (1);
++		}
+ 	}
+ 	return (numread == 0) ? -1 : numread;
+ }
+diff -urN lirc-tools-0.10.1/tools/irexec.cpp lirc-tools-0.10.1.p/tools/irexec.cpp
+--- lirc-tools-0.10.1/tools/irexec.cpp	2017-09-10 04:52:19.000000000 -0400
++++ lirc-tools-0.10.1.p/tools/irexec.cpp	2019-05-10 16:43:16.171230842 -0400
+@@ -82,9 +82,10 @@
+ 			      NULL
+ 			};
+ 			execvp(SH_PATH, vp);
+-			/* not reached */
++			/* not reached, unless there was an error */
+ 			log_perror_err("execvp failed");
+ 			fputs("execvp failed\n", stderr);
++			exit(EXIT_FAILURE);
+ 		} else {
+ 			waitpid(pid2, NULL, WNOHANG);
+ 			exit(0);

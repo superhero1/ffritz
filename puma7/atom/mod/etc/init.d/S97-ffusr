@@ -1,0 +1,13 @@
+#!/bin/sh
+
+## run startup script
+##
+if [ -x /usr/local/etc/init.d/rc.user ]; then
+    	echo executing /usr/local/etc/init.d/rc.user >> $FFLOG
+	/usr/local/etc/init.d/rc.user >> $FFLOG
+fi
+
+if [ -x /var/tmp/ffnvram/etc/rc.user ]; then
+    	echo executing /var/tmp/ffnvram/etc/rc.user >> $FFLOG
+	/var/tmp/ffnvram/etc/rc.user >> $FFLOG
+fi

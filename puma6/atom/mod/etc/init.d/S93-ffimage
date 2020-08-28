@@ -1,0 +1,76 @@
+#! /bin/sh
+#
+# Verify and mount application image to /usr/local
+#
+
+export FFINSTDIR=/usr/local
+export FFRITZ_HOME=/var/media/ftp/ffritz
+export FFLOG=/var/log/ffritz.log
+
+UCLIB_VERSION=1
+if [ -f /lib/libc.so.0 ]; then
+	UCLIB_VERSION=`readlink -f /lib/libc.so.0 | sed -e 's/.*-\([0-9]\).*/\1/'`
+elif [ -f /lib/libc.so.1 ]; then
+	UCLIB_VERSION=`readlink -f /lib/libc.so.1 | sed -e 's/.*-\([0-9]\).*/\1/'`
+fi
+
+if [ $UCLIB_VERSION -gt 0 ]; then
+	REL=-${UCLIB_VERSION}
+fi
+
+DATADIR=$FFRITZ_HOME/data
+
+NVRAM_FILE=$DATADIR/ffstore.dat
+BINFILE=$DATADIR/ffimage${REL}.bin
+PRIVKEY=/var/flash/websrv_ssl_key.pem
+
+NVRAM_COPY=/var/tmp/ffnvram
+
+CSUMFILE=${NVRAM_COPY}/ffimage${REL}.sha256
+
+## Check for presence of squashfs overlay, verify sha256sum 
+##
+## Exit code: 0 if image exists and checksum is OK, 1 otherwise
+##
+verify_image()
+{
+## Look for a squashfs overlay for /usr/local
+	if [ ! -r $BINFILE ]; then
+		echo no ffimage found >>$FFLOG
+		return 1
+	fi
+
+### If there is a sh256 digest stored in nvram, verify image against it
+	if [ -r ${CSUMFILE} ]; then
+		FSIG=`cat ${CSUMFILE}`
+		VSIG=`openssl dgst -sha256 $BINFILE | sed -e 's/.* //'`
+
+		if [ "$FSIG" != "$VSIG" ]; then
+			echo sha256sum of $BINFILE is invalid >>$FFLOG
+			return 1
+		else
+			return 0
+		fi
+	fi
+
+### (other methods, e.g. sign with private key ...)
+	return 1
+}
+
+##########################################################################
+
+## check binary image (squashfs overlay for /usr/local)
+verify_image
+
+if [ $? -eq 0 ]; then
+	mount -o loop $BINFILE /usr/local
+	[ $? -ne 0 ] && echo Failed to mount $BINFILE to /usr/local >>$FFLOG
+fi
+
+# A log rotator
+#
+if [ -x $FFINSTDIR/etc/fflogrotate ]; then
+	$FFINSTDIR/bin/ffdaemon -i 60 $FFINSTDIR/etc/fflogrotate 
+fi
+
+

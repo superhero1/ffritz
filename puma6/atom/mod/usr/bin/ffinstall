@@ -1,0 +1,137 @@
+#!/bin/sh
+#
+# Simple installer for ff release image
+# Verifies checksum, copies to right places and updates nvram
+#
+# usage: ffinstall image-file sha256sum
+#
+#
+export FFRITZ_HOME=/var/media/ftp/ffritz
+
+if [ -f /lib/libc.so.1 ]; then
+    UCLIB_VERSION=`readlink -f /lib/libc.so.1 | sed -e 's/.*-\([0-9]\).*/\1/'`
+elif [ -f /lib/libc.so.0 ]; then
+    UCLIB_VERSION=`readlink -f /lib/libc.so.0 | sed -e 's/.*-\([0-9]\).*/\1/'`
+else
+    UCLIB_VERSION=1
+fi
+
+REL=
+if [ $UCLIB_VERSION -gt 0 ]; then
+	REL=-${UCLIB_VERSION}
+fi
+
+DATADIR=$FFRITZ_HOME/data
+TMPDIR=$DATADIR/tmp
+BINFILE=$DATADIR/ffimage${REL}.bin
+CSUMFILE=/var/tmp/ffnvram/ffimage${REL}.sha256
+
+restart=0
+if [ "$1" = "-r" ]; then
+	restart=1
+	shift
+fi
+
+if [ "$1" = "" -o "$2" = "" ]; then
+	echo "usage: $0 [-r] release-image sha256sum"
+	echo "       release-image can be relative to /var/media/ftp"
+	echo "       -r : Attempt to stop/kill all processes using /usr/local,"
+	echo "            unmount, install, remount and restart"
+	exit 1
+fi
+
+if [ -f $1 ]; then
+	relfile=$1
+elif [ -f /var/media/ftp/$1 ]; then
+	relfile=/var/media/ftp/$1
+else
+	echo usage: $0 release-image
+	exit 1
+fi
+
+csum=$2
+
+if [ $restart -eq 1 ]; then
+    	if [ -f /usr/local/etc/ffshutdown ]; then
+	    /usr/local/etc/ffshutdown
+	fi
+
+	pids=`busybox lsof | grep /usr/local | sort -u |sed -e 's/[^0-9].*//'`
+	if [ "$pids" != "" ]; then
+		echo +++ stopping PIDs $pids
+		kill $pids
+	fi
+	
+	sleep 2
+	pids=`busybox lsof | grep /usr/local | sort -u |sed -e 's/[^0-9].*//'`
+	if [ "$pids" != "" ]; then
+		echo killing PIDs $pids
+		kill -9 $pids
+		sleep 2
+	fi
+
+	mount|grep /usr/local >/dev/null
+
+	if [ $? -eq 0 ]; then
+		umount /usr/local
+		if [ $? -ne 0 ]; then
+			echo FAILED to unmount /usr/local 1>&2
+			exit 1
+		fi
+	fi
+fi
+
+rm -rf ${TMPDIR}
+mkdir -p ${TMPDIR} || exit 1
+
+echo +++ Unpacking
+tar -x -C ${TMPDIR} -f $relfile || exit 1
+
+echo +++ Verifying compatibility
+
+if [ -r ${TMPDIR}/uclib-version ]; then
+	nver=`cat ${TMPDIR}/uclib-version`
+else
+	nver=0
+fi
+
+if [ $nver -ne ${UCLIB_VERSION} ]; then
+	echo FAILED: Expected uClibc major version ${UCLIB_VERSION}, image is for $nver
+	exit 1
+fi
+
+echo +++ Verifying sha256sum
+
+FSIG=`cat ${TMPDIR}/ffimage.sha256sum`
+VSIG=`openssl dgst -sha256 ${TMPDIR}/ffimage.bin | sed -e 's/.* //'`
+
+if [ "$VSIG" != "$FSIG" ]; then
+	echo " Does not match, expected $FSIG, got $VSIG"
+	exit 1
+fi
+
+if [ "$VSIG" != "$csum" ]; then
+	echo " Does not match, expected $FSIG, given $csum"
+	exit 1
+fi
+
+if [ -f $BINFILE ]; then
+	echo +++ Backing up old image
+	rm -f ${BINFILE}.old
+	mv ${BINFILE} ${BINFILE}.old
+fi
+
+echo +++ Installing
+mv ${TMPDIR}/ffimage.sha256sum ${CSUMFILE} || exit 1
+mv ${TMPDIR}/ffimage.bin ${BINFILE} || exit 1
+
+echo +++ Synchronizing nvram
+nvsync || exit 1
+
+if [ $restart -eq 1 ]; then
+	echo +++ Remounting
+	/etc/init.d/S93-ffimage || exit 1
+
+	echo +++ Starting services
+	/etc/init.d/S94-ffstart || exit 1
+fi
