@@ -1,0 +1,25 @@
+From 3d63bcd33af2169719ee2d7a8c79cce1ef46f05e Mon Sep 17 00:00:00 2001
+From: Felix Schmidt <fesc2000@gmail.com>
+Date: Mon, 31 Aug 2020 15:26:52 +0200
+Subject: [PATCH] Fix Makefile for cash_wrap.so
+
+---
+ Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index bea5d3c..2321d0c 100644
+--- a/Makefile
++++ b/Makefile
+@@ -199,7 +199,7 @@ clean:
+ $(OBJDIR)/libcash.a:	$(DYNCALL_LIB) ${BUILD_OBJS} 
+ 	${CROSS_COMPILE}ar crus $@ ${BUILD_OBJS} $(shell ls $(DYNCALL_DIR)/dyncall/*.o)
+ 
+-$(OBJDIR)/cash_wrap.so:	${BUILD_SHOBJS} $(shell ls $(DYNCALL_DIR)/dyncall/*.o)
++$(OBJDIR)/cash_wrap.so:	${BUILD_SHOBJS} $(DYNCALL_LIB)
+ 	${CROSS_COMPILE}gcc -fPIC -shared -o $@ $^ ${LDFLAGS} ${LIBS}  -pthread -lm 
+ 	cp $@ .
+ 
+-- 
+2.17.1
+
