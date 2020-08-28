@@ -46,6 +46,7 @@ purge:   - If the service file once was a symlink, restore the symlink.
          necessary, but an already existing backup will get overwritten!
          The backup location will be printed.
 status   Print status information on service.
+running  Exit code 0 if service reports STATUS=on, 1 if off, 2 if unknown
 EOF
 }
 
@@ -115,13 +116,13 @@ case $op in
 		;;
 	start)	$service_file start $conf_file_opt ;;
 	stop)   $service_file stop $conf_file_opt ;;
-	enable) ln -sfv ../init.d/$service_fname .; nvsync;;
-	disable) rm -fv $NVRAM/etc/rc.d/$service_fname; nvsync;; 
+	ena*) ln -sfv ../init.d/$service_fname .; nvsync;;
+	dis*) rm -fv $NVRAM/etc/rc.d/$service_fname; nvsync;; 
 	restart) $service_file stop $conf_file_opt
 		 sleep 3
 		 $service_file start $conf_file_opt
 		 ;;
-	config) mkdir -p $NVRAM/etc/conf.d
+	conf*) mkdir -p $NVRAM/etc/conf.d
 		if [ ! -r "$conf_file" ]; then
 			echo "# Configuration options/script for $service" > $conf_file
 			grep Xfeature:getconfig $service_file >/dev/null
@@ -163,7 +164,7 @@ case $op in
 		fi
 		nvsync
 		;;
-	status)
+	stat*)
 		if [ ! -z `which tput` ]; then
 			bold=`tput bold 2>/dev/null`
 			rev=`tput rev 2>/dev/null`
@@ -212,6 +213,20 @@ case $op in
 		    -e "s/\(signal([0-9]*)\)/${red}\1${norm}/" \
 		    -e "s/\(coredump\)/${red}${bold}\1${norm}/"
 		rm -f /tmp/$$.f
+		;;
+		
+	running)
+		grep Xfeature:getconfig $service_file >/dev/null
+		if [ $? -ne 0 ]; then
+			exit 2
+		fi
+		STATUS=
+		eval `$service_file info $conf_file_opt | grep =` 2>/dev/null
+		if [ -z $STATUS ]; then
+			exit 2
+		fi
+		test $STATUS = on && exit 0
+		exit 1
 		;;
 		
 	*)	usage;;

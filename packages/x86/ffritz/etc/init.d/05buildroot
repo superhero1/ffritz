@@ -75,34 +75,37 @@ mtab()
 			mtab_flash $BR_USER_OVERLAY
 		else
 			echo user overlay $BR_USER_OVERLAY does not exist 1>&2
-			exit 1
+			return 1
 		fi
-		exit 0
+		return 0
 	fi
 	if [ "$BR_USER_COPY" != "" ]; then
 		if [ ! -d $BR_USER_COPY ]; then
 			if [ ! -d `dirname $BR_USER_COPY` ]; then
 				echo Parent of user copy $BR_USER_COPY does not exist 1>&2
-				exit 1
+				return 1
 			fi
 			cp -a /usr/local/buildroot $BR_USER_COPY
 			if [ $? -ne 0 ]; then
 				rm -rf $BR_USER_COPY
 				echo Error bootstrapping to $BR_USER_COPY 1>&2
-				exit 1
+				return 1
 			fi
 		fi
 		mtab_redir $BR_USER_COPY
-		exit 0
+	else
+		mtab_ram
 	fi
 
-	mtab_ram
+	return 0
 }
 
 # Reverse mount table
+# Uses saved / currently active mount table if present
+#
 mtab_r()
 {
-	mtab | grep -n "" |sort -nr|sed -e 's/^[0-9]*://'
+	{ mtab_active 2>/dev/null || mtab; } | grep -n "" |sort -nr|sed -e 's/^[0-9]*://'
 }
 
 umount_all()
@@ -121,6 +124,7 @@ abort()
 	echo $*
 	umount_all
 	umount_all
+	rm -rf $tmp_mtab $BR_CONF_ACTIVE
 	exit 1
 }
 
@@ -175,6 +179,9 @@ if [ "x$1" = "xstop" ]; then
 fi
 
 if [ "x$1" = "xinfo" ]; then
+#
+# Status is assumed on if active config file exists
+#
 	if [ -r "$BR_CONF_ACTIVE" ]; then
 		echo STATUS=on
 	else
@@ -262,7 +269,11 @@ fi
 
 mkdir -p $BR_DIR
 
-mtab | while read line; do
+tmp_mtab=/tmp/$$-mtab.tmp
+
+mtab > $tmp_mtab || abort
+
+cat $tmp_mtab | while read line; do
 	set $line __x
 	mkdir -p $BR_DIR/$1
 	if [ "$2" = "NVRAM" ]; then
@@ -276,6 +287,21 @@ mtab | while read line; do
 		mount -t $2 none $BR_DIR/$1 
 	fi
 done
+
+# save mount table in status file for later unmount
+#
+{
+	echo
+	echo 'mtab_active()'
+	echo '{'
+	echo 'cat<<EOF'
+	cat $tmp_mtab
+	echo 'EOF'
+	echo '}'
+} >> $BR_CONF_ACTIVE
+
+rm -f $tmp_mtab
+
 
 # prepare passwd for buildroot, preserving existing settings,
 # but make sure ffritz and upmpdcli users are identical to

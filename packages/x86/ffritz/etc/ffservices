@@ -89,10 +89,10 @@ fi
 # wait for all FB services to be up ... :-(
 # Otherwise trouble with USB, OpenVPN, ...
 #
-# This is still a hack, just wait until dsld is running
+# This is still a hack, just wait until wpa_supplicant is running
 #
 timeout=50
-while [ $timeout -gt 0 -a "`pidof dsld`" = "" ]; do
+while [ $timeout -gt 0 -a "`pidof wpa_supplicant`" = "" ]; do
 	sleep 1
 	tmo=$((tmo - 1))
 done
