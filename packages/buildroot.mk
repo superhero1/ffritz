@@ -35,29 +35,16 @@ endif
 DEFCONF = $(shell basename $(DEFCONF_FILE))
 DEFCONF_TGT = $(BUILDDIR)/configs/$(DEFCONF)
 
-PACKAGE_MODS = $(shell find package | grep -v '^package$$')
-PACKAGE_MOD_TGT = $(PACKAGE_MODS:%=build/%)
-
-all:	$(BUILDDIR) $(PACKAGE_MOD_TGT) $(DEFCONF_TGT)
+all:	$(BUILDDIR) $(DEFCONF_TGT)
 ifeq ($(DEFCONF),user_defconfig)
 	@touch mod/ffritz_defconfig
 endif
-	@if [ -r .clean ]; then \
-		for d in `sort -u .clean`; do \
-			echo Re-generating build/package/$$d ..;\
-			test -z $$d || rm -rf build/package/$$d; \
-			tar xf $(FILE) --strip-components=1 -C $(BUILDDIR) --wildcards ''\*/package/$$d'';\
-			cp -r package/$$d build/package; \
-		done;\
-		make -C build `sort -u .clean | sed -e 's/$$/-dirclean/'`; \
-	fi
-	@rm -f .clean
 	@make -C build $(BR_FLAGS)
 	@if [ "$(BUILDROOT_TARGETS)" != "" ]; \
 		then make -C build $(BR_FLAGS) $(BUILDROOT_TARGETS); fi
 
 $(DEFCONF_TGT): $(DEFCONF_FILE)
-	@cp $(DEFCONF_FILE) $(DEFCONF_TGT)
+	cp $(DEFCONF_FILE) $(DEFCONF_TGT)
 ifneq ($(PARALLEL),)
 	@echo 'BR2_PER_PACKAGE_DIRECTORIES=y' >> $(DEFCONF_TGT)
 else
@@ -65,11 +52,6 @@ else
 endif
 	echo Using configuration: $(DEFCONF)
 	@make -C $(BUILDDIR) $(DEFCONF)
-
-$(PACKAGE_MOD_TGT): $(PACKAGE_MODS)
-	@if [ $(@:build/%=%) -nt $@ ]; then \
-		echo $@ | sed -e 's@build/package/\([^/]*\).*@\1@' >> .clean;\
-	fi
 
 base:	$(BUILDDIR) $(DEFCONF_TGT) $(PACKAGE_MOD_TGT)
 	make -C build $(BR_FLAGS) $(TOOLCHAIN)
@@ -96,14 +78,13 @@ $(BUILDDIR): $(FILE) $(PATCHES)
 	@mkdir -p $(BUILDDIR)
 	@cd $(BUILDDIR); tar xf $(FILE) --strip-components=1
 	@cd build; for p in $(PATCHES); do \
-		patch -p1 < ../$$p |\
-		grep 'patching file package/' |\
-		sed -e 's@.*package/\([^/]*\).*@\1@' >> ../.clean;\
+		patch -p1 < ../$$p; \
 	done
+	@cp -ar package $(BUILDDIR)
 	@touch $(BUILDDIR)
 
 clean:
-	rm -rf build .clean .*.stamp .*.applied sdk-buildroot
+	rm -rf build .*.stamp .*.applied sdk-buildroot
 
 sdk:	sdk-buildroot/relocate-sdk.sh
 

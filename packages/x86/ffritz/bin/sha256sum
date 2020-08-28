@@ -1,0 +1,1 @@
+exec shasum -a 256 $*

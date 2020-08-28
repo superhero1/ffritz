@@ -19,10 +19,11 @@ $(BUILDDIR)/configure:    $(FILE)
 	@rm -rf $(BUILDDIR)
 	@mkdir -p $(BUILDDIR)
 	@cd $(BUILDDIR); unzip $(FILE) && mv fuse-nfs-master/* .
+	cd $(BUILDDIR); patch -p1 < ../nodoc.patch
 	cd $(BUILDDIR); ./setup.sh
 
 $(BUILDDIR)/config.status:	$(BUILDDIR)/configure
-	@cd $(BUILDDIR); export PATH=$(TOOLCHAIN):$(PATH); ./configure --host=i686-buildroot-linux-gnu --target=i686-buildroot-linux-gnu --prefix=/
+	@cd $(BUILDDIR); export PATH=$(TOOLCHAIN):$(PATH); ./configure --host=i686-buildroot-linux-gnu --target=i686-buildroot-linux-gnu --prefix=/ --disable-doc --disable-docs --disable-documentation
 
 install: $(DFILE)
 

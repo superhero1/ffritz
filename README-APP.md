@@ -36,30 +36,27 @@ The service name is preceded by two digits controlling the initialization order.
 
 The tool "ffservice" provides a simple script to operate services:
 
-	ffservice start _servicename_
-	ffservice stop _servicename_
-	ffservice restart _servicename_
-		Self explaining
-
-	ffservice enable _servicename_
-	ffservice disable _servicename_
-		Enable/disable a service at startup
-
-	ffservice edit _servicename_
-		Edit the service script in $NVRAM/etc/init.d.
-		If it was a symlink, the link will be "broken".
-		Can be restored via purge.
-
-	ffservice config _servicename_
-		Edit the service configuration file in $NVRAM/etc/conf.d,
-		if supported by the service.
-
-	ffservice purge
-		Restore symlink to original service script, if it existed.
-		Removes service configuration file, defaults will be used.
-
-	ffservice list
-		List services
+- ffservice start _servicename_
+- ffservice stop _servicename_
+- ffservice restart _servicename_
+	- Self explaining
+- ffservice enable _servicename_
+- ffservice disable _servicename_
+	- Enable/disable a service at startup
+- ffservice edit _servicename_
+	- Edit the service script in $NVRAM/etc/init.d.
+	  If it was a symlink, the link will be "broken".
+	  Can be restored via purge.
+- ffservice config _servicename_
+	- Edit the service configuration file in $NVRAM/etc/conf.d,
+	  if supported by the service.
+- ffservice purge
+	- Restore symlink to original service script, if it existed.
+	- Removes service configuration file, defaults will be used.
+- ffservice list
+	- List services
+- ffservice status
+	- Show status of all services
 
 Most user editable configuration files for these services are located
 below
@@ -86,21 +83,23 @@ Usage: ffdaemon [daemon-args] executable [executable-args]
 
 daemon-args are:
 
-       -n              : No daemon mode
-       -C              : Do not close file descriptors
-       -r user[:group] : run as user[:group]
-       -i secs         : Restart delay after program terminates
-       -l loops        : Number of loops to run (0 = default = endless)
-       -N name         : Name service rather than using the executable name
-       -L              : List all services
-       -K name         : Kill named service (%all for all)
-       -R name         : Restart named service (%all for all)
-       -o dir          : Run service after chroot to dir
-       -H [SPEC=NUM],* : Call setrlimit for given RLIMIT_SPEC before executing
-                         client. e.g. STACK=2m,DATA=100m will set hard limit
-			 of RLIMIT_STACK/DATA to 2MB/100MB, as well as the
-                         soft limit if its greater than the hard limit.
-                         See setrlimit(2)
+~~~
+-n              : No daemon mode
+-C              : Do not close file descriptors
+-r user[:group] : run as user[:group]
+-i secs         : Restart delay after program terminates
+-l loops        : Number of loops to run (0 = default = endless)
+-N name         : Name service rather than using the executable name
+-L              : List all services
+-K name         : Kill named service (%all for all)
+-R name         : Restart named service (%all for all)
+-o dir          : Run service after chroot to dir
+-H [SPEC=NUM],* : Call setrlimit for given RLIMIT_SPEC before executing
+                  client. e.g. STACK=2m,DATA=100m will set hard limit
+                  of RLIMIT_STACK/DATA to 2MB/100MB, as well as the 
+                  soft limit if its greater than the hard limit.
+                  See setrlimit(2)
+~~~
 
 Following is a list of services (service name in brackets).
 
@@ -154,11 +153,11 @@ Option (3):
 
 -	Edit service configuration ("ffservice config buildroot")
 -	Add the line BR_USER_COPY=/var/media/ftp/my-root
--   If the directory does not exist it will be created and 
-    populated with a copy of the buildroot template
+-	If the directory does not exist it will be created and 
+    	populated with a copy of the buildroot template
 	(usr/local/buildroot).
--   From this time on it will be used as (writable) root filesystem
-    for the buildroot service.
+-   	From this time on it will be used as (writable) root filesystem
+    	for the buildroot service.
 
 Option 1 is a lightweight mechanism to just start some tools or services that
 do not require write access to /usr or other locations which are read-only.
@@ -245,15 +244,15 @@ lirc can be used to operate an IR transceiver connected to the fritzbox
 - General configuration settings (used driver, network port, ...) can be
   modified in
 
-	/var/media/ftp/ffritz/lirc_options.conf
+		/var/media/ftp/ffritz/lirc_options.conf
 
 - Remote control configuration can be placed into
 
-	/var/media/ftp/ffritz/etc/lirc/lircd.conf.d
+		/var/media/ftp/ffritz/etc/lirc/lircd.conf.d
 
 - To restart lirc after doing this:
 
-	ffdaemon -R lircd
+		ffdaemon -R lircd
 
 - For irdroid/irtoy the cdc-acm kernel module is packaged and installed.
 
@@ -296,6 +295,10 @@ Caveats:
   It is too slow and memory buffers will eventually lead to the daemon exceeding
   its memory limit (-> crash).
 
+pihole (pihole)
+---------------
+Requires a specific buildroot setup. See [README-pihole.md](README-pihole.md).
+
 Building the application image
 ==============================
 
@@ -306,7 +309,7 @@ You can either use the pre-built images from
   ftp://ftp.ffesh.de/pub/ffritz/FritzOS7/daily/
 - or build it by yourself:
 
-	make package-atom
+		make package-atom
 
 This will rebuild the image in packages/x86/ffritz.
 
@@ -327,15 +330,15 @@ The image is distributed as ffritz-app-puma7-VERSION-fos7.tar. To install it,
 
 - Copy it to the box NAS directory 
 
-	scp image.tar root@192.168.178.1:/var/media/ftp
+		scp image.tar root@192.168.178.1:/var/media/ftp
 
 - Log in and install it
 
-	ffinstall image.tar CHECKSUM
+		ffinstall image.tar CHECKSUM
 
 - OR install, terminate old and start new image/services:
 
-	ffinstall -r image.tar CHECKSUM
+		ffinstall -r image.tar CHECKSUM
 
   The checksum (it is NOT the checksum of the tar file!) is the sha256sum
   listed on the download page, or generated by the build
@@ -357,7 +360,7 @@ If you do not want to restart the box after installing a new image:
 
 - Stop all ffritz services:
 
-	/usr/local/etc/ffshutdown
+		/usr/local/etc/ffshutdown
 
 - Run mount script for new image: /etc/init.d/S93-ffimage
 - Start services: /etc/init.d/S94-ffstart

@@ -1,0 +1,8 @@
+--- build/doc/Makefile.am	2018-04-16 22:03:58.000000000 +0200
++++ build-2020.02/doc/Makefile.am	2020-05-29 17:02:31.679935325 +0200
+@@ -6,4 +6,4 @@
+ man1_MANS = fuse-nfs.1
+ 
+ fuse-nfs.1:fuse-nfs.xml
+-	-test -z "$(XSLTPROC)" || $(XSLTPROC) -o fuse-nfs.1 http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl fuse-nfs.xml
++	touch $@

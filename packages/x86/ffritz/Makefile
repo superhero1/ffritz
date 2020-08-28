@@ -49,20 +49,31 @@ endif
 IMAGE       = ffritz-app-$(VERSION)-fos7$(FOS_SUB_VERSION).tar
 CSUM	    = ffritz-app-$(VERSION)-fos7$(FOS_SUB_VERSION).sha256sum
 
+-include conf.mk
+
 ifeq ($(INSTDIR),)
     INSTDIR=$(STAGEDIR)
+endif
+
+ifeq ($(MODULES),)
+MODULES   += nfs
+MODULES   += bt
+MODULES   += prtg
+MODULES   += modules
+MODULES   += wireguard-tools
+MODULES   += shairport-sync
+MODULES   += unfs
+ifneq ($(BR_VERSION),-2019.05)
+MODULES   += ftl
+MODULES   += libmultid
+MODULES   += pi-hole
+endif
 endif
 
 ## Packages with (build/)install target
 #
 INSTDIRS   += src/install
-INSTDIRS   += ../nfs/install 
-INSTDIRS   += ../bt/install 
-INSTDIRS   += ../prtg/install 
-INSTDIRS   += ../modules/install
-INSTDIRS   += ../wireguard-tools/install
-INSTDIRS   += ../shairport-sync/install
-INSTDIRS   += ../unfs/install
+INSTDIRS   += $(MODULES:%=../%/install)
 
 ifeq ($(CASH),)
 CASH=$(shell ls -d ../cash/build/.. 2>/dev/null)

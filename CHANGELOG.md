@@ -1,6 +1,10 @@
 Change history of application package
 =====================================
 
+Release puma7-17
+----------------
+- Merge pihole branch (see [README-pihole.md](README-pihole.md))
+
 Release puma7-16
 ----------------
 - Add setrlimit options to ffdaemon.
@@ -19,7 +23,7 @@ Release puma7-15
 ----------------
 - Buildroot version 2020-02 (only for FritzOS 7.19 onwards)
 	- Add support for different buildroot versions living alongside.
-	  (see conf.mk.tpl)
+	  (see [conf.mk.tpl](conf.mk.tpl))
 	- Add PARALLEL option to conf.mk to perform buildroot parallel build.
 - Add non-ELF binaries from buildroot usr/(s)bin to /usr/local/bin.
 - tvheadend: Added patch/support for buildroot-2020.02
@@ -157,7 +161,7 @@ Release 9
 Release 8 (FritzOS7 only)
 -------------------------
 - Application package version 8
-	- Added support for PRTG Network Monitor (see README-APP.md)
+	- Added support for PRTG Network Monitor (see [README-APP.md](README-APP.md))
 	- Provide all busybox apps as links in /usr/local/bin
 	- Some enhancements to ffdaemon for service management
 	- Added netsnmp, dnsmasq  (for manual start)
