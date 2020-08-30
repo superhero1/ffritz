@@ -4,6 +4,8 @@ Change history of application package
 NEXT
 ----
 - Added volmgt service/ffvolume script to mount drives to fixed locations.
+- Missing pihole service file
+- shutting down will attempt to stop all services, not just the enabled ones
 
 Release puma7-17
 ----------------

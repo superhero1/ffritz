@@ -75,7 +75,7 @@ prep_etcdir()
 }
 
 if [ "x$1" = "xstop" ]; then
-    cd $NVRAM/etc/rc.d && for svc in `ls|sort -r|sed -e 's/^[0-9]*//'`; do
+    cd $NVRAM/etc/init.d && for svc in `ls|sort -r|sed -e 's/^[0-9]*//'`; do
 	echo Stopping $svc
     	ffservice stop $svc
     done
