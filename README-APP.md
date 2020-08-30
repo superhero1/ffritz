@@ -1,4 +1,4 @@
-Introduction 
+aIntroduction 
 ============
 This image provides some additional software packages for the atom core,
 which i have implemented/ported mainly for the purpose of operating the
@@ -40,6 +40,8 @@ The tool "ffservice" provides a simple script to operate services:
 - ffservice stop _servicename_
 - ffservice restart _servicename_
 	- Self explaining
+- ffservice starton _servicename_
+	- Start service only if it is enabled
 - ffservice enable _servicename_
 - ffservice disable _servicename_
 	- Enable/disable a service at startup
@@ -57,6 +59,9 @@ The tool "ffservice" provides a simple script to operate services:
 	- List services
 - ffservice status
 	- Show status of all services
+- ffservice running
+	- Exit code is 0/1/2 depending on whether the service is running,
+  	  not running or the status is unknown respectively.
 
 Most user editable configuration files for these services are located
 below
@@ -170,9 +175,12 @@ Option 3 is a fast alternative for (2), but future updates to the builtroot
 template that come with application package updates will not be synchronized
 automatically.
 
-For options 2/3 it might be a good idea to use the "remount" service to mount
-an external driver to somewhere else than the NAS directlry (e.g. into /tmp/..).
+For options 2/3 it might be a good idea to remount storages to somewhere else
+then the FTP directory.
+See 'User defined startup scripts' in [README.md](README.md).
 
+Furthermore, to gracefully handle storage dis- and reconnects the volmgt
+service should be used (see below).
 
 All binaries and libraries from the buildroot template directory (usr/bin,
 usr/lib) are available to FritzOS via symlinks in /usr/local/bin,
@@ -298,6 +306,54 @@ Caveats:
 pihole (pihole)
 ---------------
 Requires a specific buildroot setup. See [README-pihole.md](README-pihole.md).
+
+Volume manager daemon (volmgt)
+------------------------------
+
+This is a periodic services calling the ffvolume script:
+
+The script manages "ffritz volumes" on internal or (more likely external) filesystems.
+The motivation was to become independent from directory names assigned by FritzOS
+for mounted drives without having to hook deeply into udev rules.  
+Especially when they are surprise extracted the mount point might changes, which in turn
+might require services to get reconfigured/restarted.
+
+aFor this purpose, this tool manages directories below the "ffstorage" directory
+in the top level of a filesystem.  
+Directories below ffstorage are handled as volumes whose name must be unique
+over all used partitions (multiple occurences are completely ignored). These directories
+are redir mounted to /tmp/storage/_name_, a path which does not change regardless on
+where the volume directory is found.
+
+The script is called periodically by the volmgt service (use `ffservice config volmgt` 
+to configure).
+
+When executed, the script will handle 
+- So far unknown volumes by mounting them as described.
+- Removed volumes by  
+       - Stopping services known to use them (if enabled)  
+       - Attempting to remove the redir mount
+- Changed volume paths by  
+       - Stopping running services known to use them (if enabled)  
+       - Attempting to rebind the volume directory to the new path  
+       - Restarting all stopped services  
+
+Services bound to a specific volume can be specified within the file
+".ffsvc" in the the volume directory. Just add a newline separated
+list of service # names as known by ffservice.
+The order is important! Services are started in the order given in the file,
+and stopped in the reverse order. 
+For the remount operation, only services known to be running (ffservice running
+returning 0) will be affected.
+
+Options
+-v verbose
+-s Show mount status
+-f Restart services for remount
+-n Don't execute mount operations, just print commands
+-X Used internally to not call flock. By default the script makes itself 
+   "reentrant" by calling itself with flock (lock file is /var/lock/ffvolume.lck)
+   and -X set.
 
 Building the application image
 ==============================

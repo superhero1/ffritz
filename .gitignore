@@ -1,0 +1,12 @@
+tmp
+images
+packages/dl/
+conf.mk
+**/squashfs-root/
+**/orig/
+**/output*/
+**/build*/
+**/\.*
+!**/.gitignore
+**/filesystem.image
+**/release*/

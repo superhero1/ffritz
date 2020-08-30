@@ -136,7 +136,7 @@ User defined startup scripts
 
 - The file /nvram/ffnvram/etc/hotplug/udev-mount-sd can be created to re-define the 
   path where external USB storages are mounted to. A use case is when data that shall 
-  not be exposed via the FritzBox NAS there (e.g. a buildroot filesystem overlay
+  not be exposed via the FritzBox NAS (e.g. a buildroot filesystem overlay
   used by the application package).
 
   The script (must be executable) is a hook in /etc/hotplug/udev-mount-sd,
@@ -150,7 +150,8 @@ User defined startup scripts
   Undefining NOEXEC will prevent the noexec mount option.
 
   This is meant as a replacement for the remount service of the application image.
-  That one should be disabled.
+  That one should be disabled. A supplement service in the application image
+  is volmgt (see [README-APP.md](README-APP.md)).
 
 Software Packages
 =================

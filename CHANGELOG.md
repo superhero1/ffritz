@@ -1,6 +1,10 @@
 Change history of application package
 =====================================
 
+NEXT
+----
+- Added volmgt service/ffvolume script to mount drives to fixed locations.
+
 Release puma7-17
 ----------------
 - Merge pihole branch (see [README-pihole.md](README-pihole.md))

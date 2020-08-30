@@ -1,0 +1,366 @@
+# Copyright 2020 Felix Schmidt. See LICENSE.
+###########
+#
+# ffvolume: Storage manager/checker 
+#
+
+help()
+{
+cat <<EOF
+The script manages "ffritz storages" on filesystems.
+The motivation was to become independent from directory names assigned by
+FritzOS for mounted drives without having to hook deeply into udev rules. 
+Especially when they are surprise extracted the name might changes, which might 
+require services to get reconfigured/restarted.
+
+For this purpose, this tool manages directories below the "ffstorage" directory
+in the top level of the filesystem.
+Directories below ffstorage are handled as volumes whose name must be unique
+over all used devices (multiple occurences are completely ignored). These
+directories are redir mounted to /tmp/storage/<name>.
+
+Note: Only directory/volume names with alpha-numeric characters and _ are
+accepted.
+
+The script is called periodically by the volmgt service.
+
+When executed, the script will handle 
+- So far unknown storages by mounting them as described.
+- Removed storages by 
+       - Stopping services known to use them (if enabled)
+       - Attempting to remove the redir mount
+- Changed storage paths by
+       - Stopping running services known to use them (if enabled)
+       - Attempting to rebind the storage directory to the new path
+       - Restarting all stopped services
+
+Services bound to a specific storage can be specified within the file
+".ffsvc" in the the storage directory. Just add a newline separated
+list of service # names as known by ffservice.
+The order is important! Services are started in the order given in the file,
+and stopped in the reverse order. 
+For the remount operation, only services known to be running (ffservice running
+returning 0) will be affected.
+
+Options
+-------
+-v verbose
+-s Show mount status
+-f Restart services for remount
+-n Don't execute mount operations, just print commands
+EOF
+}
+
+ECHO=
+FFSERVICE=ffservice
+LOGFILE=/var/log/ffritz.log
+verbose=0
+restart_services=0
+dryrun=0
+
+log()
+{
+	test $verbose -ne 0 && echo $* 1>&2
+	echo ffvolume :: `date` :: $* >> $LOGFILE
+}
+
+
+# use default array
+array_dfl()
+{
+	ARY_NAME=VOL_ARRAY
+	ARY_KEYS=VOL_LIST
+}
+
+# use temporary array
+array_tmp()
+{
+	ARY_NAME=VOL_ARRAY_TMP
+	ARY_KEYS=VOL_LIST_TMP
+}
+
+## Array emulation
+## Keys are in $ARY_KEYS, values are in variables ${ARY_NAME}_key
+##
+
+# Clear array
+vol_clr()
+{
+	eval keys=\$${ARY_KEYS}
+	for v in ${keys}; do
+		eval ${ARY_NAME}_${v}=
+	done
+	eval $ARY_KEYS=
+}
+
+# set entry key=$1 to value=$2
+vol_set()
+{
+	name=${1}
+	value=${2}
+	eval ${ARY_NAME}_${name}=${value}
+	eval keys=\$${ARY_KEYS}
+	keys=`(echo ${keys} | sed -e 's/ /\n/g'; echo ${name}) | sort -u`
+	eval $ARY_KEYS=\"${keys}\"
+}
+
+# get entry key=$1
+vol_get()
+{
+	eval echo \$${ARY_NAME}_${1}
+}
+
+# Dump current array (key value pairs)
+vol_all()
+{
+	eval keys=\$${ARY_KEYS}
+	for v in ${keys}; do
+		echo ${v} `vol_get ${v}`
+	done
+}
+
+# Dump all keys
+vol_keys()
+{
+	eval echo \$${ARY_KEYS}
+}
+
+
+# Get services listed in $1 which are currently running
+running_services()
+{
+	test -r "$1" || return 0
+
+	for svc in `cat $1`; do
+		$FFSERVICE running $svc && echo $svc
+	done
+}
+
+# start services in arg list
+start_services()
+{
+	if [ $restart_services -ne 1 ]; then
+		return 0
+	fi
+
+	for svc in $*; do
+		$ECHO $FFSERVICE start $svc
+	done
+}
+
+
+# stop services in arg list
+stop_services()
+{
+	if [ $restart_services -ne 1 ]; then
+		return 0
+	fi
+
+	for svc in $*; do
+		$ECHO $FFSERVICE stop $svc
+	done
+}
+
+
+# Get all volumes with a top-level ffstorage subdirectory.
+# Get all subdirectories one level below and handle as storage.
+# The absolute path must be uniqe. Duplicates are not taken into account,
+# they are "remembered" as DUP_name=yes.
+#
+collect_storages()
+{
+	tmp=/tmp/$$.stor
+
+	mount| grep ^/dev | grep -v /var/tmp/br | awk '{print $1,$3"/ffstorage"}' > $tmp
+	while read line; do
+
+		set $line xxx
+	
+		if [ ! -d "$2" ]; then
+			continue
+		fi
+	
+		cd $2 || continue
+		volumes=`find . -type d -regex './[a-zA-Z0-9_]*' -mindepth 1 -maxdepth 1 | xargs -n1 basename 2>/dev/null`
+	
+		test "$volumes" = "" && continue
+	
+		for v in $volumes; do
+			if [ "`vol_get $v`" != "" ]; then
+				log duplicate $v : $2/$v 
+				log "   other: `vol_get $v`" 
+				eval DUP_${v}=yes
+			else
+				vol_set ${v} ${2}/${v}
+				eval DUP_${v}=no
+			fi
+		done
+	done < $tmp
+
+	rm -f $tmp
+}
+
+##############################################################
+
+lock=1
+args=$*
+while [ "$1" != "" ]; do
+	case $1 in
+		-X) lock=0;;
+		-n) dryrun=1; ECHO='echo ### ';;
+		-v) verbose=1;; 
+		-f) restart_services=1;;
+		-h) help; exit 0;;
+		-s) show=1;;
+	esac
+	shift
+done
+
+if [ $lock -eq 1 ]; then
+	flock /var/lock/ffvolume.lck $0 $args -X
+	exit $?
+fi
+
+# read last storage list into temporary storage
+#
+old_keys=
+old_list=""
+if [ -r /tmp/ffstorage.lst ]; then
+	array_tmp
+	while read line; do
+		set $line x
+		test $# -ne 3 && continue
+
+		vol_set $1 $2
+	done < /tmp/ffstorage.lst
+
+	old_list=`vol_all`
+	old_keys=`vol_keys`
+fi
+
+# Collect current storages on all partitions
+#
+array_dfl
+collect_storages 
+
+cur_list=`vol_all`
+cur_keys=`vol_keys`
+
+if [ "$show" = "1" ]; then
+	echo Current storage list
+	array_dfl
+	vol_all
+
+	echo
+	echo Saved storage list
+	array_tmp
+	vol_all
+
+	exit 0
+fi
+
+
+if [ "$old_list" = "$cur_list" ]; then
+	exit 0
+fi
+
+log old storage list: $old_list
+log new storage list: $cur_list
+
+
+# Check if current storages have moved
+for vol in $cur_keys; do
+	mountpath=/tmp/storage/$vol
+	svc_copy=/tmp/storage/$vol.svc
+
+	array_dfl
+	cur_path=`vol_get $vol`
+	
+	array_tmp
+	old_path=`vol_get $vol`
+
+	# New storage. Mount it and remember services which may need it
+	#
+	if [ "$old_path" = "" ]; then
+		log new storage: $vol on $cur_path
+		$ECHO mkdir -p $mountpath
+		$ECHO mount --redir $cur_path $mountpath || continue
+		$ECHO rm -f $svc_copy
+		if [ -r $cur_path/.ffsvc ]; then
+			$ECHO cp $cur_path/.ffsvc $svc_copy
+			log Services: `cat $svc_copy`
+		fi
+		continue
+	fi
+
+	eval is_duplicate=\$DUP_${vol}
+	if [ "$is_duplicate" = "yes" ]; then
+		log Leaving duplicate $vol untouched
+		continue
+	fi
+
+	# remount unless it is a duplicate (then leave the existing mapping)
+	if [ $old_path != $cur_path ]; then
+		log storage has moved from $old_path to $cur_path
+		running=`running_services $svc_copy`
+		log running services: $running
+		if [ -r "$svc_copy" ]; then
+			stop_services `cat $svc_copy | sort -nr`
+		fi
+		
+		if [ -d $mountpath ]; then
+			$ECHO umount $mountpath 2>/dev/null
+			$ECHO umount $mountpath 2>/dev/null 
+		else
+			$ECHO mkdir -p $mountpath 
+		fi
+
+		$ECHO mount --redir $cur_path $mountpath
+		if [ $? -ne 0 ]; then
+			# remount failed, keep old path in db
+			log remount failed: $mountpath
+			array_dfl
+			vol_set $vol REMOUNT_FAILED
+			continue
+		fi
+
+		# try to restart services
+		$ECHO rm -f $svc_copy
+		if [ -r $cur_path/.ffsvc ]; then
+			$ECHO cp $cur_path/.ffsvc $svc_copy
+			if [ "$running" != "" ]; then
+				start_services $running
+			fi
+		fi
+		continue
+	fi
+done
+
+# handle the case that a storage has been removed
+for vol in $old_keys; do
+	mountpath=/tmp/storage/$vol
+
+	array_dfl
+	cur_path=`vol_get $vol`
+	
+	array_tmp
+	old_path=`vol_get $vol`
+
+	# unmount
+	if [ "$cur_path" = "" -a "$is_duplicate" != "yes" ]; then
+		log storage has been removed: $vol on $old_path
+		if [ -r "$svc_copy" ]; then
+			stop_services `cat $svc_copy | sort -nr`
+		fi
+		$ECHO umount $mountpath || log umount $mountpath failed
+		$ECHO rm -f $svc_copy
+	fi
+done
+	
+
+# save current state
+#
+if [ "$dryrun" != "1" ]; then
+	array_dfl
+	vol_all > /tmp/ffstorage.lst
+fi

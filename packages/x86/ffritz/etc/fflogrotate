@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-LOGFILES="/var/log/ffritz.log /var/log/openvpn.log /var/log/mpd.log"
+LOGFILES="/var/log/ff*.log /var/log/openvpn.log /var/log/mpd.log"
 
 max=250000
 

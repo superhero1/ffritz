@@ -1,0 +1,5 @@
+*.tar
+*.sha256sum
+*.md
+ffimage.bin
+*-version

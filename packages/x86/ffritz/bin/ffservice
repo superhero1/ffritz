@@ -11,7 +11,11 @@ service=$*
 
 usage()
 {
-	echo "Usage: `basename $0` start|stop|restart|enable|disable|list|edit|config|purge service"
+	echo "Usage: `basename $0` start|starton|stop|restart service"
+	echo "Usage: `basename $0` enable|disable|running service"
+	echo "Usage: `basename $0` edit|config|purge service"
+	echo "Usage: `basename $0` status [service]"
+	echo "Usage: `basename $0` list"
 }
 
 help()
@@ -24,6 +28,7 @@ list:    List all services, and which ones are enabled at system start.
          The current run state of a service is not known by this tool,
          but ffdaemon -L might give hints
 start:   Start service
+starton: Start service if it is enabled
 stop:    Stop service
 restart: Restart service
 enable:  Enable service at system start
@@ -115,14 +120,17 @@ case $op in
 		mv $tmpfile $service_file || exit 1
 		;;
 	start)	$service_file start $conf_file_opt ;;
+	starton) test -r $service_fname && $service_file start $conf_file_opt ;;
+	enabled) test -r $service_fname;
+		exit $?;;
 	stop)   $service_file stop $conf_file_opt ;;
-	ena*) ln -sfv ../init.d/$service_fname .; nvsync;;
-	dis*) rm -fv $NVRAM/etc/rc.d/$service_fname; nvsync;; 
+	ena*)   ln -sfv ../init.d/$service_fname .; nvsync;;
+	dis*)   rm -fv $NVRAM/etc/rc.d/$service_fname; nvsync;; 
 	restart) $service_file stop $conf_file_opt
 		 sleep 3
 		 $service_file start $conf_file_opt
 		 ;;
-	conf*) mkdir -p $NVRAM/etc/conf.d
+	conf*)  mkdir -p $NVRAM/etc/conf.d
 		if [ ! -r "$conf_file" ]; then
 			echo "# Configuration options/script for $service" > $conf_file
 			grep Xfeature:getconfig $service_file >/dev/null
@@ -222,11 +230,20 @@ case $op in
 		fi
 		STATUS=
 		eval `$service_file info $conf_file_opt | grep =` 2>/dev/null
-		if [ -z $STATUS ]; then
-			exit 2
+		# Trust if service reports STATUS by itself
+		if [ ! -z $STATUS ]; then
+			test $STATUS = on && exit 0
+			exit 1
 		fi
-		test $STATUS = on && exit 0
-		exit 1
+		# Check if at least on deamon is running
+		if [ "$DAEMONS" != "" ]; then
+			for daemon in $DAEMONS; do
+				ffdaemon -I $daemon >/dev/null && exit 0
+			done
+			exit 1
+		fi
+		# Unknown status
+		exit 2
 		;;
 		
 	*)	usage;;

@@ -1,0 +1,52 @@
+#!/bin/sh
+# This line MUST NOT be removed! Xfeature:getconfig
+#
+# Periodic volume check
+#
+# See ffvolume -h for details
+#
+##############################################################################
+
+# Default settings
+#
+FFVOLUME_ARGS=-f
+FFVOLUME_INTERVAL=60
+
+# Override with user configuration
+#
+test ! -z $2 && . $2
+
+DAEMONS="ffvolume"
+
+case $1 in
+	start)
+		/tmp/ffvolume $FFVOLUME_ARGS
+		ffdaemon -i $FFVOLUME_INTERVAL /tmp/ffvolume $FFVOLUME_ARGS
+		break
+		;;
+	stop)
+	        ffdaemon -K ffvolume
+	        exit 0
+		;;
+	info)	echo DAEMONS=\"$DAEMONS\"
+		exit 0
+		;;
+	getconfig)
+cat <<EOF
+## 
+## Arguments for ffvolume (see ffvolume -h).
+## Default: -f to restart services for remount operation
+#
+#FFVOLUME_ARGS="-f"
+
+## Execution interval in seconds
+#
+#FFVOLUME_INTERVAL=60
+EOF
+		exit 0
+		;;
+
+	*)	exit 0
+		;;
+
+esac
