@@ -1,0 +1,34 @@
+#!/bin/sh
+#
+# Xfeature:getconfig
+
+DHCP=
+
+# Override with user configuration
+#
+test ! -z $2 && . $2
+
+if [ "$1" = "stop" ]; then
+        pihole-stop.sh
+        exit 0
+fi
+
+if [ "x$1" = "xinfo" ]; then
+	echo DAEMONS=lighttpd
+        exit 0
+fi
+
+if [ "$1" = "getconfig" ]; then
+cat <<EOF
+## Set DHCP to -d to enable DHCP server in pihole
+##
+#DHCP=-d
+EOF
+        exit 0
+fi
+
+if [ "$1" != "start" ]; then
+        exit 0
+fi
+
+pihole-start.sh $DHCP
