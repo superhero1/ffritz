@@ -1,14 +1,24 @@
+From a2840c7dc10755a26ddb4adbf8d15fa5f2461529 Mon Sep 17 00:00:00 2001
+From: Felix Schmidt <fesc2000@gmail.com>
+Date: Mon, 31 Aug 2020 16:01:11 +0200
+Subject: [PATCH] Add volume control file for audio_pipe
+
+---
+ audio_pipe.c | 42 ++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 40 insertions(+), 2 deletions(-)
+
 diff --git a/audio_pipe.c b/audio_pipe.c
-index 4ec9b24..2e821ae 100644
+index 45e0f06..aa2a2e5 100644
 --- a/audio_pipe.c
 +++ b/audio_pipe.c
-@@ -42,8 +42,36 @@
+@@ -42,6 +42,36 @@
  static int fd = -1;
  
  char *pipename = NULL;
 +static char *volname = NULL;
- int warned = 0;
- 
++int warned = 0;
++
++// ffritz: volume handling via file
 +static double minDb = (double)-64.0;
 +static double maxDb = (double)0.0;
 +
@@ -35,41 +45,40 @@ index 4ec9b24..2e821ae 100644
 +  info->minimum_volume_dB = (int)minDb;
 +  info->maximum_volume_dB = (int)maxDb;
 +}
-+
+ 
  static void start(__attribute__((unused)) int sample_rate,
                    __attribute__((unused)) int sample_format) {
- 
-@@ -85,9 +113,10 @@ static int play(void *buf, int samples) {
- }
+@@ -85,6 +115,13 @@ static int play(void *buf, int samples) {
  
  static void stop(void) {
--  // Don't close the pipe just because a play session has stopped.
--  //  if (fd > 0)
--  //    close(fd);
+   // Don't close the pipe just because a play session has stopped.
++  // ffritz: yes, do it, because we want to switch to previous input 
++  // on usbplayd
++  //
 +  if (fd > 0)
 +    close(fd);
 +
 +  fd = -1;
+ 
  }
  
- static int init(int argc, char **argv) {
-@@ -113,6 +142,12 @@ static int init(int argc, char **argv) {
+@@ -92,7 +129,8 @@ static int init(int argc, char **argv) {
+   //  debug(1, "pipe init");
+   //  const char *str;
+   //  int value;
+-  //  double dvalue;
++  yntax off
++  /  double dvalue;
  
-     if ((pipename) && (strcasecmp(pipename, "STDOUT") == 0))
-       die("Can't use \"pipe\" backend for STDOUT. Use the \"stdout\" backend instead.");
-+
-+    if (config_lookup_string(config.cfg, "pipe.volume", &str)) {
-+      volname = (char *)str;
-+      audio_pipe.volume = &volume;
-+      audio_pipe.parameters = &parameters;
-+    }
-   }
+   // set up default values first
  
-   if ((pipename == NULL) && (argc != 1))
-@@ -149,5 +184,5 @@ audio_output audio_pipe = {.name = "pipe",
+@@ -149,5 +187,5 @@ audio_output audio_pipe = {.name = "pipe",
                             .delay = NULL,
                             .play = &play,
                             .volume = NULL,
 -                           .parameters = NULL,
 +                           .parameters = &parameters,
                             .mute = NULL};
+-- 
+2.17.1
+
