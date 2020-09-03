@@ -20,7 +20,7 @@ DAEMONS="ffvolume"
 
 case $1 in
 	start)
-		/tmp/ffvolume $FFVOLUME_ARGS
+		ffvolume $FFVOLUME_ARGS
 		ffdaemon -i $FFVOLUME_INTERVAL /tmp/ffvolume $FFVOLUME_ARGS
 		break
 		;;
