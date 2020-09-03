@@ -2,13 +2,18 @@ Introduction
 ============
 This is a repository containing my modifications for FritzBox-6591 Cable.
 It basically modifies the original AVM install image by adding an ssh
-(dropbear) service to log in, and also provides an optional application
-package adding further services (mainly for operating the box as audio/media
-player).
+(dropbear) service to log in.
 
-This README covers the first topic. For information on the application
-image see [README-APP.md](README-APP.md).
+On top of this, an optional application image containing further services 
+can be installed at runtime. I started it mainly for operating the box
+as audio/media player, in the meantime it is a wrapper around a 
+[buildroot](https://buildroot.org) installation.
 
+This README covers the basic firmware modification. For information on the 
+application image see [README-APP.md](README-APP.md).
+
+Disclaimer
+----------
 I take no responsibility for broken devices or other problems (e.g. with
 your provider).  Use this at your own risk.
 Also, what i DO NOT support is:
@@ -19,6 +24,8 @@ Also, what i DO NOT support is:
 If you don't trust my binaries (you shouldn't), everything that is required to
 rebuild them is provided (see below).
 
+Vartiants
+---------
 NOTE: This is the branch for FritzBox 6591. For 6490/6590 use the master
       branch of the repository (<https://bitbucket.org/fesc2000/ffritz/src/master/>).
 
@@ -40,8 +47,8 @@ Creating an install/update firmware image
 
 - Run make
 
-Note that this will use pre-built binaries checked into the git repository.
-To rebuild these binaries:
+Note that this will use pre-built dropbear binaries checked into the git 
+repository. To rebuild these binaries:
 
 	make rebuild
 

@@ -6,6 +6,9 @@ NEXT
 - Added volmgt service/ffvolume script to mount drives to fixed locations.
 - Missing pihole service file
 - shutting down will attempt to stop all services, not just the enabled ones
+- Added cash tool.
+- Bump shairport-sync to 3.3.7rc2.
+- ffservice purge will only restore old service script
 
 Release puma7-17
 ----------------
