@@ -37,19 +37,18 @@ edit:    Edit service file. If the service file (in etc/init.d) is a symlink
          (usually to /usr/local/etc/init.d) then the symlink will be removed and
          the service file is kept locally before starting the editor.
          Use the purge command to restore the original symlink
+purge:   If the service file once was a symlink, restore the symlink.
+         Both the old service and configuration file will be backed up, if
+         necessary, but an already existing backup will get overwritten!
+         The backup location will be printed (etc/init.d/.service-file).
 config:  Edit the service configuration, if there is any.
          The configuration file (a shell script!) is kept in etc/conf.d.
          If none exists yet, and the service supports it, a default/example
          configuration is provided.
          Use the purge command to reset the service configuration to its
-	 defaults (by removing the configuration file).
+         defaults (by removing the configuration file).
+         The backup location will be printed (etc/conf.d/.config-file).
 defconfig: Reset the service configuration, if there is any, to defaults.
-purge:   - If the service file once was a symlink, restore the symlink.
-         - Removes the service configuration, which will apply the service
-           defaults.
-         Both the old service and configuration file will be backed up, if
-         necessary, but an already existing backup will get overwritten!
-         The backup location will be printed.
 status   Print status information on service.
 running  Exit code 0 if service reports STATUS=on, 1 if off, 2 if unknown
 EOF
@@ -145,8 +144,7 @@ case $op in
 		vi $conf_file
 		nvsync
 		;;
-	purge)	$0 defconfig $service
-		orig_file=/usr/local/etc/init.d/$service_fname
+	purge)	orig_file=/usr/local/etc/init.d/$service_fname
 		if [ -r "$orig_file" ]; then
 			if [ `readlink -f $orig_file` != `readlink -f $service_file` ]; then
 				service_bak=$NVRAM/etc/init.d/.$service_fname
