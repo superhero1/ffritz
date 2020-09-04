@@ -1,14 +1,14 @@
-From a2840c7dc10755a26ddb4adbf8d15fa5f2461529 Mon Sep 17 00:00:00 2001
+From 502cf74e0df0030060ff1122e66943dc17ffa485 Mon Sep 17 00:00:00 2001
 From: Felix Schmidt <fesc2000@gmail.com>
 Date: Mon, 31 Aug 2020 16:01:11 +0200
 Subject: [PATCH] Add volume control file for audio_pipe
 
 ---
- audio_pipe.c | 42 ++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 40 insertions(+), 2 deletions(-)
+ audio_pipe.c | 45 ++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 44 insertions(+), 1 deletion(-)
 
 diff --git a/audio_pipe.c b/audio_pipe.c
-index 45e0f06..aa2a2e5 100644
+index 45e0f06..762ba33 100644
 --- a/audio_pipe.c
 +++ b/audio_pipe.c
 @@ -42,6 +42,36 @@
@@ -62,17 +62,20 @@ index 45e0f06..aa2a2e5 100644
  
  }
  
-@@ -92,7 +129,8 @@ static int init(int argc, char **argv) {
-   //  debug(1, "pipe init");
-   //  const char *str;
-   //  int value;
--  //  double dvalue;
-+  yntax off
-+  /  double dvalue;
+@@ -111,6 +148,12 @@ static int init(int argc, char **argv) {
  
-   // set up default values first
+     if ((pipename) && (strcasecmp(pipename, "STDOUT") == 0))
+       die("Can't use \"pipe\" backend for STDOUT. Use the \"stdout\" backend instead.");
++
++    if (config_lookup_string(config.cfg, "pipe.volume", &str)) {
++      volname = (char *)str;
++      audio_pipe.volume = &volume;
++      audio_pipe.parameters = &parameters;
++    }
+   }
  
-@@ -149,5 +187,5 @@ audio_output audio_pipe = {.name = "pipe",
+   if ((pipename == NULL) && (argc != 1))
+@@ -149,5 +192,5 @@ audio_output audio_pipe = {.name = "pipe",
                             .delay = NULL,
                             .play = &play,
                             .volume = NULL,
