@@ -4,6 +4,7 @@
 #	BR_VERSION	buildroot version suffix
 # provides:
 #	BR_VERSION	Buildroot suffix
+#	REPODIR		repository path
 #	PKGTOP		real path of packages/
 #	DLDIR		real path of download directory
 #	TOPDIR		real path of current directory
@@ -14,7 +15,9 @@
 #	TGTDIR		buildroot target directory (BR/output/target)
 #	CMNDIR		real path of common sources
 
--include $(ARCHDIR)/../../conf.mk
+REPODIR     = $(realpath $(ARCHDIR)/../..)
+
+include $(REPODIR)/topcfg.mk
 URL=
 include $(ARCHDIR)/arch.mk
 

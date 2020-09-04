@@ -35,6 +35,7 @@ FFWRAP_FORCE_LIB += openvpn
 
 OUTPUTDIR   = $(TOPDIR)/output$(BR_VERSION)
 STAGEDIR    = $(OUTPUTDIR)/ffritz
+STAGEDIR2   = $(OUTPUTDIR)/image
 
 BRCOPY       = $(STAGEDIR)/buildroot
 
@@ -44,8 +45,8 @@ ifneq ($(BR_VERSION),-2019.05)
 FOS_SUB_VERSION=19
 endif
 
-IMAGE       = ffritz-app-$(VERSION)-fos7$(FOS_SUB_VERSION).tar
-CSUM	    = ffritz-app-$(VERSION)-fos7$(FOS_SUB_VERSION).sha256sum
+IMAGE       = $(APP_IMAGE)
+CSUM	    = $(shell basename .tar $(APP_IMAGE))
 
 -include conf.mk
 
@@ -104,13 +105,14 @@ $(INSTDIRS):
 	make -C `dirname $@` install DESTDIR=$(STAGEDIR) INSTDIR=$(STAGEDIR)
 
 $(IMAGE): ffimage.bin
+	mkdir -p $(STAGEDIR2)
 	sha256sum ffimage.bin | sed -e 's/ .*//' > $(CSUM)
-	cp ../../../*.md .
+	cp ../../../*.md $(STAGEDIR2)
+	mv ffimage.bin glibc-version $(STAGEDIR2)
 #	cp ../libdvbfi/README.txt README-dvb.txt 
 #	cp ../libdvbfi/fwd .
-	cp $(CSUM) ffimage.sha256sum
-	tar cf $(IMAGE) ffimage.bin ffimage.sha256sum *.md glibc-version
-	rm -f ffimage.sha256sum
+	cp $(CSUM) $(STAGEDIR2)/ffimage.sha256sum
+	cd $(STAGEDIR2); tar cf $(TOPDIR)/$(IMAGE) ffimage.bin ffimage.sha256sum *.md glibc-version
 	@echo
 	@echo +++ DONE +++
 	@echo "Atom image file: $(TOPDIR)/$(IMAGE)"

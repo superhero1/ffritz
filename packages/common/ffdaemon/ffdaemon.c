@@ -56,11 +56,12 @@ static int service_status (char *service_name, struct client_status *st);
 static char service_args[ARG_MAX] = "";
 
 const char *usage =
-"usage: %s [-nCL] [-r user] [-i interval] [-l loops] [-N|K|R service] [-o dir] [-H limits] command args ...\n"
+"usage: %s [-nCL] [-i sec] [-b sec] [-r user] [-i interval] [-l loops] [-N|K|R service] [-o dir] [-H limits] command args ...\n"
 "   -n : No daemon mode\n"
 "   -C : Do not close FDs\n"
 "   -r : run as user[:group]\n"
 "   -i : Restart delay after program terminates\n"
+"   -b : Delay before first execution\n"
 "   -l : Number of loops to run (0 = default = endless)\n"
 "   -N : Name service rather than using the executable name\n"
 "   -L : List all services\n"
@@ -623,6 +624,7 @@ int main(int argc, char **argv)
     int daemon_mode = 1;
     int nargs;
     int interval = 2;
+    int start_delay = 0;
     int loops = 0;
     int noclose = 0;
     char *service_name = NULL;
@@ -695,6 +697,14 @@ int main(int argc, char **argv)
 		{
 		    i++;
 		    interval = atoi(argv[i]);
+		    break;
+		}
+		/* fall through */
+	    case 'b':
+	    	if (i < argc-1)
+		{
+		    i++;
+		    start_delay = atoi(argv[i]);
 		    break;
 		}
 		/* fall through */
@@ -794,7 +804,7 @@ int main(int argc, char **argv)
     svc_info ("RLIM=%s", 0, &limits);
  
     if (daemon_mode) {
-	switch (daemon2 (interval, loops, 0, noclose, service_name))
+	switch (daemon2 (interval, start_delay, loops, 0, noclose, service_name))
 	{
 	    case 0:
 	    	/* running as slave */

@@ -25,7 +25,7 @@
 
 void log_put (const char *format, ...);
 void log_set (const char *logf, int consOut);
-int daemon2 (int delay, int loops, int nochdir, int noclose, const char *service_name);
+int daemon2 (int delay, int start_delay, int loops, int nochdir, int noclose, const char *service_name);
 int do_limits (char *limits, int check_only);
 char *get_pidfile(const char *service_name);
 char *get_client_pidfile(const char *service_name);

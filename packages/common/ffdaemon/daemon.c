@@ -335,7 +335,7 @@ void log_set (const char *logf, int consOut)
     }
 }
 
-int daemon2 (int interval, int loops, int nochdir, int noclose,
+int daemon2 (int interval, int start_delay, int loops, int nochdir, int noclose,
 	     const char *sv_name)
 {
     int status;
@@ -357,6 +357,9 @@ int daemon2 (int interval, int loops, int nochdir, int noclose,
     }
 
     prep_pid_file ();
+
+    if (start_delay)
+	    sleep(start_delay);
 
     /* master process loop
      */

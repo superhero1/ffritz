@@ -25,7 +25,7 @@ BRCOPY       = $(STAGEDIR)/buildroot
 
 VERSION     = $(shell cat version)
 
-IMAGE       = $(TOPDIR)/ffritz-arm-$(VERSION)-fos7.tar.gz
+IMAGE       = $(ARM_EXT_IMAGE)
 
 ifeq ($(INSTDIR),)
     INSTDIR=$(STAGEDIR)
@@ -85,7 +85,7 @@ $(INSTDIRS):
 	make -C `dirname $@` install DESTDIR=$(STAGEDIR) INSTDIR=$(STAGEDIR)
 
 $(IMAGE): $(BINFILES) $(ETCFILES) stage
-	cd $(OUTPUTDIR); tar cfz $(IMAGE) .
+	cd $(OUTPUTDIR); tar cfz ../$(IMAGE) .
 	@echo
 	@echo +++ DONE +++
 	@echo "ARM image file: $(IMAGE)"

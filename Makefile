@@ -1,78 +1,78 @@
 
-TOPDIR	= $(shell pwd)
+REPODIR	= $(shell pwd)
 VERSION = $(shell cat version)
 ARM_VER = $(shell cat packages/arm/ffritz/version)
 HOST    = $(shell uname -m)
-DLDIR   = $(TOPDIR)/packages/dl
+DLDIR   = $(REPODIR)/packages/dl
 SUDO	= fakeroot
+FWMAJ	= 0
+FWMIN	= 0
 
--include conf.mk
+all: release
 
-ifeq ($(URL),)
-include conf.mk.dfl
+config:
+	@test -f conf.mk || cp -v conf.mk.dfl conf.mk
+	@vi conf.mk
+
+reconfig:
+	@cp -fv conf.mk conf.mk.bak
+	@cp -fv conf.mk.dfl conf.mk
+	@vi conf.mk
+
+ifeq ($(MAKECMDGOALS),clean)
+NOCFG=1
+endif
+ifeq ($(MAKECMDGOALS),config)
+NOCFG=1
+endif
+ifeq ($(MAKECMDGOALS),reconfig)
+NOCFG=1
 endif
 
-ifeq ($(URL),)
-$(error URL not set.)
+ifneq ($(NOCFG),1)
+include topcfg.mk
+endif
+
+
+ifeq ($(HOSTTOOLS),/host/$(HOST))
+HOSTTOOLS=$(REPODIR)/host/$(HOST)
 endif
 
 ifeq ($(HOSTTOOLS),)
-HOSTTOOLS=$(TOPDIR)/host/$(HOST)
+HOSTTOOLS=$(REPODIR)/host/$(HOST)
 endif
 
 ARM_MAX_FS=19922432
 
-all: release
 
-RELDIR  = release$(VERSION)
+RELDIR  = output
 
 #ARM_MODFILES = $(shell find arm/mod/ -type f -o -type d)
 ATOM_MODFILES = $(shell find atom/mod/ -type f -o -type d)
 
-ITYPE=$(shell echo $(URL) | sed -e 's/.*\.//')
-DLIMAGE=$(DLDIR)/$(shell basename $(URL))
-
 ifeq ($(ITYPE),zip)
-# Fetch and extract labor zip
-INAME=$(shell mkdir -p $(DLDIR); if [ ! -f $(DLIMAGE) ]; then wget -O $(DLIMAGE) $(URL); fi; unzip -l $(DLIMAGE) | grep image | sed -e 's/.*\(FRITZ.*.image\)/\1/')
-ifeq ($(INAME),)
-error $(URL) is not a valid firmware zip
-endif
 ORIG=$(DLDIR)/$(INAME)
-
 $(ORIG):	$(DLIMAGE)
 	cd $(DLDIR); unzip -oj $(DLIMAGE) $(INAME)
 	touch $(ORIG)
 
 else
 # fetch update image
-ORIG=$(DLDIR)/$(shell basename $(URL))
+ORIG=$(DLDIR)/$(INAME)
 
 $(ORIG):
 	mkdir -p $(DLDIR)
 	wget -O $(ORIG) $(URL)
 endif
 
-FWVER=$(shell echo $(ORIG) | sed -e 's/.*\([0-9]*.\.[0-9]*\).*\.image/\1/')
-BETA=$(shell echo $(ORIG) | sed -e 's/.*-\([0-9]*\)-Lab.*/-\1/' | grep -v image)
-MODEL=$(shell echo $(ORIG) | sed -e 's/.*_\(....\)_Cable.*/\1/')
-FWNUM=$(subst .,,$(FWVER))
-
-ifeq ($(FWVER),)
-$(error Could not determine firmware version ($(ORIG) missing?))
-endif
-
-FWMAJ=$(shell echo $(FWVER) | sed -e 's/\..*//')
-FWMIN=$(shell echo $(FWVER) | sed -e 's/.*\.//')
-
-DFL_ARM_PACKAGE=packages/arm/ffritz/ffritz-arm-$(ARM_VER)-fos7.tar.gz
+DFL_ARM_PACKAGE=packages/arm/ffritz/$(ARM_EXT_IMAGE)
 
 ifeq ($(FFRITZ_ARM_PACKAGE),LOCAL)
 FFRITZ_ARM_PACKAGE=$(DFL_ARM_PACKAGE)
 endif
 
-BUSYBOX	= $(shell which busybox)
-RSYNC	= $(shell which rsync)
+BUSYBOX	:= $(shell which busybox)
+RSYNC	:= $(shell which rsync)
 
 ifeq ($(BUSYBOX),)
 $(warning using tar to pack archive, recommend to install busybox)
@@ -97,7 +97,7 @@ src/uimg/uimg:
 tmp/uimage:	$(ORIG) src/uimg/uimg
 	@mkdir -p tmp/uimage
 	@cd tmp/uimage; tar xf $(ORIG)  
-	@cd tmp/uimage; $(TOPDIR)/src/uimg/uimg -u -n part var/firmware-update.uimg
+	@cd tmp/uimage; $(REPODIR)/src/uimg/uimg -u -n part var/firmware-update.uimg
 
 $(DFL_ARM_PACKAGE):
 	@make package-arm
@@ -116,8 +116,8 @@ tmp/arm/filesystem.image: tmp/uimage
 	@cd tmp/arm; ln -sf ../uimage/part_09_ARM_ROOTFS.bin filesystem.image
 
 arm/squashfs-root:  tmp/arm/filesystem.image 
-	@if [ ! -d arm/squashfs-root ]; then cd arm; $(SUDO) $(HOSTTOOLS)/unsquashfs4-avm-be $(TOPDIR)/tmp/arm/filesystem.image; fi
-	@if [ $(KEEP_ORIG) -eq 1 -a ! -d arm/orig ]; then cd arm; $(SUDO) $(HOSTTOOLS)/unsquashfs4-avm-be -d orig $(TOPDIR)/tmp/arm/filesystem.image; fi
+	@if [ ! -d arm/squashfs-root ]; then cd arm; $(SUDO) $(HOSTTOOLS)/unsquashfs4-avm-be $(REPODIR)/tmp/arm/filesystem.image; fi
+	@if [ $(KEEP_ORIG) -eq 1 -a ! -d arm/orig ]; then cd arm; $(SUDO) $(HOSTTOOLS)/unsquashfs4-avm-be -d orig $(REPODIR)/tmp/arm/filesystem.image; fi
 
 $(ARM_PATCHST):	$(@:arm/.applied.%=%)
 	@echo APPLY $(@:arm/.applied.%=%)
@@ -133,7 +133,7 @@ arm/.applied.fs: $(ARM_MODFILES) arm/squashfs-root $(ARM_PATCHST) $(FFRITZ_ARM_P
 	    $(SUDO) mkdir -p arm/squashfs-root/usr/local; \
 	    $(SUDO) tar xfk $(FFRITZ_ARM_PACKAGE) --strip-components=2 -C arm/squashfs-root/usr/local ./ffritz-arm; \
 	fi
-#	@if [ -d arm/squashfs-root/usr/local/bin ]; then  $(TOPDIR)/mklinks -f arm/squashfs-root/usr/bin ../local/bin; fi
+#	@if [ -d arm/squashfs-root/usr/local/bin ]; then  $(REPODIR)/mklinks -f arm/squashfs-root/usr/bin ../local/bin; fi
 	@touch $@
 
 arm/filesystem.image: arm/.applied.fs
@@ -176,8 +176,8 @@ tmp/atom/filesystem.image: tmp/uimage
 	@cd tmp/atom; ln -sf ../uimage/part_03_ATOM_ROOTFS.bin filesystem.image
 
 atom/squashfs-root:  tmp/atom/filesystem.image
-	@if [ ! -d atom/squashfs-root ]; then cd atom; $(SUDO) unsquashfs $(TOPDIR)/tmp/atom/filesystem.image; fi
-	@if [ $(KEEP_ORIG) -eq 1 -a ! -d atom/orig ]; then cd atom; $(SUDO) unsquashfs -d orig $(TOPDIR)/tmp/atom/filesystem.image; fi
+	@if [ ! -d atom/squashfs-root ]; then cd atom; $(SUDO) unsquashfs $(REPODIR)/tmp/atom/filesystem.image; fi
+	@if [ $(KEEP_ORIG) -eq 1 -a ! -d atom/orig ]; then cd atom; $(SUDO) unsquashfs -d orig $(REPODIR)/tmp/atom/filesystem.image; fi
 
 $(ATOM_PATCHST):	$(@:atom/.applied.%=%)
 	@echo APPLY $(@:atom/.applied.%=%)
@@ -223,18 +223,31 @@ ifeq ($(ENABLE_CONSOLE),1)
 	@rm -f .startup.nsh
 endif
 	@echo "PACK   firmware-update.uimg"
-	@$(TOPDIR)/src/uimg/uimg -p -n tmp/uimage/part $(RELDIR)/var/firmware-update.uimg
+	@$(REPODIR)/src/uimg/uimg -p -n tmp/uimage/part $(RELDIR)/var/firmware-update.uimg
 	@echo "PACK   $(RELDIR)/$(FWFILE)"
 	@cd $(RELDIR); $(TAR) cf $(FWFILE) var
 	@rm -rf $(RELDIR)/var
 	@echo
 	@echo +++ Done +++
+	@echo "SOC:        $(SOC)"
+	@echo "MODEL:      $(MODEL)"
+	@echo "FWVER:      $(FWVER)"
+	@echo "LABOR:      $(BETA)"
+	@echo "BR_VERSION: $(BR_VERSION)"
+	@echo
 	@echo Image is: $@
 	@echo
 
 $(RELDIR):
 	@echo "PREP   $(RELDIR)"
 	@mkdir -p $(RELDIR)
+
+info:
+	@echo "SOC:        $(SOC)"
+	@echo "MODEL:      $(MODEL)"
+	@echo "FWVER:      $(FWVER)"
+	@echo "LABOR:      $(BETA)"
+	@echo "BR_VERSION: $(BR_VERSION)"
 
 ###############################################################################################
 #
@@ -271,7 +284,6 @@ arm-brconfig:
 	@echo +++ run \"make package-arm\" to generate application image with modified configuration.
 	@echo
 
-
 ifeq ($(BR_VERSION),)
 rebuild:
 	make -C packages/x86 base base-install
@@ -291,6 +303,8 @@ help:
 	@echo 'atom-brconfig    : Change buildroot configuration for atom'
 	@echo 'arm-brconfig     : Change buildroot configuration for arm'
 	@echo 'squashfstools-be : Download freetz and build big endian squashfs tools for host'
+	@echo 'config           : Edit configuration'
+	@echo 'reconfig         : Reset and edit configuration'
 
 
 ###############################################################################################
@@ -305,3 +319,7 @@ clean:
 	@rm -f atom/filesystem.image
 	@rm -f atom/.applied* 
 	@rm -f .fwver.cache
+
+distclean: clean
+	@rm -f conf.mk
+	@rm -f packages/x86/ffritz/conf.mk

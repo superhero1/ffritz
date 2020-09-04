@@ -33,5 +33,6 @@ fi
 ip route add 224.0.0.251/32 dev lan
 
 # Run the shairport daemon
+# XX start delay so mdns works the first time (?)
 #
-ffdaemon shairport-sync -u -c $NVRAM/etc/shairport-sync.conf
+ffdaemon -b 30 shairport-sync -u -c $NVRAM/etc/shairport-sync.conf
