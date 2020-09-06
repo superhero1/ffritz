@@ -698,7 +698,7 @@ main (int argc, char **argv)
 
     if (daemon_mode)
     {
-	if (daemon2 (0, 0, 0, 0, "usbplayd"))
+	if (daemon2 (0, 0, 0, 0, 0, "usbplayd"))
 	{
 	    exit (1);
 	}

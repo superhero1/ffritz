@@ -20,19 +20,19 @@ reconfig:
 	@vi conf.mk
 
 ifeq ($(MAKECMDGOALS),clean)
-NOCFG=1
+NO_USER_CONF=1
 endif
 ifeq ($(MAKECMDGOALS),config)
-NOCFG=1
+NO_USER_CONF=1
 endif
 ifeq ($(MAKECMDGOALS),reconfig)
-NOCFG=1
+NO_USER_CONF=1
+endif
+ifeq ($(MAKECMDGOALS),rebuild)
+NO_USER_CONF=1
 endif
 
-ifneq ($(NOCFG),1)
 include topcfg.mk
-endif
-
 
 ifeq ($(HOSTTOOLS),/host/$(HOST))
 HOSTTOOLS=$(REPODIR)/host/$(HOST)
@@ -284,27 +284,23 @@ arm-brconfig:
 	@echo +++ run \"make package-arm\" to generate application image with modified configuration.
 	@echo
 
-ifeq ($(BR_VERSION),)
 rebuild:
-	make -C packages/x86 base base-install
-else
-rebuild:
-	@echo Rebuilding default binaries is not supported for BR_VERSION=$(BR_VERSION)
-endif
+	make -C packages/x86 base base-install BR_VERSION=-2019.05
 
 help:
 	@echo 'Make targets:'
 	@echo '------------'
 	@echo 'all              : Rebuild modified file system with pre-built binaries (or those from the "rebuild" target)'
 	@echo 'rebuild          : Rebuild binaries for modified filesystem images'
-	@echo 'package          : Rebuild optional packages'
-	@echo 'package-arm      : Rebuild optional package for arm'
-	@echo 'package-atom     : Rebuild optional package for atom'
+	@echo 'package          : Rebuild application packages'
+	@echo 'package-arm      : Rebuild application package for arm'
+	@echo 'package-atom     : Rebuild application package for atom'
 	@echo 'atom-brconfig    : Change buildroot configuration for atom'
 	@echo 'arm-brconfig     : Change buildroot configuration for arm'
 	@echo 'squashfstools-be : Download freetz and build big endian squashfs tools for host'
 	@echo 'config           : Edit configuration'
 	@echo 'reconfig         : Reset and edit configuration'
+	@echo 'info             : Show configuration'
 
 
 ###############################################################################################

@@ -13,7 +13,9 @@
 #
 # 
 include $(REPODIR)/conf.mk.dfl
+ifeq ($(NO_USER_CONF),1)
 -include $(REPODIR)/conf.mk
+endif
 
 # Determine image type
 #
@@ -85,5 +87,3 @@ ATOM_IMG_VERSION=$(shell cat $(REPODIR)/packages/x86/ffritz/version)
 
 ARM_EXT_IMAGE = ffritz-arm-$(ARM_IMG_VERSION)-$(SOC)-fos7.tar.gz
 APP_IMAGE     = ffritz-app-$(ATOM_IMG_VERSION)-$(SOC)-fos7$(FOS_SUB_VERSION).tar
-
-

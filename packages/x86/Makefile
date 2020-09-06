@@ -7,8 +7,9 @@ include $(ARCHDIR)/../paths.mk
 
 MODDIR		= $(shell readlink -f ../../atom/mod)
 STAGEDIR	= $(shell readlink -f .)/staging
+BRDIR           = $(ARCHDIR)/buildroot$(BR_VERSION)
 
-BASE_PACKAGES=$(BRBASEDIR) dropbear privatekeypassword #unionfs-fuse
+BASE_PACKAGES=$(BRDIR) dropbear privatekeypassword
 
 .PHONY:	$(BASE_PACKAGES)
 
@@ -53,7 +54,7 @@ stage:
 		ln -sv ../lib/ff/exec/ffwrap $$f;\
 	    done
 
-buildroot:	_TGT=base
+$(BRDIR):	_TGT=base
 
 $(BASE_PACKAGES):
 	make -C $@ $(_TGT)
