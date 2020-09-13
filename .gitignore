@@ -5,8 +5,11 @@ conf.mk
 **/squashfs-root/
 **/orig/
 **/output*/
-**/build*/
+**/build/
+**/build-*/
+**/build_*/
 **/\.*
 !**/.gitignore
 **/filesystem.image
 **/release*/
+**/staging*/
