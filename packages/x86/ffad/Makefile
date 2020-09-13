@@ -3,13 +3,16 @@ CONFTYPE=legacy
 
 INSTALL_BIN  = $(BUILDDIR)/ffad
 
-MAKE_OPTIONS = CASH_EXT_LIST="$(wildcard($(shell pwd)/ext/*))" CROSS_COMPILE=$(CROSS) tool
+MAKE_OPTIONS = CROSS_COMPILE=$(CROSS) tool
+
+CUSTOM_DEP   = $(BUILDDIR)/ext/ffad
 
 include ../../package.mk
 
-all:	$(BUILDDIR)/ffad
+all:	$(BUILDDIR)/ffad 
 
 $(BUILDDIR)/ffad: $(BUILDDIR)/cash
 	cp $(BUILDDIR)/cash $(BUILDDIR)/ffad
-      
 
+$(BUILDDIR)/ext/ffad:
+	@test -d $@ || (mkdir -p $@ && cp -va ext/ffad $(BUILDDIR)/ext)
