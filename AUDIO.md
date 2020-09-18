@@ -109,6 +109,16 @@ If you do not want to start mpd:
 
 The CLI client for mpd (mpc) is available on the atom core.
 
+NOTE: If https/sftp URLs (e.g. for web radio streams) fail to start, the root
+cause might be that the curl plugin fails to perform the certificate validation.  
+The workaround is to set the verify_peer option in the input section of
+/var/media/ftp/ffritz/mpd.conf, for example:
+
+input {
+        plugin "curl"
+        verify_peer "no"
+}
+
 Volume Control
 --------------
 The mpd binary in this package has been modified to support hardware volume
