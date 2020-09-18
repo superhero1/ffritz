@@ -11,7 +11,7 @@ include ../../package.mk
 
 all:	$(BUILDDIR)/ffad 
 
-$(BUILDDIR)/ffad: $(BUILDDIR)/cash
+$(BUILDDIR)/ffad:
 	cp $(BUILDDIR)/cash $(BUILDDIR)/ffad
 
 $(BUILDDIR)/ext/ffad:
