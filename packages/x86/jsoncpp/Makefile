@@ -1,9 +1,9 @@
 ARCHDIR=$(shell while test -f arch.mk && echo $$PWD && exit 0; test $$PWD != /; do cd ..; done)
-include $(ARCHDIR)/../paths.mk
+include $(ARCHDIR)/arch.mk
 
 DESTDIR     = $(TOPDIR)/output
 
-URL     = $(shell cat $(PKGTOP)/url-jsoncpp)
+URL     = $(call URLGET,jsoncpp)
 FILE    = $(DLDIR)/$(shell basename $(URL))
 
 OBJECTS = json_reader.o json_writer.o json_value.o

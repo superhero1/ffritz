@@ -3,14 +3,19 @@
 #
 . /usr/local/etc/ffritz-env.sh || exit 1
 
+MODULE_DIR=$FFINSTDIR/lib/modules/`uname -r`
+
 if [ "x$1" = "xstop" ]; then
     ffdaemon -K usbplayd
     exit 0
 fi
 
+RDIR=/var/run/usbplayd
+
 # Set default/user configuration
 #
-USBPLAYD_ARGS="-P /var/tmp/mpd.fifo:44100 -P /var/tmp/shairport.fifo:44100 -P /var/tmp/bt.fifo:44100"
+USBPLAYD_ARGS="-P $RDIR/mpd.fifo:44100 -P $RDIR/shairport.fifo:44100 -P $RDIR/bt.fifo:44100"
+USE_ALSA=0
 test -z $2 || . $2
 
 if [ "x$1" = "xgetconfig" ]; then
@@ -18,12 +23,23 @@ if [ "x$1" = "xgetconfig" ]; then
 	echo "# Input pipes with input sample rate"
 	echo "# Precedence is from left to right"
 	echo
-	echo 'USBPLAYD_ARGS="-P /var/tmp/mpd.fifo:44100 -P /var/tmp/shairport.fifo:44100 -P /var/tmp/bt.fifo:44100"'
+	echo 'USBPLAYD_ARGS="-P /var/run/usbplayd/mpd.fifo:44100 -P /var/run/usbplayd/shairport.fifo:44100 -P /var/run/usbplayd/bt.fifo:44100"'
+	echo
+	echo '# Whether to use ALSA rather than usbplayd (not supported on all platforms)'
+	echo '# 0 means always use usbplayd (default)'
+	echo '# 1 means always use ALSA'
+	echo '# 2 try alsa but fall back to usbplayd if not supported'
+	echo '#'
+	echo '#USE_ALSA=2'
 	exit 0
 fi
 
 if [ "x$1" = "xinfo" ]; then
-	echo DAEMONS=usbplayd
+	if [ ! -r /var/run/ff_use_alsa ]; then
+		echo DAEMONS=usbplayd
+	else
+		echo STATUS=on
+	fi
 	exit 0
 fi
 
@@ -31,13 +47,53 @@ if [ "x$1" != "xstart" ]; then
 	exit 0
 fi
 
+mkdir -p $RDIR
+
+# WA when not running usbplayd
+for f in mpd.fifo shairport.fifo bt.fifo; do
+	mkfifo $RDIR/$f 2>/dev/null
+	chmod 666 $RDIR/$f
+	ln -sf $RDIR/$f /tmp/$f
+done
+
 # Provide volume file upfront, the clients have no write access right to
 # /var/tmp unless they run as root
 #
-if [ ! -f /var/tmp/volume ]; then
-    echo 50 > /var/tmp/volume
+if [ ! -f $RDIR/volume ]; then
+    echo 50 > $RDIR/volume
 fi
-chmod 666 /var/tmp/volume
+ln -sf $RDIR/volume /tmp/volume
+chmod 666 $RDIR/volume
+
+usb_audio_module()
+{
+	chmod -R 777 /dev/snd
+	/sbin/lsmod | grep snd_usb_audio >/dev/null && return 0
+
+	test -r $MODULE_DIR/soundcore.ko || return 1
+	for m in soundcore snd snd-timer snd-pcm snd-rawmidi snd-usbmidi-lib snd-hwdep snd-usb-audio; do
+		echo loading $m;
+		/sbin/lsmod | grep $m >/dev/null || \
+		/sbin/insmod $MODULE_DIR/$m.ko || { echo failed; return 1; }
+	done
+
+	return 0
+}
+
+rm -f /var/run/ff_use_alsa
+if [ "$USE_ALSA" != "0" ]; then
+	usb_audio_module
+	if [ $? -ne 0 ]; then
+		echo Failed to load snd kernel modules >> $FFLOG
+		if [ "$USE_ALSA" = "1" ]; then
+			return 1
+		fi
+	else
+		# indicator to other sound services to use alsa
+		touch /var/run/ff_use_alsa
+		return 0
+	fi
+fi
 
 umask 0
-ffdaemon usbplayd -V /var/tmp/volume $USBPLAYD_ARGS
+ffdaemon usbplayd -V $RDIR/volume $USBPLAYD_ARGS

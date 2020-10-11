@@ -3,7 +3,7 @@
 # Simple installer for ff release image
 # Verifies checksum, copies to right places and updates nvram
 #
-# usage: ffinstall image-file sha256sum
+# usage: ffinstall [-r] [image-file sha256sum]
 #
 #
 export FFRITZ_HOME=/var/media/ftp/ffritz
@@ -13,30 +13,54 @@ TMPDIR=$DATADIR/tmp
 BINFILE=$DATADIR/ffimage${REL}.bin
 CSUMFILE=/var/tmp/ffnvram/ffimage${REL}.sha256
 
+usage()
+{
+	echo "usage: $0 [-h] [-r] [release-image sha256sum]"
+	echo "       release-image can be relative to /var/media/ftp"
+	echo "       If omitted, the currently installed image"
+	echo "       is restarted."
+	echo "       -r : Attempt to stop/kill all processes using /usr/local,"
+	echo "            unmount, install, remount and restart"
+}
+
 restart=0
+if [ "$1" = "-h" ]; then
+	usage
+	exit 0
+fi
+
 if [ "$1" = "-r" ]; then
 	restart=1
 	shift
 fi
 
-if [ "$1" = "" -o "$2" = "" ]; then
-	echo "usage: $0 [-r] release-image sha256sum"
-	echo "       release-image can be relative to /var/media/ftp"
-	echo "       -r : Attempt to stop/kill all processes using /usr/local,"
-	echo "            unmount, install, remount and restart"
-	exit 1
-fi
-
-if [ -f $1 ]; then
-	relfile=$1
-elif [ -f /var/media/ftp/$1 ]; then
-	relfile=/var/media/ftp/$1
+load_new=1
+if [ "$1" != "" ]; then
+	if [ "$2" = "" ]; then
+		usage 1>&2
+		exit 1
+	fi
 else
-	echo usage: $0 release-image
-	exit 1
+	load_new=0
 fi
 
-csum=$2
+if [ $load_new -eq 0 -a $restart -eq 0 ]; then
+	usage
+	exit 0
+fi
+
+if [ $load_new -eq 1 ]; then
+	if [ -f $1 ]; then
+		relfile=$1
+	elif [ -f /var/media/ftp/$1 ]; then
+		relfile=/var/media/ftp/$1
+	else
+		echo $1 not found 1>&2	
+		exit 1
+	fi
+
+	csum=$2
+fi
 
 if [ $restart -eq 1 ]; then
     	if [ -f /usr/local/etc/ffshutdown ]; then
@@ -66,48 +90,56 @@ if [ $restart -eq 1 ]; then
 			exit 1
 		fi
 	fi
+
+	mount|grep /usr/local >/dev/null
+	if [ $? -eq 0 ]; then
+		echo ERROR /usr/local still mounted 1>&2
+		exit 2
+	fi
 fi
 
 rm -rf ${TMPDIR}
 mkdir -p ${TMPDIR} || exit 1
 
-echo +++ Unpacking
-tar -x -C ${TMPDIR} -f $relfile || exit 1
+if [ $load_new -eq 1 ]; then
+	echo +++ Unpacking
+	tar -x -C ${TMPDIR} -f $relfile || exit 1
 
-echo +++ Verifying compatibility
+	echo +++ Verifying compatibility
 
-if [ ! -r ${TMPDIR}/glibc-version ]; then
-	echo FAILED: Expected glibc, image is for uClibc
-	exit 1
+	if [ ! -r ${TMPDIR}/glibc-version ]; then
+		echo FAILED: Expected glibc, image is for uClibc
+		exit 1
+	fi
+
+	echo +++ Verifying sha256sum
+
+	FSIG=`cat ${TMPDIR}/ffimage.sha256sum`
+	VSIG=`openssl dgst -sha256 ${TMPDIR}/ffimage.bin | sed -e 's/.* //'`
+
+	if [ "$VSIG" != "$FSIG" ]; then
+		echo " Does not match, expected $FSIG, got $VSIG"
+		exit 1
+	fi
+
+	if [ "$VSIG" != "$csum" ]; then
+		echo " Does not match, expected $FSIG, given $csum"
+		exit 1
+	fi
+
+	if [ -f $BINFILE ]; then
+		echo +++ Backing up old image
+		rm -f ${BINFILE}.old
+		mv ${BINFILE} ${BINFILE}.old
+	fi
+
+	echo +++ Installing
+	mv ${TMPDIR}/ffimage.sha256sum ${CSUMFILE} || exit 1
+	mv ${TMPDIR}/ffimage.bin ${BINFILE} || exit 1
+
+	echo +++ Synchronizing nvram
+	nvsync || exit 1
 fi
-
-echo +++ Verifying sha256sum
-
-FSIG=`cat ${TMPDIR}/ffimage.sha256sum`
-VSIG=`openssl dgst -sha256 ${TMPDIR}/ffimage.bin | sed -e 's/.* //'`
-
-if [ "$VSIG" != "$FSIG" ]; then
-	echo " Does not match, expected $FSIG, got $VSIG"
-	exit 1
-fi
-
-if [ "$VSIG" != "$csum" ]; then
-	echo " Does not match, expected $FSIG, given $csum"
-	exit 1
-fi
-
-if [ -f $BINFILE ]; then
-	echo +++ Backing up old image
-	rm -f ${BINFILE}.old
-	mv ${BINFILE} ${BINFILE}.old
-fi
-
-echo +++ Installing
-mv ${TMPDIR}/ffimage.sha256sum ${CSUMFILE} || exit 1
-mv ${TMPDIR}/ffimage.bin ${BINFILE} || exit 1
-
-echo +++ Synchronizing nvram
-nvsync || exit 1
 
 if [ $restart -eq 1 ]; then
 	echo +++ Remounting

@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# This is a hack for pihole, which requires re-directing DNS/DHCP ports
+# (53->50053, 67->50067) via libmultid.
+# The problem with killing/restarting multid at runtime is
+# - It's DNS server will no longer serve requests, which is bad if 
+#   pihole should not be DHCP server and could ask multid for
+#   local addresses.
+# - IPV6 to external is generally no longer working (!?)
+#
+# So the hack is to start multid with libmultid from the very beginning, 
+# having re-routed ports 53/67 via socat to 500xx. As this makes 
+# DNS responses rather slow it should only be used if it's planned
+# to switch to another DNS server (pihole) later on.
+# The proper way would be to use a iptables rule, but that's not available
+# on vanilla FritzOS.
+# 
+if [ -r /nvram/ffnvram/use_pihole ]; then
+	cd /tmp
+	nohup socat -T3 udp-listen:53,reuseaddr,fork UDP:127.0.0.1:50053&
+	nohup socat -T3 udp6-listen:53,reuseaddr,fork UDP6:[::1]:50053&
+	nohup socat -T3 tcp-listen:53,reuseaddr,fork TCP:127.0.0.1:50053&
+	nohup socat -T3 tcp6-listen:53,reuseaddr,fork TCP6:[::1]:50053&
+	nohup socat -T3 udp-listen:67,reuseaddr,fork UDP:127.0.0.1:50067&
+	nohup socat -T3 udp6-listen:547,reuseaddr,fork UDP6:[::1]:50547&
+	LD_PRELOAD=/usr/lib/ff/lib/libmultid.so LMD_CHANGE_DNS=1 LMD_CHANGE_DHCP=1 /sbin/multid $*
+else
+	/sbin/multid $*
+fi

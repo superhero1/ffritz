@@ -21,7 +21,12 @@ export FFLOG=/var/log/ffritz.log
 # Do not even try to mount the image if ffimage=0 is specified
 # in kernel_args
 #
-grep 'ffimage=0' /sys/firmware/efi/vars/kernel_args-*/data >/dev/null 2>&1 && exit 1
+grep 'ffimage=0' /sys/firmware/efi/vars/kernel_args-*/data >/dev/null 2>&1 && return 1
+
+# Same if there is already something mounted to /usr/local
+#
+mount|grep "on /usr/local " && { echo /usr/local already mounted 1>&2; return 1; }
+
 
 DATADIR=$FFRITZ_HOME/data
 

@@ -21,3 +21,5 @@ bzImage:
 
 test:
 	make -C $(BUILDDIR) ARCH=x86 CROSS_COMPILE=i686-buildroot-linux-gnu- puma7-crash-kernel_defconfig
+
+install-modules:

@@ -45,9 +45,9 @@ $FFINSTDIR/etc/mkusers || exit 1
 mkdir -p /var/run/mpd
 chown ffritz /var/run/mpd
 
-# Make sure usbplayd runs
+# Make sure usbplayd runs and/or sound modules are loaded
 #
-$FFINSTDIR/etc/init.d/*usbplayd start
+ffservice start usbplayd
 
 # generate mpd.conf from template
 #
@@ -69,6 +69,7 @@ touch /var/log/mpd.log
 chmod 666 /var/log/mpd.log
 mkdir -p /var/run/mpd
 chmod 777 /var/run/mpd
+chmod -R 777 /dev/snd
 
 # Run mpd (as respawning daemon)
 #

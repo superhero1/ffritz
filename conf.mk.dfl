@@ -39,7 +39,8 @@ KEEP_ORIG = 1
 
 ################################################################################
 
-## Toolchain option
+## Toolchain options
+##
 ## Use this option to use a newer buildroot version for the application package.
 ## Default depends on selected firmware image
 ##
@@ -54,4 +55,11 @@ KEEP_ORIG = 1
 ## and is enabled by default
 ##
 #PARALLEL=$(shell cat /proc/cpuinfo | grep processor | wc -l)
+
+## At least the Atom toolchain 2020-02 is configured to "external toolchain".
+## By default this external toolchain is loaded from my shaky server, but you can set
+## SDK_DOWNLOAD to 0 build it. Or load it from somewhere else and
+## put it to where "make info" tells you to.
+## 
+SDK_DOWNLOAD=1
 

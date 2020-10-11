@@ -2,6 +2,21 @@
 #
 # Stops pihole services in buildroot envoronment
 #
+multid_start()
+{
+	if [ -r /sbin/ffmultid -a -r /tmp/ffnvram/use_pihole ]; then
+		cd /tmp
+		nohup socat -T3 udp-listen:53,reuseaddr,fork UDP:127.0.0.1:50053 >/dev/null&
+		nohup socat -T3 udp6-listen:53,reuseaddr,fork UDP6:[::1]:50053 >/dev/null&
+		nohup socat -T3 tcp-listen:53,reuseaddr,fork TCP:127.0.0.1:50053 >/dev/null&
+		nohup socat -T3 tcp6-listen:53,reuseaddr,fork TCP6:[::1]:50053 >/dev/null&
+		nohup socat -T3 udp-listen:67,reuseaddr,fork UDP:127.0.0.1:50067 >/dev/null&
+		nohup socat -T3 udp6-listen:547,reuseaddr,fork UDP6:[::1]:50547 >/dev/null&
+	else
+		/sbin/multid
+	fi
+}
+
 
 kill_daemon()
 {
@@ -32,6 +47,17 @@ echo +++ stopping lighttpd
 ffdaemon -K lighttpd
 echo +++ stopping pihole-FTL
 kill_daemon pihole-FTL 10
-echo +++ restarting multid 
-kill_daemon multid 10
-/sbin/multid
+if [ -r /sbin/ffmultid -a -r /nvram/ffnvram/use_pihole ]; then
+	echo +++ restarting redirection to multid DNS/DHCP ports
+	cd /tmp
+	nohup socat -T3 udp-listen:53,reuseaddr,fork UDP:127.0.0.1:50053 >/dev/null&
+	nohup socat -T3 udp6-listen:53,reuseaddr,fork UDP6:[::1]:50053 >/dev/null&
+	nohup socat -T3 tcp-listen:53,reuseaddr,fork TCP:127.0.0.1:50053 >/dev/null&
+	nohup socat -T3 tcp6-listen:53,reuseaddr,fork TCP6:[::1]:50053 >/dev/null&
+	nohup socat -T3 udp-listen:67,reuseaddr,fork UDP:127.0.0.1:50067 >/dev/null&
+	nohup socat -T3 udp6-listen:547,reuseaddr,fork UDP6:[::1]:50547 > /dev/null&
+else
+	echo '!!! restarting multid (DNS might no longer work, restart required)'
+	kill_daemon multid 10
+	/sbin/multid
+fi

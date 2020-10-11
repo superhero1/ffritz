@@ -4,7 +4,7 @@
 ## are listed in ../../package.mk
 ##
 ## By default,
-## - tarball/git repository is downloaded (../../url-mypackage or ../../git-mypackage must exist)
+## - tarball/git repository is downloaded (../../external/url-mypackage or ../../external/git-mypackage must exist)
 ## - extracted/cloned below "build",
 ## - patched with all .patch files located here
 ## - configured according to CONFTYPE

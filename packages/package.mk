@@ -25,10 +25,16 @@
 # 
 
 ARCHDIR=$(shell while test -f arch.mk && echo $$PWD && exit 0; test $$PWD != /; do cd ..; done)
-include $(ARCHDIR)/../paths.mk
+include $(ARCHDIR)/arch.mk
 
-CC	:= $(CROSS)gcc
+CC	= $(CROSS)gcc
+LD	= $(CROSS)ld
+CXX     = $(CROSS)g++
 CONFIGURE_FLAGS	= --target=$(HOST) --host=$(HOST)
+
+export CFLAGS=--sysroot=$(SYSROOT)
+export LDFLAGS=--sysroot=$(SYSROOT)
+export CXXFLAGS=--sysroot=$(SYSROOT)
 
 PATCHES=$(shell ls *.patch 2>/dev/null | sort)
 
@@ -39,15 +45,15 @@ PKGNAME     = $(shell basename `pwd`)
 endif
 
 ifeq ($(URL),)
-URLFILE = $(PKGTOP)/url-$(PKGNAME)
-SHAFILE = $(PKGTOP)/sha-$(PKGNAME)
-URL	= $(shell test -r $(URLFILE) && cat $(URLFILE))
+URLFILE = $(URL_PREFIX)$(PKGNAME)
+SHAFILE = $(SHA_PREFIX)$(PKGNAME)
+URL	= $(call URLGET,$(PKGNAME))
 endif
 
 ifeq ($(GIT),)
-GITFILE = $(PKGTOP)/git-$(PKGNAME)
-COMMITFILE = $(PKGTOP)/commit-$(PKGNAME)
-GIT	= $(shell test -r $(GITFILE) && cat $(GITFILE))
+GITFILE = $(GIT_PREFIX)$(PKGNAME)
+COMMITFILE = $(COMM_PREFIX)$(PKGNAME)
+GIT	= $(call GITGET,$(PKGNAME))
 endif
 
 ifeq ($(SRCDIR),)
@@ -57,7 +63,7 @@ else
 ifneq ($(GIT),)
 REPO	= $(DLDIR)/$(PKGNAME)_git
 ifeq ($(COMMIT),)
-COMMIT  = $(shell test -r $(COMMITFILE) && cat $(COMMITFILE))
+COMMIT  = $(call COMMGET,$(PKGNAME))
 ifeq ($(COMMIT),)
 COMMIT	= HEAD
 endif
@@ -89,7 +95,7 @@ ifeq ($(CONFTYPE),autoreconf)
 ALL_DEP = $(BUILDDIR)/config.status
 AUTORECONF=autoreconf -vfi
 else
-MAKE_OPTIONS += CC=$(CC)
+MAKE_OPTIONS += CC="$(CC) --sysroot=$(SYSROOT)" LD="$(LD) --sysroot=$(SYSROOT)"
 ALL_DEP = $(BUILDDIR)$(MAKE_SUBDIR)/Makefile
 endif
 endif
@@ -134,34 +140,33 @@ _INST=$(shell echo "if [ -d $(1) ]; then mkdir -p $(2); cp -arv $(1) $(2); else 
 #------------------------------------
 ifneq ($(FILE),)
 $(FILE): $(wildcard $(URLFILE) $(SHAFILE))
-	@cd $(DLDIR); wget $(URL) -O $(FILE)
-	if [ -r $(SHAFILE) ]; then cd $(DLDIR); sha256sum -c $(SHAFILE); fi
-	touch $(FILE)
+	@$(call WGET,$(URL),$(FILE),$(SHAFILE))
+	@touch $(FILE)
 endif
 
 ifneq ($(REPO),)
 $(REPO): $(wildcard $(GITFILE) $(COMMITFILE))
-	rm -rf $(REPO)
-	git clone --bare $(GIT) $(REPO)
+	$(call RMDIR,$(REPO))
+	git clone --bare $(GIT) $(REPO) 
 endif
 
 ifneq ($(SRCDIR),)
 $(BUILDDIR):	$(SRCDIR)
-	rm -rf $(BUILDDIR)
+	$(call RMDIR,$(BUILDDIR))
 	cp -ar $(SRCDIR) $(BUILDDIR)
 	cd $(BUILDDIR); for p in $(PATCHES); do echo Applying $$p ..; patch -p1 < ../$$p || exit 1; done
 	cd $(BUILDDIR); $(AUTORECONF)
 else
 ifneq ($(FILE),)
 $(BUILDDIR):	$(FILE) $(wildcard $(URLFILE) $(SHAFILE))
-	rm -rf $(BUILDDIR)
+	$(call RMDIR,$(BUILDDIR))
 	mkdir -p $(BUILDDIR)
 	cd $(BUILDDIR); tar xf $(FILE) --strip-components=1
 	cd $(BUILDDIR); for p in $(PATCHES); do echo Applying $$p ..; patch -p1 < ../$$p || exit 1; done
 	cd $(BUILDDIR); $(AUTORECONF)
 else
 $(BUILDDIR):	$(REPO)
-	@rm -rf $(BUILDDIR)
+	@$(call RMDIR,$(BUILDDIR))
 	@git clone $(REPO) $(BUILDDIR)
 	@cd $(BUILDDIR); git submodule update --init
 	@cd $(BUILDDIR); git checkout $(COMMIT)
@@ -185,18 +190,18 @@ $(BUILDDIR)$(MAKE_SUBDIR)/Makefile:    $(BUILDDIR)
 $(BUILDDIR)/configure:    $(BUILDDIR)
 
 $(BUILDDIR)/config.status:	$(BUILDDIR)/configure
-	cd $(BUILDDIR); export PATH=$(TOOLCHAIN):$(PATH); ./configure $(CONFIGURE_FLAGS) --build=x86_64-unknown-linux-gnu --prefix=/usr/local --exec-prefix=/usr --sysconfdir=/usr/local/etc --localstatedir=/var --program-prefix= --disable-doc --disable-docs --disable-documentation --disable-static --enable-shared $(PKG_CONFIGURE_FLAGS)
+	cd $(BUILDDIR); PATH=$(TOOLCHAIN):$(PATH) ./configure CC=$(CC) $(CONFIGURE_FLAGS) --build=x86_64-unknown-linux-gnu --prefix=/usr/local --exec-prefix=/usr --sysconfdir=/usr/local/etc --localstatedir=/var --program-prefix= --disable-doc --disable-docs --disable-documentation --disable-static --enable-shared $(PKG_CONFIGURE_FLAGS)
 	touch $@
 
 clean:	clean-pkg 
  
 clean-pkg:
-	rm -rf $(BUILDDIR)
+	$(call RMDIR,$(BUILDDIR))
 	rm -f .*.stamp
 
 install: install-pkg
 
-install-pkg: all
+install-pkg: #all
 	@$(foreach f,$(INSTALL_BIN),$(call _INST,$(f),$(DESTDIR)/bin))
 	@$(foreach f,$(INSTALL_LIB),$(call _INST,$(f),$(DESTDIR)/lib))
 	@$(foreach f,$(INSTALL_ETC),$(call _INST,$(f),$(DESTDIR)/etc))

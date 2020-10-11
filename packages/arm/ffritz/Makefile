@@ -6,7 +6,8 @@
 #       NOSTRIP Set to 1 to not strip binaries (for debugging)
 #
 ARCHDIR=$(shell while test -f arch.mk && echo $$PWD && exit 0; test $$PWD != /; do cd ..; done)
-include $(ARCHDIR)/../paths.mk
+include $(ARCHDIR)/arch.mk
+
 
 BR_TGT	    = $(realpath $(BUILDROOT)/output/target)
 BR_TGT_LIB1 = $(BR_TGT)/lib
@@ -15,6 +16,7 @@ BR_TGT_BIN  = $(BR_TGT)/usr/bin
 BR_TGT_SBIN = $(BR_TGT)/usr/sbin
 
 BINFILES   += $(wildcard bin/*)
+BINFILES   += $(wildcard bin$(BR_VERSION)/*)
 BINFILES   += $(wildcard $(CMNDIR)/ffritz/bin/*)
 BINFILES   += $(wildcard $(CMNDIR)/ffritz/bin$(BR_VERSION)/*)
 
@@ -82,6 +84,7 @@ $(SUBDIRS):
 	make -C $@
 
 $(INSTDIRS):
+	make -C `dirname $@` DESTDIR=$(STAGEDIR) INSTDIR=$(STAGEDIR)
 	make -C `dirname $@` install DESTDIR=$(STAGEDIR) INSTDIR=$(STAGEDIR)
 
 $(IMAGE): $(BINFILES) $(ETCFILES) stage

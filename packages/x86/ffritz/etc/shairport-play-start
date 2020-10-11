@@ -1,0 +1,16 @@
+#!/bin/sh
+#
+# Script which executes before shairport starts playing
+
+## make sure mpd is stopped
+#
+mpc stop
+chmod -R 777 /dev/snd
+
+## Add you own stuff here, e.g. IR commands to start/configure amplifier
+#
+#irsend SEND_ONCE RAX16 AMP_POWER
+#usleep 100000
+#irsend SEND_ONCE RAX16 AMP_AUX
+
+

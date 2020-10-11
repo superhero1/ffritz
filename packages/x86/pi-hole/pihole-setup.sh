@@ -17,7 +17,9 @@ if [ -d $BR_USER_COPY/pihole -a "$1" != "-f" ]; then
 	exit 1
 fi
 
-test -r /usr/local/share/pihole  || { echo pihole not installed; exit 1; }
+INSTDIR=/usr/local/buildroot/usr/share/pihole
+
+test -r $INSTDIR  || { echo pihole not installed; exit 1; }
 test -r $BR_USER_COPY/dev/shm || { echo /dev/shm does not exist; exit 1; }
 test -r /usr/local/lib/libmultid.so || { echo /usr/lib/libmultid.so not installed; exit 1; }
 
@@ -41,8 +43,8 @@ fi
 
 echo +++ Extracting template to $BR_USER_COPY
 cd $BR_USER_COPY || exit 1
-tar xf /usr/local/share/pihole/pihole-template.tar.gz || exit 1
-cp /usr/local/share/pihole/pihole $BR_USER_COPY/usr/bin
+tar xf $INSTDIR/pihole-template.tar.gz || exit 1
+cp $INSTDIR/pihole $BR_USER_COPY/usr/bin
 cp /usr/local/bin/sha256sum $BR_USER_COPY/usr/bin
 cp /usr/local/bin/timeout $BR_USER_COPY/usr/bin
 

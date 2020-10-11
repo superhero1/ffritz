@@ -1,0 +1,11 @@
+--- orig/etc/init.d/rc.net	2020-09-02 10:39:26.000000000 +0200
++++ mod/etc/init.d/rc.net	2020-10-11 08:30:40.860000000 +0200
+@@ -104,7 +104,7 @@
+ multidstart()
+ {
+    if [ "`pidof multid`" = "" ] ; then
+-      eval $REDZONECHECK multid $VERBOSEPARAM $NO_TR069DISCOVER_PARAM
++      eval $REDZONECHECK ffmultid $VERBOSEPARAM $NO_TR069DISCOVER_PARAM
+       if [ "`pidof multid`" = "" ] ; then
+          echo "FATAL: multid not running after started" 1>&2
+       fi

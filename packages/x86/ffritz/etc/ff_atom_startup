@@ -1,3 +1,10 @@
 #!/bin/sh
 #
-/usr/local/bin/ffdaemon -l 1 /usr/local/etc/ffservices
+ffd=/usr/local/bin/ffdaemon
+
+echo `date` :: Spawning /usr/local/etc/ffservices >> /var/log/ffritz.log 2>&1
+
+$ffd -l 1 /usr/local/etc/ffservices >> /var/log/ffritz.log 2>&1
+
+echo `date` :: ffdaemon: $? >> /var/log/ffritz.log 2>&1
+$ffd -v -I ffservices >> /var/log/ffritz.log 2>&1

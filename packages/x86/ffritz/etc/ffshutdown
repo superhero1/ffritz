@@ -1,36 +1,5 @@
 #!/bin/sh
 #
-# Hack to stop ffritz daemons and unmount /usr/local
+# Stop ffritz daemons and unmount /usr/local
 
-if [ `readlink -f $0` != /var/tmp/ffshutdown ]; then
-	cp -f $0 /var/tmp/ffshutdown
-	exec /var/tmp/ffshutdown
-fi
-
-/usr/local/etc/ffservices stop
-
-sleep 2
-
-pids=`busybox lsof | grep /usr/local | sort -u |sed -e 's/[^0-9].*//'`
-if [ "$pids" != "" ]; then
-	echo +++ stopping PIDs $pids
-	kill $pids
-	sleep 2
-fi
-
-pids=`busybox lsof | grep /usr/local | sort -u |sed -e 's/[^0-9].*//'`
-if [ "$pids" != "" ]; then
-	echo killing PIDs $pids
-	kill -9 $pids
-	sleep 2
-fi
-
-mount|grep /usr/local >/dev/null
-
-if [ $? -eq 0 ]; then
-	umount /usr/local
-	if [ $? -ne 0 ]; then
-		echo FAILED to unmount /usr/local 1>&2
-		exit 1
-	fi
-fi
+exec /usr/local/bin/ffstop -f

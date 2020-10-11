@@ -1,0 +1,17 @@
+#!/bin/sh
+#
+
+if [ "$1" = "-h" ]; then
+	echo "usage: $0 [-h]"
+	exit 0
+fi
+
+ffdaemon -I ffservices 2>&1 > /dev/null
+if [ $? -eq 0 ]; then
+	echo "*** Will not restart as services are still running" 1>&2
+	ffdaemon -v -I ffservices 1>&2
+	exit 1
+fi
+
+cd /tmp
+../etc/ff_atom_startup

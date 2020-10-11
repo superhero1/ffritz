@@ -2,7 +2,21 @@ I thouhgt it would be nice to have mpd (music player daemon) and shairport
 (AirPlay receiver) running on the Atom core of the FritzBox, with some
 USB DAC/Codec as output.
 
-Audio components:
+The "legacy" method for output is to use a user space tool (usbplayd), 
+which was required since the required kernel modules for ALSA caused
+trouble.  
+Some platforms now do support ALSA:  
+- 6591/6660 running FritzOS > 7.19 with kernel 4.9.199
+
+
+usbplayd
+========
+
+This daemon is started to provide audio output. It polls a set of named pipes
+and plays data from one of them to the selected usb audio device. If required it
+will convert the sample rate.
+
+It is used by various audio components:
 
 ~~~
                         +---------+
@@ -22,7 +36,7 @@ Audio components:
            |                 |                 |                 |         
            |                 |                 |                 |        
       +----+-----+   +-------+--------+   +----+----+        +---+----+
-      | mpd.fifo |   | shairport.fifo |   | bt.fifo |        | volume |
+/tmp/ | mpd.fifo |   | shairport.fifo |   | bt.fifo |        | volume |
       +----+-----+   +-------+--------+   +----+----+        +---+----+
            ^                 ^                 ^                 ^
            |                 |                 |                 |
@@ -36,14 +50,7 @@ Audio components:
 +------+     +----------+
 ~~~
 
-usbplayd
-========
-
-This daemon is started to provide audio output. It polls a set of named pipes
-and plays data from one of them to the selected usb audio device. If required it
-will convert the sample rate.
-
-usbplayd is configured in /var/media/ftp/ffritz/usbplayd.conf.
+usbplayd is configured in the service file (ffservice config usbplayd).  
 The default content is:
 
     USBPLAYD_ARGS=-P /var/tmp/mpd.fifo:44100 -P /var/tmp/shairport.fifo:44100 -P /var/tmp/bt.fifo:44100
@@ -51,7 +58,7 @@ The default content is:
 Which means that three pipes are generated, one for mpd, one for shairport
 and one for bluetooth.
 The default sample rate is 44100 (i.e. mpd and shairport need to provide this
-sample rate).
+sample rate). Only 16bit output is supported.
 
 If you have a usb audio device which only supports 48000Hz usbplayd will
 resample the "fifo rate" to the "device rate" using libsamplerate.
@@ -91,6 +98,22 @@ The default is 2 (`SRC_SINC_FASTEST`) (ca. 7% load), a good compromise is
 `MEDIUM_QUALITY` with 17% load (although i don nott hear a difference).
 Add the `-c <algo-number>` switch to `USBPLAYD_ARGS` to change the default.
 
+ALSA
+====
+This is supported on some platforms, and should be activated via the usbplayd
+service (ffservice config usbplayd) by setting USE_ALSA:
+
+Settings:  
+- USE_ALSE=0 means that usbplayd is started unconditionally, no sound kernel
+  modules loaded.
+- USE_ALSE=1 means to not start usbplayd, sound kernel modules will attempted
+  to be loaded.
+- USE_ALSE=2 means to attempt loading sound kernel modules. If this fails, or
+  no modules are available for the running kernel, then usbplayd is started.  
+  This is the default.
+
+Refer to subsequent sections how to configure ALSA for the various services.
+
 MPD
 ===
 
@@ -109,16 +132,6 @@ If you do not want to start mpd:
 
 The CLI client for mpd (mpc) is available on the atom core.
 
-NOTE: If https/sftp URLs (e.g. for web radio streams) fail to start, the root
-cause might be that the curl plugin fails to perform the certificate validation.  
-The workaround is to set the verify_peer option in the input section of
-/var/media/ftp/ffritz/mpd.conf, for example:
-
-input {
-        plugin "curl"
-        verify_peer "no"
-}
-
 Volume Control
 --------------
 The mpd binary in this package has been modified to support hardware volume
@@ -129,6 +142,27 @@ This is done by setting the mixer type of pipe/fifo in mpd.conf to "hardware"
 and specifying the "volume_file" attribute.
 
 The default mpd.conf uses /var/tmp/volume as expected by usbplayd.
+
+ALSA
+----
+To enable ALSA (unless it's already present in the configuration file), add
+the following section:
+
+~~~
+audio_output {
+        type            "alsa"
+        name            "ALSA default output"
+##      device          "hw:0,0"        # optional
+##      format          "44100:16:2"    # optional
+##      mixer_type      "hardware"      # optional
+##      mixer_device    "default"       # optional
+##      mixer_control   "PCM"           # optional
+##      mixer_index     "0"             # optional
+}
+~~~
+
+Use the alsa tools (and probably output in /var/log/mpd.log) to find
+a suitable configuration.
 
 Recorder plugin
 ---------------
@@ -194,10 +228,9 @@ shairport-sync is a server implementation for the AirPort protocol.
 It announces itself as "FritzBox". It will output data to
 /var/tmp/shairport.fifo and has precedence over the MPD audio pipe.
 
-shairport-sync is started via the shairport service (/nvram/ffnvram/etc/rc.d).
-This script will also start the usbplayd service if required.
+shairport-sync is started via the shairport service.
 
-The configuration file is located in /nvram/ffnvram/etc/shairport-sync.conf.
+The configuration file is located in /tmp/ffnvram/etc/shairport-sync.conf.
 
 If you do not want to start shairport:
 
@@ -207,18 +240,21 @@ If you do not want to start shairport:
 Start script
 ------------
 
-You can specify a command to be executed when a device is starting to play
-("run_this_before_play_begins" option).
+You can specify a command to be executed when a device is starting/stopping to play
+("run_this_before_play_begins" option). By default this is set to be
+/tmp/ffnvram/etc/shairport-play-start, stop. The start script will stop mpd output.
 
-I use it to turn on and configure my amplifier via IR/lirc with this
-script:
+I also use it to turn on and configure my amplifier via IR/lirc with this
+script using irsend.
+
+ALSA
+----
+To use ALSA rather than usbplayd output, set the following options in 
+/tmp/ffnvram/etc/shairport-sync.conf:
 
 ~~~
-#!/bin/sh
-
-irsend SEND_ONCE RAX16 AMP_POWER
-usleep 100000
-irsend SEND_ONCE RAX16 AMP_AUX
+output_backend = "alsa";
+mixer_control_name = " >>output of what amixer finds (or comment out)<< ";
 ~~~
 
 Bluetooth
@@ -228,6 +264,11 @@ The bluetooth service runs the a2dp_sink_demo tool which reports itself
 as "FritzBox" endpoint and outputs via the /tmp/bt.fifo pipe to usbplayd.
 
 Pairing data is stored persistently in /var/media/ftp/ffritz/bt.
+
+ALSA
+----
+Bluetooth is currently not yet supported with alsa. You might want to
+stick to usbplayd for now.
 
 NFS Mounts
 ==========
@@ -257,10 +298,10 @@ web radio stations via mpd/mpc:
   restart lirc (ffdaemon -R lircd).
 
 - Edit the irexec definition file (/var/media/ftp/ffritz/etc/lirc/irexec.lircrc) to
-  assign keys on the remote controll to actions.
-  Below is the one i'm using.
+  assign keys on the remote control to actions.  
+  Below is the one i'm using.  
 	- The `CD_PLAY` and `PAUSE_STOP` keys are used to start/stop playing.
-	- The tuner preset keys are used to go back and forth in the playlist
+	- The tuner preset keys are used to go back and forth in the playlist.
 	- The `TUNER_ABCDE` key is used to reset the player to play the first
 	  entry from the readio playlist.
 

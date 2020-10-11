@@ -6,9 +6,9 @@ MAKE_SUBDIR	= /src
 INSTALL_LIB	= $(BUILDDIR)/src/wireguard.ko
 
 ifeq ($(KERNELDIR),)
-KERNELDIR      = $(realpath ../kernel_4.9.199/$(BUILDDIR))
+KERNELDIR       = ../kernel_4.9.199/$(BUILDDIR)
 endif
-KERNELRELEASE  = $(shell cat $(KERNELDIR)/include/config/kernel.release)
+KERNELRELEASE   = $(shell cat $(KERNELDIR)/include/config/kernel.release)
 
 MAKE_OPTIONS    = KERNELDIR=$(KERNELDIR) KERNELRELEASE=$(KERNELRELEASE) CC=$(CC) LD=$(CROSS)ld WITH_WGQUICK=yes
 

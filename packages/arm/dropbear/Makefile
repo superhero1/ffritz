@@ -5,3 +5,5 @@ PKG_CONFIGURE_FLAGS = --with-gnu-ld --disable-nls --disable-pam --disable-syslog
 MAKE_INSTALL_OPTIONS = PROGRAMS="dropbear dropbearkey dropbearconvert dbclient scp"
 
 include ../../package.mk
+
+install: all

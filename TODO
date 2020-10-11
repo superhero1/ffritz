@@ -1,0 +1,3 @@
+- fix br 2020.08
+- add bluetooth for alsa
+- Fix shairport-sync sometimes not advertised (needs ffservice restart shairport)

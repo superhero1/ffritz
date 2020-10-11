@@ -1,58 +1,43 @@
 # Generates application image for atom
 #
-# Options: 
-#       NOSTRIP Set to 1 to not strip binaries (for debugging)
+# Options: conf.mk
 #
-ARCHDIR=$(shell while test -f arch.mk && echo $$PWD && exit 0; test $$PWD != /; do cd ..; done)
-include $(ARCHDIR)/../paths.mk
+ARCHDIR := $(shell while test -f arch.mk && echo $$PWD && exit 0; test $$PWD != /; do cd ..; done)
+include $(ARCHDIR)/arch.mk
 
-BR_TGT	    = $(realpath $(BUILDROOT)/output/target)
+BR_TGT	    = $(BUILDROOT)/output/target
 BR_TGT_LIB1 = $(BR_TGT)/lib
 BR_TGT_LIB  = $(BR_TGT)/usr/lib
 BR_TGT_BIN  = $(BR_TGT)/usr/bin
 BR_TGT_SBIN = $(BR_TGT)/usr/sbin
 
-BINFILES   += $(wildcard bin/*)
-BINFILES   += $(wildcard $(CMNDIR)/ffritz/bin/*)
-BINFILES   += $(wildcard $(CMNDIR)/ffritz/bin$(BR_VERSION)/*)
-ETCFILES    = etc/ffritz-env.sh etc/mpd.conf etc/ff_atom_startup etc/ffservices etc/mkusers
-ETCFILES   += etc/lirc_options_dfl.conf
-ETCFILES   += etc/upmpdcli.conf-dist
-ETCFILES   += etc/usrmount etc/fflogrotate etc/ffshutdown
-ETCFILES   += etc/init.d
-ETCFILES   += etc/shairport-sync.conf.dfl
-ETCFILES   += etc/exports
-
-## XXX binaries that seem to require /lib as first entry in /LD_LIBRARY_PATH
-## This is the default for <= FritzOS 7.13 / BR2019-05.
-## For FOS 7.19 / BR2020-02, it is not, except some exceptions
-##
-## Maybe this can be properly fixed once the 7.19 OS package is available.
-# 
-## OpenVPN/OpenSSL fails to initialize RNG otherwise
-#
-FFWRAP_FORCE_LIB += openvpn
+BINFILES    += $(wildcard bin/*)
+BINFILES    += $(wildcard $(CMNDIR)/ffritz/bin/*)
+BINFILES    += $(wildcard $(CMNDIR)/ffritz/bin$(BR_VERSION)/*)
+ETCFILES    := etc/ffritz-env.sh etc/mpd.conf etc/ff_atom_startup etc/ffservices etc/mkusers
+ETCFILES    += etc/ffwenv
+ETCFILES    += etc/lirc_options_dfl.conf
+ETCFILES    += etc/upmpdcli.conf-dist
+ETCFILES    += etc/usrmount etc/fflogrotate etc/ffshutdown
+ETCFILES    += etc/init.d
+ETCFILES    += $(wildcard etc/shairport-*)
+ETCFILES    += $(wildcard etc/pihole-*)
+ETCFILES    += etc/exports
 
 OUTPUTDIR   = $(TOPDIR)/output$(BR_VERSION)
 STAGEDIR    = $(OUTPUTDIR)/ffritz
 STAGEDIR2   = $(OUTPUTDIR)/image
+BRCOPY      = $(STAGEDIR)/buildroot
 
-BRCOPY       = $(STAGEDIR)/buildroot
+VERSION     := $(shell cat version)
+FFLIB_SRC   := $(shell ls lib/fflibs$(BR_VERSION) 2>/dev/null || ls lib/fflibs)
 
-VERSION     = $(shell cat version)
+SQIMAGE     := $(STAGEDIR2)/ffimage.bin
+CSUM	    = $(STAGEDIR2)/$(shell basename $(APP_IMAGE) .tar).sha256sum
 
-ifneq ($(BR_VERSION),-2019.05)
-FOS_SUB_VERSION=19
-endif
-
-IMAGE       = $(APP_IMAGE)
-CSUM	    = $(shell basename .tar $(APP_IMAGE))
+IMAGE       := $(APP_IMAGE)
 
 -include conf.mk
-
-ifeq ($(INSTDIR),)
-    INSTDIR=$(STAGEDIR)
-endif
 
 ifeq ($(MODULES),)
 MODULES   += nfs
@@ -71,117 +56,118 @@ MODULES   += pi-hole
 endif
 endif
 
-## Packages with (build/)install target
-#
-INSTDIRS   += src/install
-INSTDIRS   += $(MODULES:%=../%/install)
+# required modules
+MODULES   += usbplayd
+MODULES   += tools
 
-ifeq ($(NOSTRIP),)
-NOSTRIP	    = 1
-endif
+MODULES_INST = $(MODULES:%=%-install)
+MODULES_CLEAN = $(MODULES:%=%-clean)
 
-.PHONY:	$(SUBDIRS) $(INSTDIRS) $(IMAGE) $(INSTDIR)
+BR_IMAGE = $(BR_TGT)/../images/rootfs.tar
 
-all:	buildroot $(INSTDIR) $(SUBDIRS) $(IMAGE)
+.PHONY:	$(MODULES) $(MODULES_INST) $(IMAGE) $(STAGEDIR)
+
+
+all:	toolchain $(BR_IMAGE) $(MODULES) $(IMAGE)
+
+submodules: $(MODULES)
+
+submodules-install: $(MODULES_INST)
+
+#$(BR_IMAGE): buildroot
+
+toolchain: buildroot
 
 buildroot:
-	make -C $(BRBUILDDIR)
+	@echo $(BRBUILDDIR): build
+	@$(SUBMAKE) $(BRBUILDDIR)
+	@echo $(BRBUILDDIR): done
 
-$(INSTDIR):
-	mkdir -p $(INSTDIR)
-	rm -rf $(INSTDIR)/*
-	mkdir -p $(INSTDIR)/etc
-	mkdir -p $(INSTDIR)/bin
-	mkdir -p $(INSTDIR)/share
-	mkdir -p $(BRCOPY)
-	cd $(BRCOPY); tar xf $(BR_TGT)/../images/rootfs.tar 
-	cd $(INSTDIR); ln -s buildroot/usr/lib .
-
-$(SUBDIRS):	
-	mkdir -p $(DLDIR)
-	make -C $@
-
-$(INSTDIRS):
-	make -C `dirname $@` install DESTDIR=$(STAGEDIR) INSTDIR=$(STAGEDIR)
-
-$(IMAGE): ffimage.bin
+# create/empty staging dir, copy buildroot and required files
+stage1: $(BR_IMAGE) $(ETCFILES) $(BINFILES)
+	echo +++ { stage1 start
+	$(call RMDIR,$(STAGEDIR))
+	mkdir -p $(STAGEDIR)
+	$(call RMDIR,$(STAGEDIR2))
 	mkdir -p $(STAGEDIR2)
-	sha256sum ffimage.bin | sed -e 's/ .*//' > $(CSUM)
-	cp ../../../*.md $(STAGEDIR2)
-	mv ffimage.bin glibc-version $(STAGEDIR2)
-#	cp ../libdvbfi/README.txt README-dvb.txt 
-#	cp ../libdvbfi/fwd .
-	cp $(CSUM) $(STAGEDIR2)/ffimage.sha256sum
-	cd $(STAGEDIR2); tar cf $(TOPDIR)/$(IMAGE) ffimage.bin ffimage.sha256sum *.md glibc-version
+	mkdir -p $(STAGEDIR)/etc
+	mkdir -p $(STAGEDIR)/bin
+	mkdir -p $(STAGEDIR)/share
+	mkdir -p $(BRCOPY)
+	cd $(BRCOPY); tar xf $(BR_IMAGE)
+	cd $(STAGEDIR); $(SYMLINK) buildroot/usr/lib .
+	cp -r $(BINFILES) $(STAGEDIR)/bin
+	cp -r $(ETCFILES) $(STAGEDIR)/etc
+	cp -ar etc/openvpn $(STAGEDIR)/etc
+	echo +++ } stage1 end
+
+$(MODULES):
+	@echo +++ $@: build
+	@$(SUBMAKE) ../$@
+
+$(MODULES_INST):
+	@echo +++ $(@:%-install=%): install to staging
+	@$(SUBMAKE) ../$(@:%-install=%) install DESTDIR=$(BRCOPY)/usr INSTDIR=$(BRCOPY)/usr
+
+$(MODULES_CLEAN):
+	@echo +++ $(@:%-clean=%): clean
+	@$(SUBMAKEK) ../$(@:%-clean=%) clean || true
+
+$(IMAGE): $(SQIMAGE)
+	@cp ../../../*.md $(STAGEDIR2)
+	@cp $(CSUM) $(TOPDIR)
+	@cp $(CSUM) $(STAGEDIR2)/ffimage.sha256sum
+	@cd $(STAGEDIR2); tar cf $(TOPDIR)/$(IMAGE) *
 	@echo
 	@echo +++ DONE +++
 	@echo "Atom image file: $(TOPDIR)/$(IMAGE)"
 	@echo "Image checksum:  `cat $(CSUM)`"
 	@echo
 
-ffimage.bin: $(BINFILES) $(ETCFILES) stage
-	rm -f $@
-	cd $(OUTPUTDIR); mksquashfs ffritz ../$@ -all-root -no-progress -no-exports -no-sparse -b 65536 
+image: $(IMAGE)
 
-# Install everything to target
-# LD_LIBRARY_PATH needs to be set correctly for binaries. This is done by the ffwrap wrapper script,
-# which is linked to for each binary. This makes the package position independent, i.e.
-# it can be installed to /var/media/ftp, or integrated into the atom squashfs (to /usr/local).
+# Finalize staging directory after having created it and modules have installed into it
+# LD_LIBRARY_PATH needs to be set correctly for binaries. This is done by
+# ffwrap, which is linked to for each binary.
+# This makes the package position independent, i.e. it can be installed to
+# /var/media/ftp, or integrated into the atom squashfs (to /usr/local).
+# LD_LIBRARY path settings specific to the OS/tool are stored in 
+# bin/.fflibs, which is read by ffwrap before calling the executable.
 #
-stage: $(BINFILES) $(ETCFILES) $(INSTDIRS)
-	cp -a $(BINFILES) $(INSTDIR)/bin
-	cp -r $(ETCFILES) $(INSTDIR)/etc
-	cp -ar etc/openvpn $(INSTDIR)/etc
-	sed -i -e 's@^rundir=.*@rundir=/var/media/ftp/ffritz@' $(INSTDIR)/etc/ff_atom_startup
-	cd $(BRCOPY)/usr/lib; ln -s ../../lib/libutil* . || true
-	mv $(INSTDIR)/bin/ffwrap* $(BRCOPY)/usr/bin
-	cp $(BRCOPY)/usr/bin/ffwrap* $(BRCOPY)/usr/sbin
-	# Move our binaries to buildroot
-	@cd $(INSTDIR)/bin; \
-	    for f in `ls | xargs file | grep ELF | grep -v cash_wrap.so | sed -e 's/:.*//'`; do\
-		test `basename $$f` != cash -a $(NOSTRIP) -eq 0 && strip $$f;\
-		mv $$f $(BRCOPY)/usr/bin/$$f;\
-	    done
-	# Make buildroot usr/bin available for host
-	@cd $(BRCOPY)/usr/bin; \
-	    for f in `ls | xargs file -L | grep ELF | grep -v cash_wrap.so | sed -e 's/:.*//'`; do\
-		test -e ../../../bin/$$f || ln -s ../buildroot/usr/bin/ffwrap ../../../bin/$$f;\
-	    done;
-	# /usr/bin non-ELF
-	@cd $(BRCOPY)/usr/bin; \
-	    for f in `ls | xargs file -L | grep -v ELF | sed -e 's/:.*//'`; do\
-		test -e ../../../bin/$$f || ln -s ../buildroot/usr/bin/$$f ../../../bin/$$f;\
-	    done
-	# Make buildroot usr/sbin available for host
-	@cd $(BRCOPY)/usr/sbin; \
-	    for f in `ls | xargs file -L | grep ELF | sed -e 's/:.*//'`; do\
-		test -e ../../../bin/$$f || ln -s ../buildroot/usr/sbin/ffwrap ../../../bin/$$f;\
-	    done
-	# /usr/sbin non-ELF
-	@cd $(BRCOPY)/usr/sbin; \
-	    for f in `ls | xargs file -L | grep -v ELF | sed -e 's/:.*//'`; do\
-		test -e ../../../bin/$$f || ln -s ../buildroot/usr/sbin/$$f ../../../bin/$$f;\
-	    done
-	# strip libraries
-	@if [ $(NOSTRIP) -eq 0 ]; then \
-	    cd $(INSTDIR)/lib; \
-	    for l in `ls | xargs file | grep ELF | sed -e 's/:.*//'`; do\
-		strip $$l;\
-	    done; fi
-	# LD_LIBRARY_PATH fixups
-	@cd $(INSTDIR)/bin; for f in $(FFWRAP_FORCE_LIB); do \
-		if [ -L $$f ]; then nlink=`readlink $$f`-hlib; \
-		if [ -r $$nlink ]; then ln -sfv $$nlink $$f; fi; fi; \
-	done
-	# shairport does not like those
-	rm -f $(INSTDIR)/bin/avahi*
-	# Provide terminfo database
-	cd $(INSTDIR)/share; ln -s ../buildroot/usr/share/terminfo .
-	readlink ${BR_TGT}/lib/libc.so.* | xargs basename > glibc-version || exit 1
-	
-clean: 
-	rm -rf $(OUTPUTDIR) $(IMAGE) ffimage.bin
-	for d in $(SUBDIRS) $(INSTDIRS:%/install=%); do make -k -C $$d clean || true; done
+stage2: stage1 $(MODULES_INST)
+	@echo +++ { stage2 start
+	@sed -i -e 's@^rundir=.*@rundir=/var/media/ftp/ffritz@' $(STAGEDIR)/etc/ff_atom_startup
+	@cd $(BRCOPY)/usr/lib; $(SYMLINK) ../../lib/libutil* . || true
+	@cp -v $(BRCOPY)/usr/bin/ffwrap $(BRCOPY)/usr/sbin
+	@mv $(BRCOPY)/usr/bin/ffdaemon $(STAGEDIR)/bin
+	# Make buildroot usr/bin, sbin available for host
+	@$(call LINK_TO_ONE,$(call LS_ELF,$(BRCOPY)/usr/bin),$(STAGEDIR)/bin/,../buildroot/usr/bin/ffwrap)
+	@$(call LINK_TO_ONE,$(call LS_ELF,$(BRCOPY)/usr/sbin),$(STAGEDIR)/bin/,../buildroot/usr/sbin/ffwrap)
+	# /usr/bin, sbin non-ELF
+	@$(call LINK_TO_DIR,$(call LS_NOT_ELF,$(BRCOPY)/usr/bin),$(STAGEDIR)/bin/,../buildroot/usr/bin/)
+	@$(call LINK_TO_DIR,$(call LS_NOT_ELF,$(BRCOPY)/usr/sbin),$(STAGEDIR)/bin/,../buildroot/usr/sbin/)
+	ls -lL $(STAGEDIR)/bin >/dev/null
+# shairport does not like those
+	rm -f $(STAGEDIR)/bin/avahi*
+# Provide terminfo database
+	cd $(STAGEDIR)/share; $(SYMLINK) ../buildroot/usr/share/terminfo .
+	cp $(FFLIB_SRC) $(BRCOPY)/usr/bin/.fflibs
+	cp $(FFLIB_SRC) $(BRCOPY)/usr/sbin/.fflibs
+	@echo +++ } stage2 end
+
+$(SQIMAGE): stage2
+	@echo +++ { build overlay image
+	@readlink ${BR_TGT}/lib/libc.so.* | xargs basename > $(STAGEDIR2)/glibc-version || exit 1
+	@rm -f $@
+	@cd $(OUTPUTDIR); mksquashfs ffritz $@ -all-root -no-progress -no-exports -no-sparse -b 65536 
+	sha256sum $(SQIMAGE) | sed -e 's/ .*//' > $(CSUM)
+	@echo +++ } end build overlay image
+
+sqimage: $(SQIMAGE)
+
+clean:	$(MODULES_CLEAN)
+	$(call RMDIR,$(OUTPUTDIR))
+	$(call RMDIR,/tmp/xxx)
 
 cleanall: clean
-	make -C $(BUILDROOT) clean
+	@$(SUBMAKE) $(BRBUILDDIR) clean

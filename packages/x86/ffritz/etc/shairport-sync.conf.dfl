@@ -60,8 +60,8 @@ general =
 // Advanced parameters for controlling how Shairport Sync stays active and how it runs a session
 sessioncontrol =
 {
-//	run_this_before_play_begins = "/full/path/to/application and args"; // make sure the application has executable permission. If it's a script, include the shebang (#!/bin/...) on the first line
-//	run_this_after_play_ends = "/full/path/to/application and args"; // make sure the application has executable permission. If it's a script, include the shebang (#!/bin/...) on the first line
+	run_this_before_play_begins = "/nvram/ffnvram/etc/shairport-play-start"; // make sure the application has executable permission. If it's a script, include the shebang (#!/bin/...) on the first line
+	run_this_after_play_ends = "/nvram/ffnvram/etc/shairport-play-stop"; // make sure the application has executable permission. If it's a script, include the shebang (#!/bin/...) on the first line
 
 //	"active" state starts when play begins and ends when the active_state_timeout has elapsed after play ends, unless another play session starts before the timeout has fully elapsed.
 //	run_this_before_entering_active_state = "/full/path/to/application and args"; // make sure the application has executable permission. If it's a script, include the shebang (#!/bin/...) on the first line

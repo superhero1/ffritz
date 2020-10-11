@@ -1,0 +1,51 @@
+#!/bin/sh
+#
+# Tool to push application image to target via ssh login
+
+usage()
+{
+	echo "Usage: $0 [-r] ip-addr update-image"
+	echo "Pushes ffritz application image to ip/host"
+	echo " Options:"
+	echo "   -r Stop services, activate new image and re-start services"
+	echo " Without -r, call ffrestart or reboot the box"
+}
+
+if [ "$1" = "-h" ]; then
+	usage
+	exit 0
+fi
+
+restart=
+if [ "$1" = "-r" ]; then
+	restart=-r
+	shift
+fi
+
+image=$2
+test -z $image && { usage 1>&2; exit 1; }
+test -r $image || { usage 1>&2; exit 1; }
+
+host=$1
+test -z $host && { usage 1>&2; exit 1; }
+
+file $image | grep tar >/dev/null || \
+{ 
+	file $image 1>&2
+	echo does not look like a tar archive 1>&2
+	exit 1
+}
+
+csumf=`dirname $image`/`basename $image .tar`.sha256sum
+test -r $csumf || \
+{
+	echo $csumf not found 1>&2
+	exit 1
+}
+csum=`cat $csumf`
+
+tgt=/var/media/ftp/ffi.image
+inst="openssl dgst -sha256 $tgt; ffinstall $restart $tgt $csum"
+
+cmd="ssh root@$host sh -c \"\\\"echo +++ Loading; cat >$tgt && $inst; \\\"\""
+eval $cmd < $image || exit 1

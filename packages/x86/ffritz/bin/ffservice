@@ -88,10 +88,13 @@ if [ $cnt -eq 0 -o -z $cnt ]; then
 fi
 
 if [ $cnt -gt 1 ]; then
+	rc=0
 	for s in $services; do
 		$0 $op $s
+		nrc=$?
+		test $nrc -gt $rc && rc=$nrc
 	done
-	exit 0
+	exit $rc
 fi
 
 # from here on we work with a single services list
@@ -171,7 +174,7 @@ case $op in
 		nvsync
 		;;
 	stat*)
-		if [ ! -z `which tput` ]; then
+		if [ -t 1 -a ! -z `which tput` ]; then
 			bold=`tput bold 2>/dev/null`
 			rev=`tput rev 2>/dev/null`
 			norm=`tput sgr0 2>/dev/null`
@@ -206,10 +209,16 @@ case $op in
 		test ! -z $STATUS && svstat1=$STATUS
 		test "$svstat1" != "off" -a $don -eq $dnum && svstat2=/good
 		test "$svstat1" != "off" -a $don -lt $dnum && svstat2=/FAIL
+		if [ "$svstat2" = "/good" ]; then
+			grep -e 'exit([^0][0-9]*)' -e 'signal([0-9]*' \
+			 -e coredump < /tmp/$$.f >/dev/null 2>&1 && \
+			 svstat2="/BAD"
+		fi
 		test ! -z $LOG && echo " Log file: $LOG"
 		echo " Service status: $svstat1$svstat2" |
 			sed -e "s/on/${bold}on${norm}/g" \
 			    -e "s/good/${bold}${green}good${norm}/g" \
+			    -e "s/BAD/${bold}${red}BAD${norm}/g" \
 			    -e "s/FAIL/${bold}${red}FAIL${norm}/g"
 		test "$svstat1" = "on" && nr=${bold}${red}
 		cat /tmp/$$.f | sed -e "s/^/  /" \
@@ -219,6 +228,10 @@ case $op in
 		    -e "s/\(signal([0-9]*)\)/${red}\1${norm}/" \
 		    -e "s/\(coredump\)/${red}${bold}\1${norm}/"
 		rm -f /tmp/$$.f
+		test "$svstat1" = "off" && exit 0
+		test "$svstat2" = "/good" && exit 0
+		test "$svstat2" = "/BAD" && exit 1
+		exit 2
 		;;
 		
 	running)

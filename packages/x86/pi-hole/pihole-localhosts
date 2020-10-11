@@ -1,0 +1,26 @@
+# Script to update pihole-FTL with hosts managed by the fritzbox
+#
+# Requires adding this to /etc/dnsmasq.d/01-pihole.conf:
+#  addn-hosts=/tmp/fbox.list
+#
+# pihole does not automatically updates its database with changes, so it's 
+# required to re-start it with HUP signal
+#
+. /usr/local/etc/ffritz-env.sh
+
+LIST=$BR_DIR/tmp/fbox.list
+
+if [ ! -d $BR_DIR/tmp ]; then
+	exit 0
+fi
+
+aicmd multid dhcpd leases | awk '{print $3,$5}' | grep -v \"\" | sed -e 's/"//g' | grep 192.168.0| sort -u > $LIST.tmp || exit 1
+
+if [ -r $LIST ]; then
+	diff $LIST $LIST.tmp >/dev/null && exit 0
+fi
+
+cp $LIST.tmp $LIST || exit 1
+echo Updated $LIST, sending HUP to `pidof pihole-FTL` | tee -a $FFLOG
+
+killall -HUP pihole-FTL

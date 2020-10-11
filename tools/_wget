@@ -1,0 +1,43 @@
+#!/bin/sh
+
+url=$1
+fname=`readlink -f $2`
+shaf=$3
+
+if [ -d $fname ]; then
+	mkdir -p $fname || exit 1
+	fname=$fname/`basename $1`
+else
+	mkdir -p `dirname $2` || exit 1
+fi
+wget "$1" -O "$fname" || { rm -f $fname; exit 1; }
+touch "$fname"
+
+sha_dl=`sha256sum $fname` || { mv -v $fname $fname.bad; exit 1; }
+sha_dl=`echo $sha_dl | sed -e 's/ .*//'`
+
+test -z $shaf && exit 0
+
+fname_rel=`echo $fname | sed -e 's@.*packages/dl/\(.*\)@../dl/\1@'`
+
+shaf_dir=`dirname $shaf`
+shaf_dir=`readlink -f $shaf_dir` >/dev/null
+shaf=$shaf_dir/`basename $shaf`
+
+if [ ! -r $shaf ]; then
+	cd `dirname $shaf`
+	if [ -r $fname_rel ]; then
+		sha256sum $fname_rel > $shaf || rm -f $shaf
+	fi
+fi
+
+test -r "$shaf" || exit 0
+
+sha=`cat "$shaf" | sed -e 's/ .*//'`
+
+test "$sha" = "$sha_dl" || \
+{
+	echo "*** ERROR: Checksum mismatch for $url [$shaf] 1>&2"
+	mv -v $fname $fname.bad
+	exit 1;
+}

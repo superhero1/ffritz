@@ -12,6 +12,10 @@ grep usb /etc/group >/dev/null     || echo usb:x:8001:ffritz >> /etc/group
 #
 grep upmpdcli /etc/passwd >/dev/null || echo upmpdcli:x:8001:8000:upmpdcli:/var/media/ftp/ffritz:/bin/sh >> /etc/passwd
 
+# Required by alsa-lib
+#
+grep audio /etc/group > /dev/null || echo audio:x:29:upmpdcli >> /etc/group
+
 if [ ! -d ~ffritz/.mpd ]; then
     mkdir -p ~ffritz/.mpd
 fi

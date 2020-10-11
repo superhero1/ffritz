@@ -1,6 +1,29 @@
 Change history of application package
 =====================================
 
+Release puma7-19
+================
+- Add alsa support
+  - Build USB sound kernel modules for kernel 4.9.199 (FritzOS >= 7.19)
+  - Added config option to usbplayd
+    - REQUIRED: run "ffservice reconf usbplayd" and adjust USE_ALSA
+  - Add alsa support for shairport-sync
+    - Add executable for audio start in shairport-sync.conf:
+    - /nvram/ffnvram/etc/shairport-play-start and stop
+    - OPTIONAL: change to interact with mpd (start script stops mpd)
+  - Add alsa output to default mpd.conf
+    - REQUIRED: change in user mpd.conf to support ALSA
+- added ffstart/stop tools
+- pihole:
+  - Run pihole-localhost service to make local names visible to pihole
+    (unless pihole DHCP is used)
+  - Interact with base image to make use of temporary socat processes
+    to redirect DNS/DHCP to multid.
+- Some build changes
+  - external toolchain support, toolchain blob downloaded from net.
+- Add wireguard support for FritzOS 7.21
+- Add ffinstall host tool to install app image via ssh
+
 Release puma7-18
 ----------------
 - Added volmgt service/ffvolume script to mount drives to fixed locations.

@@ -31,7 +31,7 @@ echo `date` :: ffinit >>$FFLOG
 ## Start, and stop telnet after a while
 ## Might already run from telnetd.service, or not if < 7.19
 ##
-/usr/bin/telnetd -l /sbin/ar7login
+/usr/sbin/telnetd -l /sbin/ar7login
 nohup sh -c "sleep 300; echo killing telnetd > /dev/console; sleep 10; killall telnetd" &
 
 ## Decrypt persistent storage image to /var/tmp/ffnvram

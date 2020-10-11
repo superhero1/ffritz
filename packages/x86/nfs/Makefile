@@ -1,37 +1,34 @@
-ARCHDIR=$(shell while test -f arch.mk && echo $$PWD && exit 0; test $$PWD != /; do cd ..; done)
-include $(ARCHDIR)/../paths.mk
+## Template for integrating "3rd prty" tool
+##
+## Tool specific options for configuring, building and installing 
+## are listed in ../../package.mk
+##
+## By default,
+## - tarball/git repository is downloaded (../../external/url-mypackage or ../../external/git-mypackage must exist)
+## - extracted/cloned below "build",
+## - patched with all .patch files located here
+## - configured according to CONFTYPE
+## - built below build
+## - installed (make install) according to INSTALL_ rules
+##
+## make clean deletes the build directory
+##
+## To integrate the build result into the application package, add
+## this to ../ffritz/Makefile:
+##
+## INSTDIRS   += ../mypackage/install
+##
+## Missing libraries etc. should first be searched for in buildroot and
+## added via "make userconfig" there.
+##
+############################################################################
 
-DESTDIR	    = $(TOPDIR)/output
+# Find directory containing package.mk upwards
+#
+PKGDIR=$(shell while test -f package.mk && echo $$PWD && exit 0; [ $$PWD != / ]; do cd ..; done)
 
-URL	= $(shell cat $(PKGTOP)/url-nfs)
-FILE	= $(DLDIR)/$(shell basename $(URL))
+CONFTYPE            = autoreconf
+PKG_CONFIGURE_FLAGS =
+INSTALL_BIN         = 
 
-BFILE = $(BUILDDIR)/fuse/fuse-nfs
-DFILE = $(DESTDIR)/bin/fuse-nfs
-
-all:	$(BUILDDIR)/config.status
-	@make -C $(BUILDDIR) PATH=$(TOOLCHAIN):$(PATH)
-
-$(FILE):
-	@cd $(DLDIR); wget $(URL)
-
-$(BUILDDIR)/configure:    $(FILE)
-	@rm -rf $(BUILDDIR)
-	@mkdir -p $(BUILDDIR)
-	@cd $(BUILDDIR); unzip $(FILE) && mv fuse-nfs-master/* .
-	cd $(BUILDDIR); patch -p1 < ../nodoc.patch
-	cd $(BUILDDIR); ./setup.sh
-
-$(BUILDDIR)/config.status:	$(BUILDDIR)/configure
-	@cd $(BUILDDIR); export PATH=$(TOOLCHAIN):$(PATH); ./configure --host=i686-buildroot-linux-gnu --target=i686-buildroot-linux-gnu --prefix=/ --disable-doc --disable-docs --disable-documentation
-
-install: $(DFILE)
-
-$(DFILE): $(BFILE)
-	@make -C $(BUILDDIR) PATH=$(TOOLCHAIN):$(PATH) install-exec DESTDIR=$(DESTDIR)
-
-$(BFILE):	$(BUILDDIR)/config.status
-	@make -C $(BUILDDIR) PATH=$(TOOLCHAIN):$(PATH)
-
-clean:
-	rm -rf $(BUILDDIR)
+include $(PKGDIR)/package.mk

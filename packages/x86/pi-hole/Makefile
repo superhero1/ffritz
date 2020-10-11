@@ -1,33 +1,31 @@
-## Template for integrating "3rd prty" tool
-##
-## Tool specific options for configuring, building and installing 
-## are listed in ../../package.mk
-##
-## By default,
-## - tarball/git repository is downloaded (../../url-mypackage or ../../git-mypackage must exist)
-## - extracted/cloned below "build",
-## - patched with all .patch files located here
-## - configured according to CONFTYPE
-## - built below build
-## - installed (make install) according to INSTALL_ rules
-##
-## make clean deletes the build directory
-##
-## To integrate the build result into the application package, add
-## this to ../ffritz/Makefile:
-##
-## INSTDIRS   += ../mypackage/install
-##
-## Missing libraries etc. should first be searched for in buildroot and
-## added via "make userconfig" there.
+## pihole build
 ##
 ############################################################################
 
-all:
+ARCHDIR  := $(shell while test -f arch.mk && echo $$PWD && exit 0; test $$PWD != /; do cd ..; done)
+include $(ARCHDIR)/arch.mk
+
+WD       := $(shell pwd)
+BUILDDIR := $(WD)/build
+TPL      := $(BUILDDIR)/pihole-template.tar.gz
+SRCDIR   := $(WD)/src
+
+ifeq ($(DESTDIR),)
+DESTDIR=output
+endif
+
+
+all: $(TPL)
+
+$(TPL): $(call NEWEST,src)
+	mkdir -p `dirname $@`
+	cd $(SRCDIR); tar cfz $@ .
 
 install:
 	mkdir -p $(DESTDIR)/bin 
 	mkdir -p $(DESTDIR)/share/pihole
-	cp *.sh timeout $(DESTDIR)/bin
-	cp pihole pihole-template.tar.gz $(DESTDIR)/share/pihole
-	mkdir -p $(DESTDIR)/buildroot/usr/bin
+	cp *.sh timeout pihole-localhosts $(DESTDIR)/bin
+	cp pihole $(TPL) $(DESTDIR)/share/pihole
+
+clean:
+	rm -f $(TPL)

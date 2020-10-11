@@ -3,6 +3,7 @@
 # Xfeature:getconfig
 
 DHCP=
+LOCALHOST_UPDATE_INTERVAL=60
 
 # Override with user configuration
 #
@@ -10,11 +11,12 @@ test ! -z $2 && . $2
 
 if [ "$1" = "stop" ]; then
         pihole-stop.sh
+	ffdaemon -K pihole-localhosts
         exit 0
 fi
 
 if [ "x$1" = "xinfo" ]; then
-	echo DAEMONS=lighttpd
+	echo DAEMONS=\"lighttpd pihole-localhosts\"
         exit 0
 fi
 
@@ -23,6 +25,10 @@ cat <<EOF
 ## Set DHCP to -d to enable DHCP server in pihole
 ##
 #DHCP=-d
+
+## Update interval for hosts managed by fritzbox
+#
+#LOCALHOST_UPDATE_INTERVAL=60
 EOF
         exit 0
 fi
@@ -31,4 +37,5 @@ if [ "$1" != "start" ]; then
         exit 0
 fi
 
+ffdaemon -i $LOCALHOST_UPDATE_INTERVAL pihole-localhosts
 pihole-start.sh $DHCP

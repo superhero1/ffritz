@@ -1,0 +1,22 @@
+#!/bin/sh
+#
+# Xfeature:getconfig
+
+if [ "$1" = "stop" ]; then
+        ffdaemon -K ffad
+        exit 0
+fi
+
+if [ "x$1" = "xinfo" ]; then
+	echo DAEMONS=ffad
+        exit 0
+fi
+
+if [ "$1" != "start" ]; then
+        exit 0
+fi
+
+
+if [ -x /usr/local/bin/ffad ]; then
+        ffdaemon ffad @10000:tty
+fi

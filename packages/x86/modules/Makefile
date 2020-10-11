@@ -1,20 +1,20 @@
 ARCHDIR=$(shell while test -f arch.mk && echo $$PWD && exit 0; test $$PWD != /; do cd ..; done)
-include $(ARCHDIR)/../paths.mk
+include $(ARCHDIR)/arch.mk
+
 
 ifeq ($(BR_VERSION),-2019.05)
 KERNELS	= 3.12.59 3.12.74
 else
 KERNELS	= 4.9.199
-endif
 MODULES = wireguard
+endif
 
 ifeq ($(DESTDIR),)
 DESTDIR = $(shell pwd)/output
 endif
 
-TMPDIR = $(shell pwd)/modules/$(KERNEL)
-
-KDIRS	= $(KERNELS:%=../kernel_%)
+TMPDIR := $(shell pwd)/modules/$(KERNEL)
+KDIRS  := $(KERNELS:%=../kernel_%)
 
 BUILDDIR = build$(BR_VERSION)
 
@@ -33,6 +33,7 @@ $(KDIRS):
 module:
 	test -d ../kernel_$(KERNEL)/$(BUILDDIR)
 	mkdir -p $(TMPDIR)
+	make -j -C ../$(MODULE) KERNELDIR=$(realpath ../kernel_$(KERNEL)/$(BUILDDIR)) DESTDIR=$(TMPDIR) BUILDDIR=build_$(KERNEL)$(BR_VERSION) all
 	make -j -C ../$(MODULE) KERNELDIR=$(realpath ../kernel_$(KERNEL)/$(BUILDDIR)) DESTDIR=$(TMPDIR) BUILDDIR=build_$(KERNEL)$(BR_VERSION) install
 
 cleanmodule:
@@ -41,7 +42,8 @@ cleanmodule:
 install: all
 	mkdir -p $(DESTDIR)/bin
 	for k in $(KERNELS); do \
-	 mkdir -p $(DESTDIR)/lib/modules/$$k; \
+	 make -C ../kernel_$$k DESTDIR=$(DESTDIR)/lib/modules/$$k install-modules && \
+	 mkdir -p $(DESTDIR)/lib/modules/$$k && \
 	 cp -arv $(TMPDIR)/$$k/lib/* $(DESTDIR)/lib/modules/$$k; \
 	done
 

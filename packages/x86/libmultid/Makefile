@@ -3,7 +3,7 @@ PKGDIR=$(shell while test -f package.mk && echo $$PWD && exit 0; [ $$PWD != / ];
 SRCDIR		= $(TOPDIR)/src
 CONFTYPE	= legacy
 #MAKE_OPTIONS	= "CFLAGS=-DLIBC_LOCATION=\\\"/lib/libc.so\\\" -DD_DNS"
-MAKE_OPTIONS	= CFLAGS="-DD_DNS -DDEBUG"
+MAKE_OPTIONS	= CFLAGS="-DD_DNS -DD_IPV6"
 INSTALL_LIB	= $(BUILDDIR)/libmultid.so $(BUILDDIR)/libmultid.so.0.0.0
 
 all:

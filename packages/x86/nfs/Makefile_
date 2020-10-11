@@ -1,0 +1,40 @@
+ARCHDIR=$(shell while test -f arch.mk && echo $$PWD && exit 0; test $$PWD != /; do cd ..; done)
+include $(ARCHDIR)/arch.mk
+
+DESTDIR	    = $(TOPDIR)/output
+
+URL	= $(call URLGET,nfs)
+FILE	= $(DLDIR)/$(shell basename $(URL))
+
+BFILE = $(BUILDDIR)/fuse/fuse-nfs
+DFILE = $(DESTDIR)/bin/fuse-nfs
+
+all:	$(BUILDDIR)/config.status
+	@make -C $(BUILDDIR) PATH=$(TOOLCHAIN):$(PATH)
+
+$(FILE):
+	@cd $(DLDIR); wget $(URL)
+
+$(BUILDDIR)/configure:    $(FILE)
+	@rm -rf $(BUILDDIR)
+	@mkdir -p $(BUILDDIR)
+	@cd $(BUILDDIR); unzip $(FILE) && mv fuse-nfs-master/* .
+	cd $(BUILDDIR); patch -p1 < ../nodoc.patch
+	cd $(BUILDDIR); ./setup.sh
+
+export PKG_CONFIG_LIBDIR=$(SYSROOT)/lib/pkgconfig
+
+$(BUILDDIR)/config.status:	$(BUILDDIR)/configure
+	cd $(BUILDDIR); export PATH=$(TOOLCHAIN):$(PATH); ./configure --host=i686-buildroot-linux-gnu --target=i686-buildroot-linux-gnu --prefix=/ --disable-doc --disable-docs --disable-documentation --with-sysroot=$(SYSROOT)
+
+install: $(DFILE)
+
+$(DFILE): $(BFILE)
+	@make -C $(BUILDDIR) PATH=$(TOOLCHAIN):$(PATH) install-exec DESTDIR=$(DESTDIR)
+
+$(BFILE):	$(BUILDDIR)/config.status
+	@make -C $(BUILDDIR) PATH=$(TOOLCHAIN):$(PATH)
+
+clean:
+	rm -rf $(BUILDDIR)
+

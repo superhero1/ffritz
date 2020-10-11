@@ -1,6 +1,7 @@
 /*
 	Copyright (C) 2012 cuma
 	Copyright (C) 2011 Joerg Jungermann
+	Copyright (C) 2020 Felix Schmidt
 
 	This library is free software; you can redistribute it and/or
 	modify it under the terms of the GNU Lesser General Public
@@ -33,15 +34,26 @@
 #endif
 #endif
 
-static void debug_printf(char *fmt, ...) {
+static FILE *cons = NULL;
+
 #ifdef DEBUG
+static void debug_printf(char *fmt, ...) {
 	va_list ap;
 	va_start(ap, fmt);
 	vfprintf(stdout, fmt, ap);
+	if (cons)
+		vfprintf(cons, fmt, ap);
 	va_end(ap);
 	fflush(stdout);
-#endif
 }
+#else
+#define debug_printf(...)
+#endif
+
+
+static int _change_dns = 0;
+static int _change_dhcp = 0;
+static int _change_llmnr = 0;
 
 static int (*real_bind)(int, const struct sockaddr *, socklen_t) = NULL;
 
@@ -49,6 +61,9 @@ static void _libmultid_init (void) __attribute__((constructor));
 static void _libmultid_init (void)
 {
 	const char *err;
+
+	if (!cons)
+		cons = fopen ("/dev/console", "w");
 
 #if defined(RTLD_NEXT) && !defined(__UCLIBC__)
   /*
@@ -71,7 +86,12 @@ static void _libmultid_init (void)
 		fprintf(stderr, "[libmultid::_libmultid_init()] Unable to get bind-handle: %s\n", err);
 		exit(1);
 	}
-	debug_printf("[libmultid::_libmultid_init()] successfully initialized\n");
+
+	_change_dns = (getenv("LMD_CHANGE_DNS") != NULL);
+	_change_dhcp = (getenv("LMD_CHANGE_DHCP") != NULL);
+	_change_llmnr = (getenv("LMD_CHANGE_LLMNR") != NULL);
+
+	debug_printf("[libmultid::_libmultid_init()] successfully initialized. dns=%d dhcp=%d llmnr=%d\n", _change_dns, _change_dhcp, _change_llmnr);
 }
 
 #ifdef D_LOCAL
@@ -87,24 +107,28 @@ change_port (u_short *pport)
 {
 	u_short port = ntohs (*pport);
 	switch (port) {
-#if defined(D_DNS) || defined(D_DHCP) || defined(D_LLMNR)
-#ifdef D_DNS
 	case 53:
-#endif
-#ifdef D_DHCP
+		if (_change_dns)
+			break;
+		return 0;
 	case 67:
-#endif
-#ifdef D_LLMNR
+	case 547:
+		if (_change_dhcp)
+			break;
+		return 0;
 	case 5353:
 	case 5355:
-#endif
-		port += 50000;
-		*pport = htons (port);
-		return 1;
-#endif
+		if (_change_llmnr)
+			break;
+		return 0;
+
 	default:
 		return 0;
 	}
+
+	port += 50000;
+	*pport = htons (port);
+	return 1;
 }
 
 int bind (int fd, const struct sockaddr *sk, socklen_t sl)

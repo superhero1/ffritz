@@ -1,6 +1,14 @@
 Change history of ffritz core integration:
 ==========================================
 
+release 28
+----------
+- Add support/hack for different DNS/DHCP server in application image
+  (see [README-pihole.md](README-pihole.md)):
+	- Add sbin/ffmultid
+	- Add socat
+	- Add libmultid.so
+
 release 27
 ----------
 - [7.19] Add ffritz.target after multi-user.target to prevent services from starting too early

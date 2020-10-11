@@ -7,14 +7,15 @@
 
 
 WGDIR=$NVRAM/etc/wireguard
+PATH=$PATH:/sbin
 
 if [ "x$1" = "xgetconfig" ]; then
 	exit 0
 fi
 
 if [ "x$1" = "xinfo" ]; then
-	echo DAEMONS=\"wgforward\"
-	/sbin/ifconfig wg0 >/dev/null 2>&1
+	echo DAEMONS=\"wgforward-udp wgforward-tcp\"
+	ifconfig wg0 >/dev/null 2>&1
 	if [ $? -eq 0 ]; then
 		echo STATUS=on
 	else
@@ -23,17 +24,17 @@ if [ "x$1" = "xinfo" ]; then
 	exit 0
 fi
 
-if [ `echo $CONFIG_VERSION | tr -d '.'` -gt 712 ]; then
-	echo 'Sorry, wireguard will not yet run on firmware > 7.12' 1>&2
-	echo 'Sorry, wireguard will not yet run on firmware > 7.12' > /dev/console
-	exit 0
-fi
-
-
 if [ "x$1" = "xstop" ]; then
-	ffdaemon -K wgforward
-	wg-quick down $WGDIR/wg0.conf
-#	rmmod wireguard
+	ffdaemon -K wgforward-udp
+	ffdaemon -K wgforward-tcp
+
+	lsmod | grep wireguard >/dev/null || exit0
+	ifconfig wg0 >/dev/null 2>&1 || exit 0
+
+	cp /usr/local/bin/wg-quick /tmp
+	/tmp/wg-quick down $WGDIR/wg0.conf
+	rmmod wireguard
+
 	exit 0
 fi
 
@@ -42,7 +43,7 @@ if [ "x$1" != "xstart" ]; then
 fi
 
 if [ ! -f $WGDIR/wg0.conf ]; then
-	echo WireGuard not started, no config file
+	echo WireGuard not started, no config file $WGDIR/wg0.conf
 	exit 0
 fi
 
@@ -54,13 +55,16 @@ if [ ! -r $module ]; then
 fi
 
 lanip=169.254.1.1
-# lanip=`/sbin/ifconfig lan|grep 'inet addr:'|sed -e 's/.*inet addr:\(.*\) B.*/\1/'`
+# lanip=`ifconfig lan|grep 'inet addr:'|sed -e 's/.*inet addr:\(.*\) B.*/\1/'`
 test -z $lanip && exit 1
 
-insmod $module
+lsmod | grep wireguard >/dev/null || insmod $module
+lsmod | grep wireguard >/dev/null || { echo wirguard.ko failed to load >&2; exit 1; }
 
 # run pcplisten periodically to add/renew a forward rule to wireguard
 #
-ffdaemon -i 90 -N wgforward pcplisten udp $lanip 51820 100 wg
+ffdaemon -i 90 -N wgforward-udp pcplisten udp $lanip 51820 100 wg
+ffdaemon -i 90 -N wgforward-tcp pcplisten tcp $lanip 51820 100 wg
 
-wg-quick up $WGDIR/wg0.conf
+cp /usr/local/bin/wg-quick /tmp
+/tmp/wg-quick up $WGDIR/wg0.conf

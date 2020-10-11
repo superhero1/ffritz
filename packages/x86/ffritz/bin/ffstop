@@ -1,0 +1,53 @@
+#!/bin/sh
+#
+# Stop ffritz daemons and unmount /usr/local
+
+usage()
+{
+	echo "usage: ffstop [-h] -f [-n]"
+	echo "  -n: No unmount after service shutdown"
+}
+
+test "$1" = "-h" && { usage; exit 0; }
+
+if [ `readlink -f $0` != /var/tmp/ffstop ]; then
+	cp -f $0 /var/tmp/ffstop
+	exec /var/tmp/ffstop $*
+fi
+
+test "$1" = "-f" || { usage 1>&2; exit 1; }
+shift
+
+no_unmount=0
+test "$1" = "-n" && no_unmount=1
+
+/usr/local/etc/ffservices stop
+
+sleep 2
+
+pids=`busybox lsof | grep /usr/local | sort -u |sed -e 's/[^0-9].*//'`
+if [ "$pids" != "" ]; then
+	echo +++ stopping PIDs $pids
+	kill $pids
+	sleep 2
+fi
+
+pids=`busybox lsof | grep /usr/local | sort -u |sed -e 's/[^0-9].*//'`
+if [ "$pids" != "" ]; then
+	echo killing PIDs $pids
+	kill -9 $pids
+	sleep 2
+fi
+
+test $no_unmount -eq 1 && exit 0
+
+mount|grep /usr/local >/dev/null
+
+if [ $? -eq 0 ]; then
+	umount /usr/local
+	if [ $? -ne 0 ]; then
+		echo "*** FAILED to unmount /usr/local" 1>&2
+		exit 1
+	fi
+	echo +++ /usr/local has been unmounted.
+fi

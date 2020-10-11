@@ -4,6 +4,10 @@
 . /usr/local/etc/ffritz-env.sh || exit 1
 . /usr/local/etc/mkusers || exit 1
 
+# Override with user configuration
+#
+test ! -z $2 && . $2
+
 if [ "x$1" = "xstop" ]; then
     ffdaemon -K shairport-sync
     exit 0
@@ -14,25 +18,33 @@ if [ "x$1" = "xinfo" ]; then
 	exit 0
 fi
 
+if [ "x$1" = "xgetconfig" ]; then
+	echo '#'
+	echo '# Configuration is done in /tmp/ffnvram/etc/shairport-sync.conf'
+	exit 0
+fi
+
 if [ "x$1" != "xstart" ]; then
 	exit 0
 fi
 
-# Make sure usbplayd runs
+# Make sure usbplayd runs and/or audio modules are loaded
 #
 ffservice start usbplayd
 
 # install default config file
 #
-if [ ! -r $NVRAM/etc/shairport-sync.conf ]; then
-	cp $FFINSTDIR/etc/shairport-sync.conf.dfl $NVRAM/etc/shairport-sync.conf || exit 1
-fi
+for f in $FFINSTDIR/etc/shairport-*; do
+	dst=$NVRAM/etc/`basename $f .dfl`
+	if [ ! -r $dst ]; then
+		cp $f $dst || exit 1
+	fi
+done
 
 # make sure mdns multicast responses go to the correct interface
 #
-ip route add 224.0.0.251/32 dev lan
+ip route add 224.0.0.251/32 dev lan 2>/dev/null && sleep 10
 
 # Run the shairport daemon
-# XX start delay so mdns works the first time (?)
 #
-ffdaemon -b 30 shairport-sync -u -c $NVRAM/etc/shairport-sync.conf
+ffdaemon shairport-sync -u -c $NVRAM/etc/shairport-sync.conf

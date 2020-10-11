@@ -16,7 +16,3 @@ MODULES   += ftl
 MODULES   += libmultid
 MODULES   += pi-hole
 endif
-
-## Whether to strip binaries
-#
-NOSTRIP	  = 1

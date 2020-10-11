@@ -1,5 +1,5 @@
 ARCHDIR=$(shell while test -f arch.mk && echo $$PWD && exit 0; test $$PWD != /; do cd ..; done)
-include $(ARCHDIR)/../paths.mk
+include $(ARCHDIR)/arch.mk
 
 TOPDIR	    = $(shell pwd)
 
@@ -9,7 +9,7 @@ endif
 
 export PATH := $(TOOLCHAIN):$(PATH)
 
-URL	= $(shell cat $(PKGTOP)/url-openssh)
+URL	= $(call URLGET,openssh)
 FILE	= $(DLDIR)/$(shell basename $(URL))
 
 all:	$(BUILDDIR)/config.status

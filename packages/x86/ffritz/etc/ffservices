@@ -6,16 +6,18 @@
 
 . /usr/local/etc/ffritz-env.sh || exit 1
 
+touch $FFLOG
+chmod 666 $FFLOG
+
+echo `date` :: $0 $* >> $FFLOG
+
 grep 'ffimage=0' /sys/firmware/efi/vars/kernel_args-*/data >/dev/null 2>&1
 if [ $? -eq 0 ]; then
-	echo ffservices: Found ffimage=0 in kernel_args, not starting services. 1>&2
+	echo ffservices: Found ffimage=0 in kernel_args, not starting services. | tee -a $FFLOG 1>&2
 	exit 1
 fi
 
 OVERLAY=$NVRAM/rootfs-overlay
-
-touch $FFLOG
-chmod 666 $FFLOG
 
 # Prepare etc directory in nvram
 # This contains all persistent data in /etc, including rc scripts
@@ -75,13 +77,12 @@ prep_etcdir()
 }
 
 if [ "x$1" = "xstop" ]; then
-    cd $NVRAM/etc/init.d && for svc in `ls|sort -r|sed -e 's/^[0-9]*//'`; do
+    cd $NVRAM/etc/init.d && for svc in `ls [0-9]* |sort -r|sed -e 's/^[0-9]*//'`; do
 	echo Stopping $svc
     	ffservice stop $svc
     done
     exit 0
 fi
-
 
 # Start services
 #
@@ -97,6 +98,10 @@ while [ $timeout -gt 0 -a "`pidof wpa_supplicant`" = "" ]; do
 	tmo=$((tmo - 1))
 done
 sleep 2
+
+# ffwrap default environment
+#
+cp $FFINSTDIR/etc/ffwenv /tmp/.ffwenv
 
 # Create/check users/paths
 #

@@ -14,10 +14,10 @@
 #   toolchain	    - Build toolchain
 #
 ARCHDIR=$(shell while test -f arch.mk && echo $$PWD && exit 0; test $$PWD != /; do cd ..; done)
-include $(ARCHDIR)/../paths.mk
+include $(ARCHDIR)/arch.mk
 
 DESTDIR = $(TOPDIR)/output
-URLFILE = $(PKGTOP)/url-avm-toolchain-atom
+URLFILE = $(call URLFILE,avm-toolchain-atom)
 
 URL	= $(shell cat $(URLFILE))
 FILE	= $(DLDIR)/$(shell basename $(URL))

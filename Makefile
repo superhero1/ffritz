@@ -32,7 +32,7 @@ ifeq ($(MAKECMDGOALS),rebuild)
 NO_USER_CONF=1
 endif
 
-include topcfg.mk
+include mk/topcfg.mk
 
 ifeq ($(HOSTTOOLS),/host/$(HOST))
 HOSTTOOLS=$(REPODIR)/host/$(HOST)
@@ -133,7 +133,6 @@ arm/.applied.fs: $(ARM_MODFILES) arm/squashfs-root $(ARM_PATCHST) $(FFRITZ_ARM_P
 	    $(SUDO) mkdir -p arm/squashfs-root/usr/local; \
 	    $(SUDO) tar xfk $(FFRITZ_ARM_PACKAGE) --strip-components=2 -C arm/squashfs-root/usr/local ./ffritz-arm; \
 	fi
-#	@if [ -d arm/squashfs-root/usr/local/bin ]; then  $(REPODIR)/mklinks -f arm/squashfs-root/usr/bin ../local/bin; fi
 	@touch $@
 
 arm/filesystem.image: arm/.applied.fs
@@ -167,6 +166,7 @@ ATOM_PATCHES += hotplug-remap-v1.patch
 else
 ATOM_PATCHES += 10-console.rules.patch
 ATOM_PATCHES += hotplug-remap-v2.patch
+ATOM_PATCHES += 20-rc-net-ffmultid.patch
 endif
 
 ATOM_PATCHST=$(ATOM_PATCHES:%=atom/.applied.%)
@@ -243,11 +243,12 @@ $(RELDIR):
 	@mkdir -p $(RELDIR)
 
 info:
-	@echo "SOC:        $(SOC)"
-	@echo "MODEL:      $(MODEL)"
-	@echo "FWVER:      $(FWVER)"
-	@echo "LABOR:      $(BETA)"
-	@echo "BR_VERSION: $(BR_VERSION)"
+	@echo "SOC:            $(SOC)"
+	@echo "MODEL:          $(MODEL)"
+	@echo "FWVER:          $(FWVER)"
+	@echo "LABOR:          $(BETA)"
+	@echo "BR_VERSION:     $(BR_VERSION)"
+	@echo "Atom toolchain: $(shell make --no-print-directory -C packages/x86/buildroot$(BR_VERSION) sdk-name)"
 
 ###############################################################################################
 #
@@ -272,6 +273,9 @@ package-arm:
 package-atom:	atom/squashfs-root
 	make -C packages/x86
 
+sdk-atom:	atom/squashfs-root
+	make -C packages/x86 sdk
+
 atom-brconfig:
 	@make -C packages/x86/buildroot$(BR_VERSION) userconfig
 	@echo
@@ -295,6 +299,7 @@ help:
 	@echo 'package          : Rebuild application packages'
 	@echo 'package-arm      : Rebuild application package for arm'
 	@echo 'package-atom     : Rebuild application package for atom'
+	@echo 'sdk-atom         : Explicit build of sdk package for atom (if supported by selected toolchain)'
 	@echo 'atom-brconfig    : Change buildroot configuration for atom'
 	@echo 'arm-brconfig     : Change buildroot configuration for arm'
 	@echo 'squashfstools-be : Download freetz and build big endian squashfs tools for host'

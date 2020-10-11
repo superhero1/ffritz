@@ -8,8 +8,13 @@ conf.mk
 **/build/
 **/build-*/
 **/build_*/
-**/^\.*
-!**/.gitignore
+**/\.*
+!**/\.gitignore
 **/filesystem.image
 **/release*/
 **/staging*/
+**/*.orig
+**/*_BACKUP_*
+**/*_BASE_*
+**/*_LOCAL_*
+**/*_REMOTE_*
