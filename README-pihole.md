@@ -19,6 +19,10 @@ Installation (one-time)
   /var/media/ftp or, preferably, on a USB HDD (see also notes on
   volmgt in [README-APP.md](README-APP.md)).
 
+- Restart buildroot service, this will create the new root filesystem:
+
+	ffservice restart buildroot
+
 - Install pihole into the br environment:
 
 	pihole-setup.sh
@@ -37,7 +41,7 @@ Startup
 
 If you want to run pihole as DHCP server as well, run
 
-	ffservice config buildroot
+	ffservice config pihole
 
 and enable the DHCP option.  
 
