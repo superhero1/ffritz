@@ -8,57 +8,60 @@ NOTE: It is recommended to run this with ffritz / FritzOS image
       version 28 (see caveats below)!
 
 Installation (one-time)
------------------------
+=======================
+
+Buildroot environment, if not already done
+------------------------------------------
 
 - Configure buildroot so that it uses a copied installation:
 
-	ffservice config buildroot
+		ffservice config buildroot
 
 - Set BR_USER_COPY so that it points to a storage location where 
-  the buildroot environment is copied to. For example somewhere below
-  /var/media/ftp or, preferably, on a USB HDD (see also notes on
-  volmgt in [README-APP.md](README-APP.md)).
+  the buildroot environment is copied to. For example, on the NAS drive:
+
+		BR_USER_COPY=/var/media/ftp/buildroot
+  or, preferably, on a USB HDD (see also notes on volmgt in
+  [README-APP.md](README-APP.md)).
 
 - Restart buildroot service, this will create the new root filesystem:
 
-	ffservice restart buildroot
+		ffservice restart buildroot
 
-- Install pihole into the br environment:
+- If ffritz image version >= 28 is installed, configure it for pihole use
+  (see caveats below) and restart the box:
 
-	pihole-setup.sh
+		touch /nvram/ffnvram/use_pihole
+		/sbin/reboot
 
+pihole
+------
+
+- Install pihole into the buildroot environment:
+
+		pihole-setup.sh
   This will install pihole into the buildroot environment, update the initial
   database and prompt for a admin login password.
 
-- If ffritz image version 28 is installed, configure it for pihole use
-  (see caveats below), if this is not already done:
+- If you want to run pihole as DHCP server as well, run
 
-	touch /nvram/ffnvram/use_pihole
-	/sbin/reboot
+		ffservice config pihole
+  and enable the DHCP option.  
 
-Startup
--------
+- To start pi-hole:
 
-If you want to run pihole as DHCP server as well, run
+		ffservice start pihole
+  pihole-FTL (dnsmaq variant of pi-hole) should now run, and the GUI should be
+  available at http://192.168.178.1:85 (or http://fritz.box:85).
 
-	ffservice config pihole
+- If it works, enable pihole at system startup
 
-and enable the DHCP option.  
+		ffservice enable pihole
 
-To start pi-hole:
 
-	ffservice start pihole
+To change the GUI login password:
 
-pihole-FTL (dnsmaq variant of pi-hole) should now run, and the GUI should be
-available at http://192.168.178.1:85 (or http://fritz.box:85).
-
-To enable pihole at system startup
-
-	ffservice enable pihole
-
-To change the login password:
-
-	br pihole -a -p
+		br pihole -a -p
 
 CAVEATS
 =======
@@ -66,6 +69,7 @@ CAVEATS
 pihole replaces dns/dhcp services in multid by re-starting multid with DNS/DHCP 
 ports redirected to port numbers 50000+port.
 However, re-starting multid at runtime will  
+
 - multid's DNS server to no longer work
 - Make IPv6 to no longer work !
 
@@ -77,6 +81,7 @@ would still work.
 For that reason, the base ffritz/FritzOS patch as of version 28 will
 check the file /nvram/ffnvram/use_pihole before starting multid initially.
 If it exists:  
+
 - A bunch of socat processes is spawned to forward DNS/DHCP requests
 - multid is started in redirection mode.
 
