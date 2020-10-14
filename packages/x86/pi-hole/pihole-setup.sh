@@ -73,8 +73,8 @@ mv $tmp $BR_USER_COPY/etc/sudoers
 chmod +s $BR_USER_COPY/usr/bin/sudo
 
 br chmod 775 /etc/pihole
-br chown pihole  /etc/pihole /etc/pihole/*
-br chgrp www-data  /etc/pihole /etc/pihole/*
+br chown -R pihole  /etc/pihole 
+br chgrp -R www-data  /etc/pihole
 
 echo Updating database
 br /opt/pihole/gravity.sh
