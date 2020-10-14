@@ -251,6 +251,18 @@ mkdir -p $BR_VAR
 if [ -f $BR_CONF ]; then
 	echo reading config from $BR_CONF
 	. $BR_CONF
+
+	# if its on NAS, make sure its mounted with exec
+	#
+	echo $BR_USER_COPY $BR_USER_OVERLAY | grep /var/media/ftp >/dev/null && {
+		mount | grep " /var/media/ftp " | grep noexec >/dev/null && {
+			echo +++ Remounting NAS without noexec
+			mount -o remount,rw,exec /var/media/ftp/ || { echo '*** FAILED' >&2; exit 1; }
+		}
+		echo '!!! WARNING: Using NAS as overlay/copy. This might be a security issue!'
+	}
+
+
 	cp -f $BR_CONF $BR_CONF_ACTIVE
 fi
 touch $BR_CONF_ACTIVE

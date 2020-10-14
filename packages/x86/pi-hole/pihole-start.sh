@@ -77,7 +77,7 @@ if [ -r /sbin/ffmultid ]; then
 		#
 		for retry in 1 2 3; do
 			pids=`ps|grep socat|grep -e listen:53 -e listen:67 -e listen:547 |awk '{print $1}'`
-			test -z $pids && break
+			test -z "$pids" && break
 			echo killing DNS/DHCP socats: $pids
 			kill $pids
 			sleep 1
@@ -94,6 +94,9 @@ if [ $need_multid_restart -eq 1 ]; then
 fi
 
 sleep 1
+
+echo +++ IP address update
+pihole-config.sh
 
 echo +++ starting pihole-FTL
 br pihole-FTL 
