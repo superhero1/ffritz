@@ -29,9 +29,14 @@ Older versions for 6x90 are kept on the "fritzos6" branch:
 
 <https://bitbucket.org/fesc2000/ffritz/src/fritzos6>
 
-A version for FritzBox-6591 is in the 6591 branch:
+The version for FritzBox-6591 is in the master branch:
 
-<https://bitbucket.org/fesc2000/ffritz/src/6591>
+<https://bitbucket.org/fesc2000/ffritz>
+
+
+NOTE!!!
+This branch is currently not maintained due to lack of hardware.
+It ends with support for FritzOS 7.12 !!!
 
 
 Usage
