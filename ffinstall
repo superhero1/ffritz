@@ -11,6 +11,8 @@ usage()
 	echo " Without -r, call ffrestart or reboot the box"
 }
 
+
+
 if [ "$1" = "-h" ]; then
 	usage
 	exit 0
@@ -28,6 +30,9 @@ test -r $image || { usage 1>&2; exit 1; }
 
 host=$1
 test -z $host && { usage 1>&2; exit 1; }
+
+test -t && PV=`which pv`
+test -z "$PV" && PV=cat
 
 file $image | grep tar >/dev/null || \
 { 
@@ -47,5 +52,5 @@ csum=`cat $csumf`
 tgt=/var/media/ftp/ffi.image
 inst="openssl dgst -sha256 $tgt; ffinstall $restart $tgt $csum"
 
-cmd="ssh root@$host sh -c \"\\\"echo +++ Loading; cat >$tgt && $inst; \\\"\""
-eval $cmd < $image || exit 1
+cmd="ssh root@$host sh -c \"\\\"echo +++ Transferring..; cat >$tgt && $inst; \\\"\""
+$PV $image | eval $cmd || exit 1
