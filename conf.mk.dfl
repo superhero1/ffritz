@@ -2,7 +2,7 @@
 # Configuration
 ################################################################################
 #
-## The original firmware .image/.zip URL (or directly put the file to packages/dl)
+## The original firmware .image/.zip URL (or directly put the file to dl/)
 ##
 ## Labor images:
 #
@@ -13,6 +13,12 @@
 #URL=http://download.avm.de/firmware/6591/79013767/FRITZ.Box_6591_Cable-07.12-72501-Release.image
 #URL=http://download.avm.de/firmware/6591/213215464/FRITZ.Box_6591_Cable-07.13.image
 URL=https://download.avm.de/firmware/6591/7652164782/FRITZ.Box_6591_Cable-07.21.image
+
+# Last supported 6490 Image
+#URL=http://download.avm.de/firmware/6490/758467098/FRITZ.Box_6490_Cable-07.12.image
+
+# 6490 untested
+#URL=https://download.avm.de/firmware/6490/9764886654/FRITZ.Box_6490_Cable-07.20.image
 
 ## Keep original rootfs for diff?
 ## dirdiff arm/orig/ arm/squashfs-root/
@@ -35,7 +41,7 @@ KEEP_ORIG = 1
 ## If this option is not set no binaries will be placed into the ARM root filesystem.
 #
 #FFRITZ_ARM_PACKAGE=LOCAL
-#FFRITZ_ARM_PACKAGE=packages/dl/ffritz-arm-puma7-0.8-fos7.tar.gz
+#FFRITZ_ARM_PACKAGE=dl/ffritz-arm-puma7-0.8-fos7.tar.gz
 
 ################################################################################
 

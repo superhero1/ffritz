@@ -1,6 +1,11 @@
 Change history of ffritz core integration:
 ==========================================
 
+NEXT
+----
+- Support for puma6 and 7 boxes in one branch
+	- puma6 (6x90) tested up to 7.12
+
 release 28
 ----------
 - Add support/hack for different DNS/DHCP server in application image

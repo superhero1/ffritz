@@ -1,0 +1,4 @@
+#!/bin/sh
+
+echo Starting dropbear 
+/usr/bin/dropbear 2>/dev/console || echo dropbear startup failed 

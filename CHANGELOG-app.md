@@ -1,8 +1,14 @@
 Change history of application package
 =====================================
 
+NEXT
+----
+- puma6/7 support in image
+	- puma6 (6490/6590) build not yet supported here, use puma6 branch
+
+
 Release puma7-19
-================
+----------------
 - Add alsa support
   - Build USB sound kernel modules for kernel 4.9.199 (FritzOS >= 7.19)
   - Added config option to usbplayd

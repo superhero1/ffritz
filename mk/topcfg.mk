@@ -57,14 +57,11 @@ ifeq ($(MODEL),6590)
 SOC=puma6
 endif
 
-ifeq ($(SOC),puma6)
-$(error sorry, $(SOC) not yet supported, try the master branch)
-endif
-
 ifeq ($(shell test $(FWMAJ) -lt 7),0)
 $(error sorry, firmware too old, try the fritzos6 branch)
 endif
 
+ifeq ($(SOC),puma7)
 ifeq ($(BR_VERSION),)
 ifeq ($(shell test $(FWMAJ) -eq 7 -a $(FWMIN) -lt 19 ; echo $$?),0)
 BR_VERSION=-2019.05
@@ -81,6 +78,11 @@ ifeq ($(PARALLEL),)
 PARALLEL=$(shell cat /proc/cpuinfo | grep processor | wc -l)
 endif # PARALLEL
 endif # 2020.02
+
+else #puma6
+
+BR_VERSION=-2019.05-p6
+endif
 
 ARM_IMG_VERSION=$(shell cat $(REPODIR)/packages/arm/ffritz/version)
 ATOM_IMG_VERSION=$(shell cat $(REPODIR)/packages/x86/ffritz/version)

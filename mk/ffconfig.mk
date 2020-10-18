@@ -38,12 +38,12 @@ endif
 PKGTOP      := $(REPODIR)/packages
 TOOLDIR     := $(REPODIR)/tools
 CMNDIR      := $(PKGTOP)/common
-DLDIR	    := $(PKGTOP)/dl
+DLDIR	      := $(REPODIR)/dl
 TOPDIR	    = $(shell pwd)
 BUILDDIR    = build$(BR_VERSION)
 TC_CHECK    = $(shell $(PKGTOP)/tccheck $(BUILDROOT))
 
-PLAT_BASE   = $(REPODIR)
+PLAT_BASE   = $(REPODIR)/$(SOC)
 
 URL_REPO    = $(PKGTOP)/external
 
@@ -68,7 +68,7 @@ PLAT_CPU     := $(PLAT_BASE)/arm
 else
 PLAT_CPU     := $(PLAT_BASE)/atom
 endif
-PLAT_OSBASE  := $(PLAT_CPU)/suqashfs-root
+PLAT_OSBASE  := $(PLAT_CPU)/squashfs-root
 PLAT_OVERLAY := $(PLAT_CPU)/mod
 
 endif

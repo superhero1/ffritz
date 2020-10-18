@@ -182,6 +182,7 @@ $(TC_STAMP):
 $(ALL_DEP) $(CUSTOM_DEP): $(REPO) $(FILE)
 
 all-pkg:	$(ALL_DEP) $(CUSTOM_DEP)
+	@export > .make.sh; echo 'PATH=$(TOOLCHAIN):$(PATH) make -C $(BUILDDIR)$(MAKE_SUBDIR) $(MAKE_OPTIONS)' >> .make.sh
 	PATH=$(TOOLCHAIN):$(PATH) make -C $(BUILDDIR)$(MAKE_SUBDIR) $(MAKE_OPTIONS)
 
 $(BUILDDIR)$(MAKE_SUBDIR)/Makefile:    $(BUILDDIR) 

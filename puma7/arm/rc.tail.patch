@@ -1,0 +1,64 @@
+--- orig/etc/init.d/rc.tail.sh	2017-12-12 11:57:56.000000000 +0100
++++ squashfs-root/etc/init.d/rc.tail.sh	2018-04-07 00:05:42.804641000 +0200
+@@ -46,5 +46,61 @@
+ set_m_sleep=$((10*60))
+ nohup sh -c "echo \"\$0[\$\$]: ++++fork set_modulemen, sleep ${set_m_sleep}++++\" > /dev/console ; sleep ${set_m_sleep}; echo \"\$0[\$\$]: ++++do set_modulemen++++\" > /dev/console; /bin/set_modulemem;" &
+ fi
++
+ #########################################################################
++# MOD: Make sure telnetd is started after startup for 5 mins
++#	Do this only if /sbin/ar7login exists. If not then this is 
++#	Likely firmware >= 6.83 where we don't need it.
++#########################################################################
++if [ -f /sbin/ar7login ]; then
++	/usr/sbin/telnetd -l /sbin/ar7login
++	nohup sh -c "sleep 300; echo killing telnetd > /dev/console; sleep 10; killall telnetd" &
++fi
++
++#########################################################################
++# MOD: Start a SSH daemon (dropbear)
++#   - We want to be able to store root password persistently:
++#	- Create a copy for /etc/shadow to /nvram/shadow (if not yet done)
++#	- Link /etc/shadow to /nvram/shadow
++#   - Same for the certificates:
++#	- Create /nvram/dropbear (if it does not yet exist)
++#	- Link /var/tmp/dropbear to /nvram/dropbear
++#   - Same for roots .ssh directory (var/tmp/root-ssh linked to /nvram/root-ssh)
++#   - Start the daemon. 
++#   
++#########################################################################
++if [ -x /usr/bin/dropbear ]; then
++    if [ ! -f /nvram/shadow ]; then
++	cp /etc/shadow /nvram/shadow
++	chmod 600 /nvram/shadow
++    fi
++    rm -f /var/tmp/shadow
++    ln -sf /nvram/shadow /var/tmp/shadow
++
++    if [ ! -d /nvram/dropbear ]; then
++	if [ -d /var/media/ftp/.dropbear ]; then
++		mv /var/media/ftp/.dropbear /nvram/dropbear
++	else
++		mkdir /nvram/dropbear
++		chmod 700 /nvram/dropbear
++	fi
++    fi
++    rm -rf /var/tmp/dropbear
++    ln -sf /nvram/dropbear /var/tmp/dropbear
++
++    if [ ! -f /var/tmp/dropbear/dropbear_rsa_host_key ]; then
++	dropbearkey -t rsa -f /var/tmp/dropbear/dropbear_rsa_host_key
++	chmod 600 /var/tmp/dropbear/dropbear_rsa_host_key
++    fi
++
++    if [ ! -d /nvram/root-ssh ]; then
++	mkdir /nvram/root-ssh
++	chmod 700 /nvram/root-ssh
++    fi
++    rm -rf /var/tmp/root-ssh
++    ln -sf /nvram/root-ssh /var/tmp/root-ssh
++
++    /usr/bin/dropbear 
++fi
++
+ exit 0

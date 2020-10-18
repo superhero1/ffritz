@@ -1,6 +1,12 @@
 Introduction 
 ============
-This is a repository containing my modifications for FritzBox-6591 Cable.
+This is a repository containing my modifications for FritzBox Cable.
+
+- 6591: Fully supported and tested
+- 6660: Likely supported, not tested
+- 6x90: Basic support, currently not maintained. See 6x90 note at the
+        very end.
+
 It basically modifies the original AVM install image by adding an ssh
 (dropbear) service to log in.
 
@@ -224,6 +230,12 @@ apt-get install gawk libtool realpath pkg-config zlibc gnulib libcap-dev
 
 You might have to remove "composite" and "sys/acl.h" from the
 .build-prerequisites file
+
+6x90 Note (puma6 hardware)
+==========================
+Support for 6x90 currently stops at version 7.12. Also, the master branch allows only
+to generate the OS image modification. The application package needs to be build
+in the puma6 branch.
 
 Credits
 =======

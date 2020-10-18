@@ -1,0 +1,47 @@
+#!/bin/sh
+#
+linux_fs_start=`grep linux_fs_start ${CONFIG_ENVIRONMENT_PATH}/environment`
+if [ -z "$linux_fs_start" ]; then
+    current=0
+    linux_fs_start=1
+else
+    linux_fs_start="${linux_fs_start##linux_fs_start}"
+    current=$linux_fs_start
+    if [ $linux_fs_start = 0 ]; then
+	current=0
+	linux_fs_start=1
+    else
+	current=1
+	linux_fs_start=0
+    fi
+fi
+
+echo "SELECTED boot bank        $current"
+
+if [ -f /etc/version ]; then
+	eval `grep CONFIG_VERSION_MAJOR= /etc/version`
+	eval `grep FIRMWARE_VERSION= /etc/version`
+	echo "RUNNING firmware version: $FIRMWARE_VERSION"
+else
+	echo "RUNNING firmware version: unknown"
+fi
+
+mount /dev/mmcblk0p7 /mnt >/dev/null 2>&1
+if [ -f /mnt/etc/version ]; then
+	eval `grep CONFIG_VERSION_MAJOR= /mnt/etc/version`
+	eval `grep FIRMWARE_VERSION= /mnt/etc/version`
+	echo "BACKUP firmware version:  $FIRMWARE_VERSION"
+else
+	echo "BACKUP firmware version:  unknown"
+fi
+umount /mnt >/dev/null 2>&1
+
+if [ "x$1" = "x-e" ]; then
+	echo linux_fs_start ${linux_fs_start} >${CONFIG_ENVIRONMENT_PATH}/environment
+	echo switched to boot bank $linux_fs_start
+else
+	echo
+	echo Execute the following command, followed by /sbin/reboot, to flip boot bank:
+	echo
+	echo " echo linux_fs_start ${linux_fs_start} >${CONFIG_ENVIRONMENT_PATH}/environment"
+fi

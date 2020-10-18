@@ -55,10 +55,10 @@ Ubuntu/Debian ftp client (see troubleshooting section further below).
 Steps:
 
 1.  Generate the update image as described in README.md.  
-    Once complete, there will be some image files in the subdirectory tmp/uimage:
+    Once complete, there will be some image files in the subdirectory build/puma7/uimage:
 
-        ffritz$ cd tmp/uimage/
-        ffritz/tmp/uimage$ ls -l
+        ffritz$ cd build/puma7/uimage/
+        ffritz/build/puma7/uimage$ ls -l
         -r--r--r-- 1 felix osboxes  9437184 Apr 13 07:37 part_02_ATOM_KERNEL.bin
         -rw-r--r-- 1 felix osboxes 29569024 Apr 13 07:37 part_03_ATOM_ROOTFS.bin
         -r--r--r-- 1 felix osboxes  2335056 Apr 13 07:36 part_08_ARM_KERNEL.bin
@@ -73,7 +73,7 @@ Steps:
 
 2.  Repower the box and connect via ftp client after ca. 5 seconds:  
 
-        ffritz/tmp/uimage$ ftp 192.168.178.1
+        ffritz/build/puma7/uimage$ ftp 192.168.178.1
 
     user/password is adam2/adam2
 

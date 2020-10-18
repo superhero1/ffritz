@@ -3,7 +3,7 @@ REPODIR	= $(shell pwd)
 VERSION = $(shell cat version)
 ARM_VER = $(shell cat packages/arm/ffritz/version)
 HOST    = $(shell uname -m)
-DLDIR   = $(REPODIR)/packages/dl
+DLDIR   = $(REPODIR)/dl
 SUDO	= fakeroot
 FWMAJ	= 0
 FWMIN	= 0
@@ -42,13 +42,22 @@ ifeq ($(HOSTTOOLS),)
 HOSTTOOLS=$(REPODIR)/host/$(HOST)
 endif
 
-ARM_MAX_FS=19922432
+RELDIR  = $(REPODIR)/images
 
+PLAT_BASE  := $(REPODIR)/$(SOC)
+BUILD_DIR  := $(REPODIR)/build
+PLAT_TMP   := $(BUILD_DIR)/$(SOC)
 
-RELDIR  = output
+ARM_TMP    := $(PLAT_TMP)/arm
+ARM_STAGE  := $(ARM_TMP)/squashfs-root
+ARM_ORIG   := $(ARM_TMP)/orig
+ARM_BASE   := $(PLAT_BASE)/arm
 
-#ARM_MODFILES = $(shell find arm/mod/ -type f -o -type d)
-ATOM_MODFILES = $(shell find atom/mod/ -type f -o -type d)
+ATOM_TMP   := $(PLAT_TMP)/atom
+ATOM_STAGE := $(ATOM_TMP)/squashfs-root
+ATOM_ORIG  := $(ATOM_TMP)/orig
+ATOM_BASE  := $(PLAT_BASE)/atom
+
 
 ifeq ($(ITYPE),zip)
 ORIG=$(DLDIR)/$(INAME)
@@ -64,8 +73,6 @@ $(ORIG):
 	mkdir -p $(DLDIR)
 	wget -O $(ORIG) $(URL)
 endif
-
-DFL_ARM_PACKAGE=packages/arm/ffritz/$(ARM_EXT_IMAGE)
 
 ifeq ($(FFRITZ_ARM_PACKAGE),LOCAL)
 FFRITZ_ARM_PACKAGE=$(DFL_ARM_PACKAGE)
@@ -85,19 +92,14 @@ ifeq ($(RSYNC),)
 $(error rsync missing, please install)
 endif
 
-
 #ifneq ($(FFRITZ_ARM_PACKAGE),)
 #$(FFRITZ_ARM_PACKAGE):
 #	wget ftp://ftp.ffesh.de/pub/ffritz/arm/$(shell basename $(FFRITZ_ARM_PACKAGE)) -O $(FFRITZ_ARM_PACKAGE) || true
 #endif
 
-src/uimg/uimg:
-	@make -C src/uimg
+FWFILE  = fb$(MODEL)_$(FWVER)$(BETA)-$(VERSION).tar
 
-tmp/uimage:	$(ORIG) src/uimg/uimg
-	@mkdir -p tmp/uimage
-	@cd tmp/uimage; tar xf $(ORIG)  
-	@cd tmp/uimage; $(REPODIR)/src/uimg/uimg -u -n part var/firmware-update.uimg
+include $(PLAT_BASE)/soc.mk
 
 $(DFL_ARM_PACKAGE):
 	@make package-arm
@@ -105,45 +107,41 @@ $(DFL_ARM_PACKAGE):
 ###############################################################################################
 ## Unpack, patch and repack ARM FS
 #
-armfs:	arm/filesystem.image
+armfs:	$(ARM_TMP)/filesystem.image
 
-ARM_PATCHES += profile.patch $(shell cd arm; ls user-*.patch 2>/dev/null | sort)
+include $(ARM_BASE)/cpu.mk
 
-ARM_PATCHST=$(ARM_PATCHES:%=arm/.applied.%)
+ARM_PATCHST=$(ARM_PATCHES:%=$(ARM_TMP)/.applied.%)
 
-tmp/arm/filesystem.image: tmp/uimage
-	@mkdir -p tmp/arm
-	@cd tmp/arm; ln -sf ../uimage/part_09_ARM_ROOTFS.bin filesystem.image
+$(ARM_STAGE):  $(ARM_ROOTIMG) 
+	@if [ ! -d $(ARM_STAGE) ]; then cd $(ARM_TMP); $(SUDO) $(HOSTTOOLS)/unsquashfs4-avm-be $(ARM_ROOTIMG); fi
+	@if [ $(KEEP_ORIG) -eq 1 -a ! -d $(ARM_ORIG) ]; then cd $(ARM_TMP); $(SUDO) $(HOSTTOOLS)/unsquashfs4-avm-be -d orig $(ARM_ROOTIMG); fi
 
-arm/squashfs-root:  tmp/arm/filesystem.image 
-	@if [ ! -d arm/squashfs-root ]; then cd arm; $(SUDO) $(HOSTTOOLS)/unsquashfs4-avm-be $(REPODIR)/tmp/arm/filesystem.image; fi
-	@if [ $(KEEP_ORIG) -eq 1 -a ! -d arm/orig ]; then cd arm; $(SUDO) $(HOSTTOOLS)/unsquashfs4-avm-be -d orig $(REPODIR)/tmp/arm/filesystem.image; fi
-
-$(ARM_PATCHST):	$(@:arm/.applied.%=%)
-	@echo APPLY $(@:arm/.applied.%=%)
-	@cd arm/squashfs-root; $(SUDO) patch -p1 < $(@:arm/.applied.%=../%)
+$(ARM_PATCHST):	$(@:$(ARM_TMP)/.applied.%=$(ARM_BASE)/%)
+	@echo APPLY $(@:$(ARM_TMP)/.applied.%=$(ARM_BASE)/%)
+	@cd $(ARM_STAGE); $(SUDO) patch -p1 < $(@:$(ARM_TMP)/.applied.%=$(ARM_BASE)/%)
 	@touch $@
 
-arm/.applied.fs: $(ARM_MODFILES) arm/squashfs-root $(ARM_PATCHST) $(FFRITZ_ARM_PACKAGE)
-	@echo "PATCH  arm/squashfs-root"
-	@$(SUDO) rm -rf arm/squashfs-root/usr/local
-	@$(SUDO) $(RSYNC) -a --no-perms arm/mod/ arm/squashfs-root/
+$(ARM_TMP)/.applied.fs: $(ARM_MODFILES) $(ARM_STAGE) $(ARM_PATCHST) $(FFRITZ_ARM_PACKAGE)
+	@echo "PATCH  $(ARM_STAGE)"
+	@$(SUDO) rm -rf $(ARM_STAGE)/usr/local
+	@$(SUDO) $(RSYNC) -a --no-perms $(PLAT_BASE)/arm/mod/ $(ARM_STAGE)/
 	@if [ -f "$(FFRITZ_ARM_PACKAGE)" ]; then \
 	    echo Integrating ARM extensions from $(FFRITZ_ARM_PACKAGE); \
-	    $(SUDO) mkdir -p arm/squashfs-root/usr/local; \
-	    $(SUDO) tar xfk $(FFRITZ_ARM_PACKAGE) --strip-components=2 -C arm/squashfs-root/usr/local ./ffritz-arm; \
+	    $(SUDO) mkdir -p $(ARM_STAGE)/usr/local; \
+	    $(SUDO) tar xfk $(FFRITZ_ARM_PACKAGE) --strip-components=2 -C $(ARM_STAGE)/usr/local ./ffritz-arm; \
 	fi
 	@touch $@
 
-arm/filesystem.image: arm/.applied.fs
-	@rm -f arm/filesystem.image
-	@$(SUDO) chmod 755 arm/squashfs-root
-	@echo "PACK  arm/squashfs-root"
-	@cd arm; $(SUDO) $(HOSTTOOLS)/mksquashfs4-avm-be squashfs-root filesystem.image -comp xz -all-root -info -no-progress -no-exports -no-sparse -b 65536 -processors 1 >/dev/null
-	@if [ `wc -c arm/filesystem.image | sed -e 's/ .*//'` -ge $(ARM_MAX_FS) ]; then \
+ $(ARM_TMP)/filesystem.image: $(ARM_TMP)/.applied.fs
+	@rm -f $(ARM_TMP)/filesystem.image
+	@$(SUDO) chmod 755 $(ARM_STAGE)
+	@echo "PACK  $(ARM_STAGE)"
+	@cd $(ARM_TMP); $(SUDO) $(HOSTTOOLS)/mksquashfs4-avm-be squashfs-root  $(ARM_TMP)/filesystem.image -comp xz -all-root -info -no-progress -no-exports -no-sparse -b 65536 -processors 1 >/dev/null
+	@if [ `wc -c $(ARM_TMP)/filesystem.image | sed -e 's/ .*//'` -ge $(ARM_MAX_FS) ]; then \
 		echo '*** ERROR: Arm filesystem is getting too large!'; \
 		echo '*** Consider editing conf.mk and remove ARM extensions (FFRITZ_ARM_PACKAGE)'; \
-		echo "***  size=`wc -c arm/filesystem.image | sed -e 's/ .*//'`  max=$(ARM_MAX_FS)"; \
+		echo "***  size=`wc -c $(ARM_TMP)/filesystem.image | sed -e 's/ .*//'`  max=$(ARM_MAX_FS)"; \
 		false; fi
 
 arm-package: packages/arm/ffritz/ffritz-arm-$(ARM_VER).tar.gz
@@ -156,91 +154,54 @@ packages/arm/ffritz/ffritz-arm-$(ARM_VER).tar.gz:
 ###############################################################################################
 ## Unpack, patch and repack ATOM FS 
 #
-atomfs:	atom/filesystem.image
+atomfs:	$(ATOM_TMP)/filesystem.image
 
-ATOM_PATCHES = profile.patch $(shell cd atom; ls user-*.patch 2>/dev/null | sort)
+include $(ATOM_BASE)/cpu.mk
 
-ifeq ($(shell test $(FWMAJ) -eq 7 -a $(FWMIN) -lt 19 ; echo $$?),0)
-ATOM_PATCHES += 50-udev-default.patch
-ATOM_PATCHES += hotplug-remap-v1.patch
-else
-ATOM_PATCHES += 10-console.rules.patch
-ATOM_PATCHES += hotplug-remap-v2.patch
-ATOM_PATCHES += 20-rc-net-ffmultid.patch
-endif
+ATOM_PATCHST=$(ATOM_PATCHES:%=$(ATOM_TMP)/.applied.%)
 
-ATOM_PATCHST=$(ATOM_PATCHES:%=atom/.applied.%)
+$(ATOM_STAGE):  $(ATOM_ROOTIMG)
+	@if [ ! -d $(ATOM_STAGE) ]; then cd $(ATOM_TMP); $(SUDO) unsquashfs $(ATOM_ROOTIMG); fi
+	@if [ $(KEEP_ORIG) -eq 1 -a ! -d $(ATOM_ORIG) ]; then cd $(ATOM_TMP); $(SUDO) unsquashfs -d orig $(ATOM_ROOTIMG); fi
 
-tmp/atom/filesystem.image: tmp/uimage
-	@mkdir -p tmp/atom
-	@cd tmp/atom; ln -sf ../uimage/part_03_ATOM_ROOTFS.bin filesystem.image
-
-atom/squashfs-root:  tmp/atom/filesystem.image
-	@if [ ! -d atom/squashfs-root ]; then cd atom; $(SUDO) unsquashfs $(REPODIR)/tmp/atom/filesystem.image; fi
-	@if [ $(KEEP_ORIG) -eq 1 -a ! -d atom/orig ]; then cd atom; $(SUDO) unsquashfs -d orig $(REPODIR)/tmp/atom/filesystem.image; fi
-
-$(ATOM_PATCHST):	$(@:atom/.applied.%=%)
-	@echo APPLY $(@:atom/.applied.%=%)
-	@cd atom/squashfs-root; $(SUDO) patch -p1 < $(@:atom/.applied.%=../%)
+$(ATOM_PATCHST):	$(@:$(ATOM_TMP)/.applied.%=$(ATOM_BASE)/%)
+	@echo APPLY $(@:$(ATOM_TMP)/.applied.%=$(ATOM_BASE)/%)
+	@cd $(ATOM_STAGE); $(SUDO) patch -p1 < $(@:$(ATOM_TMP)/.applied.%=$(ATOM_BASE)/%)
 	@touch $@
 
-atom/.applied.fs: $(ATOM_MODFILES) atom/squashfs-root $(ATOM_PATCHST)
-	@echo "PATCH  atom/squashfs-root"
-	@$(SUDO) $(RSYNC) -a atom/mod/ atom/squashfs-root/
-	@mkdir -p atom/squashfs-root/usr/local
+$(ATOM_TMP)/.applied.fs: $(ATOM_MODFILES) $(ATOM_STAGE) $(ATOM_PATCHST)
+	@echo "PATCH  $(ATOM_STAGE)"
+	@$(SUDO) $(RSYNC) -a $(PLAT_BASE)/atom/mod $(ATOM_STAGE)/
+	@mkdir -p $(ATOM_STAGE)/usr/local
 	@touch $@
 
-atom/filesystem.image: atom/.applied.fs
-	@rm -f atom/filesystem.image
-	@$(SUDO) chmod 755 atom/squashfs-root
-	@echo "PACK  atom/squashfs-root"
-	@cd atom; $(SUDO) mksquashfs squashfs-root filesystem.image -comp xz -all-root -info -no-progress -no-sparse -b 65536 -no-xattrs -processors 1 >/dev/null
+$(ATOM_TMP)/filesystem.image: $(ATOM_TMP)/.applied.fs
+	@rm -f $(ATOM_TMP)/filesystem.image
+	@$(SUDO) chmod 755 $(ATOM_STAGE)
+	@echo "PACK  $(ATOM_STAGE)"
+	@cd $(ATOM_TMP); $(SUDO) mksquashfs squashfs-root filesystem.image -comp xz -all-root -info -no-progress -no-sparse -b 65536 -no-xattrs -processors 1 >/dev/null
 
-#.PHONY:		$(RELDIR)
+.PHONY:		$(RELDIR)
 
 ###############################################################################################
-FWFILE  = fb$(MODEL)_$(FWVER)$(BETA)-$(VERSION).tar
 
 release:
 	make clean
 	make $(RELDIR)/$(FWFILE)
-	
-$(RELDIR)/$(FWFILE): atomfs armfs $(RELDIR) 
-	@rm -rf $(RELDIR)/var
-	@cd $(RELDIR); tar xf $(ORIG)
-	@cp -f arm/filesystem.image tmp/uimage/*ARM_ROOTFS.bin
-	@rm -f $(RELDIR)/var/remote/var/tmp/filesystem.image
-	@cp atom/mod/usr/bin/switch_bootbank $(RELDIR)/var
-	@cp -f atom/filesystem.image tmp/uimage/*ATOM_ROOTFS.bin
-ifeq ($(ENABLE_CONSOLE),1)
-	@echo "PATCH  part_02_ATOM_KERNEL.bin"
-	@mkdir -p tmp/mnt
-	@sudo mount -o loop tmp/uimage/part_02_ATOM_KERNEL.bin tmp/mnt >/dev/null 
-	@test -r tmp/mnt/EFI/BOOT/startup.nsh
-	@(echo mm 0xfed94810 0x00914b49 -w 4; echo mm 0xfed94820 0x00914b49 -w 4; cat tmp/mnt/EFI/BOOT/startup.nsh) > .startup.nsh
-	@sudo cp .startup.nsh tmp/mnt/EFI/BOOT/startup.nsh
-	@sudo umount tmp/mnt >/dev/null 
-	@rm -f .startup.nsh
-endif
-	@echo "PACK   firmware-update.uimg"
-	@$(REPODIR)/src/uimg/uimg -p -n tmp/uimage/part $(RELDIR)/var/firmware-update.uimg
-	@echo "PACK   $(RELDIR)/$(FWFILE)"
-	@cd $(RELDIR); $(TAR) cf $(FWFILE) var
-	@rm -rf $(RELDIR)/var
-	@echo
-	@echo +++ Done +++
 	@echo "SOC:        $(SOC)"
 	@echo "MODEL:      $(MODEL)"
 	@echo "FWVER:      $(FWVER)"
 	@echo "LABOR:      $(BETA)"
 	@echo "BR_VERSION: $(BR_VERSION)"
 	@echo
-	@echo Image is: $@
+	@echo Image is: $(RELDIR)/$(FWFILE)
 	@echo
-
+	
 $(RELDIR):
 	@echo "PREP   $(RELDIR)"
 	@mkdir -p $(RELDIR)
+	@mkdir -p $(ARM_TMP)
+	@mkdir -p $(ATOM_TMP)
 
 info:
 	@echo "SOC:            $(SOC)"
@@ -265,15 +226,16 @@ squashfstools-be:	freetz
 #
 #
 #
+ifneq ($(SOC),puma6)
 package: package-atom package-arm
 
 package-arm:
 	make -C packages/arm
 
-package-atom:	atom/squashfs-root
+package-atom:	$(ATOM_STAGE)
 	make -C packages/x86
 
-sdk-atom:	atom/squashfs-root
+sdk-atom:	$(ATOM_STAGE)
 	make -C packages/x86 sdk
 
 atom-brconfig:
@@ -290,11 +252,13 @@ arm-brconfig:
 
 rebuild:
 	make -C packages/x86 base base-install BR_VERSION=-2019.05
+endif
 
 help:
 	@echo 'Make targets:'
 	@echo '------------'
 	@echo 'all              : Rebuild modified file system with pre-built binaries (or those from the "rebuild" target)'
+ifneq ($(SOC),puma6)
 	@echo 'rebuild          : Rebuild binaries for modified filesystem images'
 	@echo 'package          : Rebuild application packages'
 	@echo 'package-arm      : Rebuild application package for arm'
@@ -302,6 +266,7 @@ help:
 	@echo 'sdk-atom         : Explicit build of sdk package for atom (if supported by selected toolchain)'
 	@echo 'atom-brconfig    : Change buildroot configuration for atom'
 	@echo 'arm-brconfig     : Change buildroot configuration for arm'
+endif
 	@echo 'squashfstools-be : Download freetz and build big endian squashfs tools for host'
 	@echo 'config           : Edit configuration'
 	@echo 'reconfig         : Reset and edit configuration'
@@ -310,16 +275,8 @@ help:
 
 ###############################################################################################
 clean:
-	@rm -rf tmp
-	@$(SUDO) rm -rf arm/squashfs-root
-	@$(SUDO) rm -rf arm/orig
-	@rm -f arm/filesystem.image
-	@rm -f arm/.applied*
-	@$(SUDO) rm -rf atom/squashfs-root
-	@$(SUDO) rm -rf atom/orig
-	@rm -f atom/filesystem.image
-	@rm -f atom/.applied* 
-	@rm -f .fwver.cache
+	@echo Removing $(BUILD_DIR)
+	@rm -rf $(BUILD_DIR)
 
 distclean: clean
 	@rm -f conf.mk

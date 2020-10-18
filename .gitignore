@@ -1,6 +1,6 @@
 tmp
 images
-packages/dl/
+dl/
 conf.mk
 **/squashfs-root/
 **/orig/

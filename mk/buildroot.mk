@@ -124,6 +124,7 @@ ifeq ($(SDK_DOWNLOAD),1)
 # Download SDK image
 #
 $(SDK):	$(URL_PREFIX)$(SDK_NAME)
+	@mkdir -p $(SDK_DST)
 	@$(call WGET_EXT2,$(SDK_NAME),$@)
 else
 #

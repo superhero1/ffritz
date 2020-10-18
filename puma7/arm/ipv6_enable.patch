@@ -1,0 +1,22 @@
+*** orig/usr/www/avm/internet/ipv6.lua	2016-03-02 20:39:25.000000000 +0100
+--- squashfs-root/usr/www/avm/internet/ipv6.lua	2016-08-13 16:08:09.870000001 +0200
+***************
+*** 53,59 ****
+  ipv6_active_prefix = boxvars2.c_boxvars:init( { sz_query = "ipv6:settings/dhcpv6c_use_wanted_prefixlen"}) -- ( 41 )
+  ipv6_prefixlen = boxvars2.c_boxvars:init( { sz_query = "ipv6:settings/dhcpv6c_wanted_prefixlen"}) -- ( 41 )
+  ipv6_hidden_ipv4 = boxvars2.c_boxvars:init( { sz_query = "ipv6:settings/ipv4_hidden"} )
+! ipv6_hidden_ipv6_native = boxvars2.c_boxvars:init( { sz_query = "ipv6:settings/ipv6_native_hidden"} )
+  ipv6_hidden_ds_lite = boxvars2.c_boxvars:init( { sz_query = "ipv6:settings/ds_lite_hidden"} )
+  ipv6_hidden_gui = boxvars2.c_boxvars:init( { sz_query = "ipv6:settings/gui_hidden"} )
+  function wlan_guest_active()
+--- 53,62 ----
+  ipv6_active_prefix = boxvars2.c_boxvars:init( { sz_query = "ipv6:settings/dhcpv6c_use_wanted_prefixlen"}) -- ( 41 )
+  ipv6_prefixlen = boxvars2.c_boxvars:init( { sz_query = "ipv6:settings/dhcpv6c_wanted_prefixlen"}) -- ( 41 )
+  ipv6_hidden_ipv4 = boxvars2.c_boxvars:init( { sz_query = "ipv6:settings/ipv4_hidden"} )
+! -- MOD
+! -- This entry in ar7.cfg is always overwritten at boot time ..
+! -- ipv6_hidden_ipv6_native = boxvars2.c_boxvars:init( { sz_query = "ipv6:settings/ipv6_native_hidden"} )
+! ipv6_hidden_ipv6_native = boxvars2.c_boxvars:init( { sz_query = "ipv6:settings/ipv6_hidden"} )
+  ipv6_hidden_ds_lite = boxvars2.c_boxvars:init( { sz_query = "ipv6:settings/ds_lite_hidden"} )
+  ipv6_hidden_gui = boxvars2.c_boxvars:init( { sz_query = "ipv6:settings/gui_hidden"} )
+  function wlan_guest_active()
