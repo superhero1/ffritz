@@ -2,10 +2,10 @@ Introduction
 ============
 This is a repository containing my modifications for FritzBox Cable.
 
-- 6591: Fully supported and tested
-- 6660: Likely supported, not tested
-- 6x90: Basic support, currently not maintained. See 6x90 note at the
-        very end.
+- 6591 (puma7 SoC): Fully supported and tested
+- 6660 (puma7 SoC): Likely supported, not tested
+- 6x90 (puma6 SoC): Basic support, currently not maintained.
+	See 6x90 note at the very end.
 
 It basically modifies the original AVM install image by adding an ssh
 (dropbear) service to log in.
@@ -49,7 +49,9 @@ Creating an install/update firmware image
 - Go to ffritz directory
 
 - To change the default build settings (AVM image URL, etc) copy conf.mk.dfl to
-  conf.mk and edit it.
+  conf.mk and edit it.  
+  The selected image file (URL=...) will determine whether the modifications
+  for puma6 based boxes (6490/6590) or puma7 (6591/6660) are applied.
 
 - Run make
 
@@ -196,11 +198,11 @@ Notes
 Patches
 -------
 If you need/want to add your own patches for the Atom root filesystem, put them
-to atom/user-*.patch.
+to puma7/atom/user-*.patch (puma6 for 6490/6590).
 To add/replace complete files/hierarchies in the filesystem, add them below
-the atom/mod directory.
+the puma7/atom/mod directory.
 
-Likewise for ARM.
+Likewise for the ARM core (puma7/arm, puma6/arm).
 
 Toolchain
 ---------

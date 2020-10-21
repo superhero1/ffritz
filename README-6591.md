@@ -11,8 +11,8 @@ look for it.
 
 Basically, what you need to do is to copy the file user-oem.patch before building an update image:
 
-        cp user-oem.patch atom/
-        cp user-oem.patch arm/
+        cp user-oem.patch puma7/atom/
+        cp user-oem.patch puma7/arm/
         make
 
 This will allow to boot the image on a branded box, but various features might not be available.
