@@ -171,7 +171,7 @@ $(ATOM_PATCHST):	$(@:$(ATOM_TMP)/.applied.%=$(ATOM_BASE)/%)
 
 $(ATOM_TMP)/.applied.fs: $(ATOM_MODFILES) $(ATOM_STAGE) $(ATOM_PATCHST)
 	@echo "PATCH  $(ATOM_STAGE)"
-	@$(SUDO) $(RSYNC) -a $(PLAT_BASE)/atom/mod $(ATOM_STAGE)/
+	@$(SUDO) $(RSYNC) -a $(PLAT_BASE)/atom/mod/ $(ATOM_STAGE)/
 	@mkdir -p $(ATOM_STAGE)/usr/local
 	@touch $@
 
