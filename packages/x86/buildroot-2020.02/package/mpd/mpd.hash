@@ -1,0 +1,5 @@
+# Locally calculated after checking pgp signature
+sha256  d3275e11d85637adde250cadf3b4f5aec2144228f0d8085767493fc46c55b2f9  mpd-0.21.19.tar.xz
+sha256  e1bdb15f0e3b62c18e91257a7b41530dc36eb91cc03eabc6e6bffd947ec168ce  mpd-0.21.21.tar.xz
+sha256  408464093d09c73ceecafc201defcbaba2193cb30ad0aaf1241459a410fecaf3  mpd-0.22.1.tar.xz
+sha256  ab15fd526bd8dd18a9e77ebc139656bf4d33e97fc7238cd11bf60e2b9b8666c6  COPYING

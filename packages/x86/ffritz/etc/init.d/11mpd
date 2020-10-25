@@ -72,9 +72,9 @@ mkdir -p /var/run/mpd
 chmod 777 /var/run/mpd
 chmod -R 777 /dev/snd
 
-# Run mpd (as respawning daemon)
+# Run mpd (as respawning daemon, allow RT scheduling)
 #
-ffdaemon -r ffritz mpd --no-daemon $FFRITZ_HOME/mpd.conf
+ffdaemon -H RTPRIO=0 -r ffritz mpd --no-daemon $FFRITZ_HOME/mpd.conf
 
 
 # Run upmpdcli (UPNP frontent to MPD)
