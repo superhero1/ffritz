@@ -28,7 +28,7 @@
 PKGDIR=$(shell while test -f package.mk && echo $$PWD && exit 0; [ $$PWD != / ]; do cd ..; done)
 
 CONFTYPE            = autoreconf
-PKG_CONFIGURE_FLAGS =
+PKG_CONFIGURE_FLAGS = --prefix=/ --exec-prefix=/
 INSTALL_BIN         = 
 
 include $(PKGDIR)/package.mk
