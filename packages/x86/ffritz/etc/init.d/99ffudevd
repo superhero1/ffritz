@@ -1,0 +1,43 @@
+#!/bin/sh
+# This line MUST NOT be removed! Xfeature:getconfig
+
+# Default settings
+#
+DAEMON_CONFIG=
+
+# Override with user configuration
+#
+test ! -z $2 && . $2
+
+DAEMONS=ffudevd
+
+case $1 in
+	start)
+		break
+		;;
+	stop)
+	        ffdaemon -K ffudevd
+	        exit 0
+		;;
+	info)	echo DAEMONS=\"$DAEMONS\"
+		exit 0
+		;;
+	getconfig)
+cat <<EOF
+# ffudevd 
+#
+#DAEMON_CONFIG
+
+EOF
+		exit 0
+		;;
+
+	*)	exit 0
+		;;
+
+esac
+
+########################################################################
+# Service startup ..
+
+ffdaemon $DAEMON_CONFIG ffudevd

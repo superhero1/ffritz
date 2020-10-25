@@ -29,6 +29,7 @@ case $1 in
 	        exit 0
 		;;
 	info)	echo DAEMONS=\"$DAEMONS\"
+		echo USB_CLASS=08
 		exit 0
 		;;
 	getconfig)

@@ -1,0 +1,99 @@
+#!/bin/sh
+#
+# A simple udev daemon which restarts services that report
+# an USB class they are handling.
+#
+. /usr/local/etc/ffritz-env.sh
+
+
+tmpdir=/var/run/ffudev
+mkdir -p $tmpdir
+
+tmp=$tmpdir/tmp
+epid=$tmpdir/epid
+
+empty=empty
+ffservice=ffservice
+
+abort()
+{
+	if [ -r $epid ]; then
+		$empty -k `cat $epid`
+	fi
+	exit 1
+}
+trap 'abort' SIGINT 
+
+
+if [ -r $epid ]; then
+	$empty -k `cat $epid`
+fi
+
+# start udev monitor in background
+#
+$empty -f -p $epid /usr/bin/udevadm monitor -u -s usb || exit 1
+
+$empty -l |grep out|awk '{print $4}' > $tmp.pipe
+pipe=`cat $tmp.pipe`
+
+test -p $pipe || { echo Failed to spawn udevadm monitor, no pipe: $pipe >&2; $empty -k; exit 1;}
+
+# endless
+#
+while : ; do
+
+# Wait from messages from udev listener and handle after 3 secs of silence
+#
+rm -f $tmp
+socat -T3 PIPE:$pipe,rdonly CREATE:$tmp || { sleep 3; continue; }
+echo `date` :: $0 :: >> $FFLOG
+cat $tmp >> $FFLOG
+
+# collect all affected devices, don't care about removed stuff
+#
+removed=`grep remove $tmp | grep remove | sed -e 's/.*remove//' -e 's/(usb)//' | sort -u`
+changed=`grep change $tmp | grep change | sed -e 's/.*change//' -e 's/(usb)//' | sort -u`
+added=`grep add $tmp | grep add | sed -e 's/.*add//' -e 's/(usb)//' | sort -u`
+
+#echo removed: $removed
+#echo added: $added
+#echo changed: $changed
+
+test -z "${added}${changed}" && continue
+
+# get all involved USB classes
+#
+for d in $added $changed; do
+	cat /sys/$d/bDeviceClass 2>/dev/null
+	cat /sys/$d/bInterfaceClass 2>/dev/null
+done | sort -u > $tmp.1
+
+classes=`cat $tmp.1`
+
+test -z "$classes" && continue
+
+echo New USB classes: $classes
+
+services=`$ffservice list | grep -B 100 Enabled: | grep -v :`
+
+# restart all services claiming this USB class
+#
+restart=
+for service in $services; do
+	USB_CLASS=
+	eval `$ffservice attr $service 2>/dev/null | sed -e 's/$/;/'`
+	test -z "$USB_CLASS" && continue
+
+	for class in $classes; do
+		test $USB_CLASS = $class || continue
+		restart="$restart $service"
+		break
+	done
+done
+
+echo `date` :: $0 :: Services: $restart >> $FFLOG
+test -z "$restart" || $ffservice restart $restart
+
+sleep 1
+
+done #endless

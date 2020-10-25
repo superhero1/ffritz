@@ -38,6 +38,7 @@ if [ "x$1" = "xinfo" ]; then
 	if [ ! -r /var/run/ff_use_alsa ]; then
 		echo DAEMONS=usbplayd
 	else
+		echo USB_CLASS=01
 		echo STATUS=on
 	fi
 	exit 0

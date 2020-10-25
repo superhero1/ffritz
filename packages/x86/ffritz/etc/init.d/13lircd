@@ -13,6 +13,7 @@ fi
                                              
 if [ "x$1" = "xinfo" ]; then
 	echo DAEMONS=\"lircd irexec\"
+	echo USB_CLASS=02
 	exit 0
 fi
 

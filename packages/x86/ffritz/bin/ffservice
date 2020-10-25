@@ -12,7 +12,7 @@ service=$*
 usage()
 {
 	echo "Usage: `basename $0` start|starton|stop|restart service"
-	echo "Usage: `basename $0` enable|disable|running service"
+	echo "Usage: `basename $0` enable|disable|running|attr service"
 	echo "Usage: `basename $0` edit|config|purge service"
 	echo "Usage: `basename $0` status [service]"
 	echo "Usage: `basename $0` list"
@@ -172,6 +172,9 @@ case $op in
 			echo === Config file: Nothing to do, $conf_file does not exist
 		fi
 		nvsync
+		;;
+	attr)    grep Xfeature:getconfig $service_file >/dev/null || exit 0
+		$service_file info $conf_file_opt
 		;;
 	stat*)
 		if [ -t 1 -a ! -z `which tput` ]; then

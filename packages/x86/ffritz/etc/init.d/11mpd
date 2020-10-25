@@ -34,6 +34,7 @@ if [ "x$1" = "xinfo" ]; then
 	test $ENABLE_UPMPDCLI -eq 1 && DAEMONS="$DAEMONS upmpdcli"
 	test $ENABLE_YMPD -eq 1 && DAEMONS="$DAEMONS ympd"
 	echo DAEMONS=\"$DAEMONS\"
+	echo USB_CLASS=01
 	exit 0
 fi
 
