@@ -5,7 +5,9 @@ NEXT
 ----
 - puma6/7 support in image
 	- puma6 (6490/6590) build not yet supported here, use puma6 branch
-
+- Bump mpd to 0.22.1
+- Added ffudevd
+- Fixed missing fuse-nfs binary
 
 Release puma7-19
 ----------------

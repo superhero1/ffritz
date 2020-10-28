@@ -1,3 +1,5 @@
+ARM_MAX_FS=67108864
+
 ARM_PATCHES += $(shell test $(FWNUM) -lt 720 && echo rc.tail.patch)
 ARM_PATCHES += $(shell test $(FWNUM) -gt 660 && echo nvram_dontremove.patch)
 ARM_PATCHES += $(shell test $(FWNUM) -lt 663 && echo ipv6_enable.patch)
