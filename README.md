@@ -83,7 +83,7 @@ Installing the image (with ssh/telnet/console access)
 - Extract the image:
 
 ~~~
-	cd /var/media/ftp; tar xf fb6591_7.13-24.tar
+	cd /var/media/ftp; tar xf fb6591_7.22-28.tar
 ~~~
 
 - Install the image:
