@@ -5,28 +5,56 @@ if [ "x$1" = "x-h" ]; then
 	exit 0
 fi
 
+showver()
+{
+	name=$1
+	dir=$2
+	part=$3
+
+	if [ -f var/content ]; then
+		mod=
+		if [ -d $dir/usr/lib/ff ]; then
+			mod="modified `cat $dir/etc/ffversion 2>/dev/null`"
+		fi
+		eval `grep Version= var/content`
+		eval `grep Type= var/content`
+		eval `grep Build= var/content`
+		echo "$name firmware version: $Version $Type $Build  [$part]  $mod"
+	elif [ -f $dir/etc/version ]; then
+		mod=
+		if [ -d $dir/usr/lib/ff ]; then
+			mod="modified `cat $dir/etc/ffversion 2>/dev/null`"
+		fi
+		FIRMWARE_VERSION=unknown
+		eval `grep FIRMWARE_VERSION= $dir/etc/version`
+		echo "$name firmware version:  $FIRMWARE_VERSION  [$part]  $mod"
+	else
+		echo "$name firmware version: unknown  [$part]"
+	fi
+}
+
 linux_fs_start=`grep linux_fs_start ${CONFIG_ENVIRONMENT_PATH}/environment`
 if [ -z "$linux_fs_start" ]; then
-    current=0
-    linux_fs_start=1
-else
-    linux_fs_start="${linux_fs_start##linux_fs_start}"
-    current=$linux_fs_start
-    if [ $linux_fs_start = 0 ]; then
 	current=0
 	linux_fs_start=1
-	this=/dev/mmcblk0p3
-	this_gwfs=/dev/mmcblk0p6
-	other=/dev/mmcblk0p9
-	other_gwfs=/dev/mmcblk0p12
-    else
-	current=1
-	linux_fs_start=0
-	this=/dev/mmcblk0p9
-	this_gwfs=/dev/mmcblk0p12
-	other=/dev/mmcblk0p3
-	other_gwfs=/dev/mmcblk0p6
-    fi
+else
+	linux_fs_start="${linux_fs_start##linux_fs_start}"
+	current=$linux_fs_start
+	if [ $linux_fs_start = 0 ]; then
+		current=0
+		linux_fs_start=1
+		this=/dev/mmcblk0p3
+		this_gwfs=/dev/mmcblk0p6
+		other=/dev/mmcblk0p9
+		other_gwfs=/dev/mmcblk0p12
+	else
+		current=1
+		linux_fs_start=0
+		this=/dev/mmcblk0p9
+		this_gwfs=/dev/mmcblk0p12
+		other=/dev/mmcblk0p3
+		other_gwfs=/dev/mmcblk0p6
+	fi
 fi
 
 tmp=/tmp/verinfo
@@ -34,55 +62,15 @@ mkdir -p $tmp
 cd $tmp
 
 echo "SELECTED boot bank        $current"
-
 tar xf $this_gwfs ./var/content >/dev/null 2>&1
-
-if [ -f var/content ]; then
-	mod=
-	if [ -d /usr/lib/ff ]; then
-		mod=modified
-	fi
-	eval `grep Version= var/content`
-	eval `grep Type= var/content`
-	eval `grep Build= var/content`
-	echo "RUNNING firmware version: $Version $Type $Build  [$this]  $mod"
-elif [ -f /etc/version ]; then
-        mod=
-        if [ -d /usr/lib/ff ]; then
-                mod=modified
-        fi
-	FIRMWARE_VERSION=unknown
-        eval `grep FIRMWARE_VERSION= /etc/version`
-        echo "RUNNING firmware version:  $FIRMWARE_VERSION  [$this]  $mod"
-else
-	echo "RUNNING firmware version: unknown  [$this]"
-fi
+showver RUNNING / $this
 rm -f var/content
 
 mount $other /mnt >/dev/null 2>&1
 tar xf $other_gwfs ./var/content >/dev/null 2>&1
-
-if [ -f var/content ]; then
-	mod=
-	if [ -d /mnt/usr/lib/ff ]; then
-		mod=modified
-	fi
-	eval `grep Version= var/content`
-	eval `grep Type= var/content`
-	eval `grep Build= var/content`
-	echo "BACKUP firmware version: $Version $Type $Build  [$other]  $mod"
-elif [ -f /mnt/etc/version ]; then
-        mod=
-        if [ -d /mnt/usr/lib/ff ]; then
-                mod=modified
-        fi
-	FIRMWARE_VERSION=unknown
-        eval `grep FIRMWARE_VERSION= /mnt/etc/version`
-        echo "BACKUP firmware version:  $FIRMWARE_VERSION  [$other]  $mod"
-else
-	echo "BACKUP firmware version: unknown  [$other]"
-fi
+showver BACKUP /mnt $other
 umount /mnt >/dev/null 2>&1
+rm -f var/content
 
 if [ "x$1" = "x-e" ]; then
 	echo Rebooting with BACKUP image ..

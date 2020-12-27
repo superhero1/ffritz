@@ -1,6 +1,8 @@
 
 REPODIR	= $(shell pwd)
 VERSION = $(shell cat version)
+REV     = $(shell git show --oneline | head -1 | sed -e 's/ .*//')
+TS     := $(shell date +%D,%R)
 ARM_VER = $(shell cat packages/arm/ffritz/version)
 HOST    = $(shell uname -m)
 DLDIR   = $(REPODIR)/dl
@@ -172,6 +174,7 @@ $(ATOM_PATCHST):	$(@:$(ATOM_TMP)/.applied.%=$(ATOM_BASE)/%)
 $(ATOM_TMP)/.applied.fs: $(ATOM_MODFILES) $(ATOM_STAGE) $(ATOM_PATCHST)
 	@echo "PATCH  $(ATOM_STAGE)"
 	@$(SUDO) $(RSYNC) -a $(PLAT_BASE)/atom/mod/ $(ATOM_STAGE)/
+	@echo '$(VERSION) $(REV) $(TS)' > $(ATOM_STAGE)/etc/ffversion
 	@mkdir -p $(ATOM_STAGE)/usr/local
 	@touch $@
 

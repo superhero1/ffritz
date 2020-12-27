@@ -111,8 +111,8 @@ The tool "ffservice" provides a means to operate services:
 	- Enable/disable a service at startup
 - ffservice edit _servicename_
 	- Edit the service script in $NVRAM/etc/init.d.
-	  If it was a symlink, the link will be "broken".
-- ffservice purge
+	  If it was a symlink, the link will be broken.
+- ffservice purge _servicename_
 	- Restore symlink to original service script, if it existed.
 	- The old, modified file is backed up in init.d . prefix. 
 - ffservice config _servicename_
@@ -122,10 +122,10 @@ The tool "ffservice" provides a means to operate services:
 	- Restore default configuration of service. 
 	- The old configuration is backed up in conf.d with . prefix.
 - ffservice list
-	- List services
-- ffservice status
-	- Show status of all services
-- ffservice running
+	- List all services
+- ffservice status [_servicenames_]
+	- Show status of all or specific services
+- ffservice running _servicename_
 	- Exit code is 0/1/2 depending on whether the service is running,
   	  not running or the status is unknown respectively.
 
@@ -187,7 +187,7 @@ If one or more tool-names are given, the subsequent path specs apply for
 these tools only. If omitted, path specs apply to all tools. The line
 matching a tool is used, subsequent lines are ignored.
 
-The tool_name prefix determines the string match mode: 
+The tool_name prefix determines the string match mode:   
 - % indicates exact match, 
 - ? indicates substring match.
 
@@ -212,9 +212,9 @@ basename as argv[0] (no directory part).
 Execution parameters affecting ffwrap itself can be given in the
 _ffw_exec_option environment variable, which is a space separated list of
 parameters:  
-* -c Behaves like cash_wrap by setting LD_PRELOAD to target_bin/cash_wrap.so
+- -c Behaves like cash_wrap by setting LD_PRELOAD to target_bin/cash_wrap.so
      An existing LD_PRELOAD is saved to CASH_ORG_LD_PRELOAD.
-* -C Like -c, sets cash_wrap_autoexec=1 to not invoke the cash shell.
+- -C Like -c, sets cash_wrap_autoexec=1 to not invoke the cash shell.
 
 Rather than being defined as environment variable _ffw_exec_option should 
 be prefixed for the specific invocation. For example:
@@ -406,7 +406,7 @@ in /var/media/ftp/ffritz/.hts. If you want to enable the recorder you need to
 explicitly set the recorder path in the tvh configuration menu (i recommend using
 an external USB drive).
 
-Caveats:
+Caveats:  
 - I recommend only using one HD tuner at this time until the SatIP server is
   optimized (the libdvbif patch as it was used for the 6490 is not yet ported).
   I have seen cableinfo at 35% CPU load for a single HD stream.
@@ -463,12 +463,12 @@ and stopped in the reverse order.
 For the remount operation, only services known to be running (ffservice running
 returning 0) will be affected.
 
-Options
--v verbose
--s Show mount status
--f Restart services for remount
--n Don't execute mount operations, just print commands
--X Used internally to not call flock. By default the script makes itself 
+Options:  
+- -v verbose
+- -s Show mount status
+- -f Restart services for remount
+- -n Don't execute mount operations, just print commands
+- -X Used internally to not call flock. By default the script makes itself 
    "reentrant" by calling itself with flock (lock file is
    /var/lock/ffvolume.lck) and -X set.
 
@@ -501,6 +501,7 @@ it uses a toolchain archive loaded from my
 [ftp](ftp://ftp.ffesh.de/pub/ffritz/toolchain-external-custom/) server.
 
 If the download or the server fails you can either  
+
 - set SDK_DOWNLOAD=0 in conf.mk,
 - build it by yourself ("make sdk-atom"),
 - or copy the file from somewhere else to the location shown by "make info".

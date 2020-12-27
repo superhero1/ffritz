@@ -206,7 +206,7 @@ Likewise for the ARM core (puma7/arm, puma6/arm).
 
 Toolchain
 ---------
-Cross-compile toolchain for ARM and atom is buildroot-2019-05
+Cross-compile toolchain for ARM and Atom is buildroot-2020-02
 It is installed in packages/x86/buildroot (just do a make there).
 
 Build Host
