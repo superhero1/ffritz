@@ -1,0 +1,5 @@
+[Service]
+ExecStart=/usr/bin/dropbear -F
+After=ffinit.service
+[Install]
+WantedBy=multi-user.target

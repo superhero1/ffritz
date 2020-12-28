@@ -18,7 +18,7 @@ URL=https://download.avm.de/firmware/6591/8548751392/FRITZ.Box_6591_Cable-07.22.
 # Last supported 6490 Image
 #URL=http://download.avm.de/firmware/6490/758467098/FRITZ.Box_6490_Cable-07.12.image
 
-# 6490 untested
+# 6490 beta
 #URL=https://download.avm.de/firmware/6490/9764886654/FRITZ.Box_6490_Cable-07.20.image
 
 ## Keep original rootfs for diff?

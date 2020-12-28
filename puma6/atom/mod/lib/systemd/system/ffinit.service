@@ -1,0 +1,6 @@
+[Service]
+ExecStart=/etc/init.d/S91-ffinit
+Type=oneshot
+RemainAfterExit=yes
+[Install]
+WantedBy=multi-user.target

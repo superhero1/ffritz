@@ -1,0 +1,66 @@
+#!/bin/sh
+#
+# Installer for ffritz application image.
+# Requires ssh access to the fritzbox.
+#
+# Usage: 
+# ffinstall [-r] imagefile ipaddress
+#
+# where
+# - ipaddress is the ip address / network name of the fritzbox
+# - imagefile name and path of the ffritz application image. 
+#   The corresponding sha256sum file must be located in the same directory
+#
+# By default the image is only installed, and will be used at the next restart.
+# Specifying -r will do the following in addition:
+# - terminate all ffritz services of the old image,
+# - activate the new image,
+# - Start the new services.
+#
+
+usage()
+{
+        echo "usage: ffinstall [-r] [-n] [-h] image.tar ipaddress"
+}
+
+restart=
+dryrun=0
+
+while [ "$1" != "" ]; do
+        case $1 in
+                -r)    restart=-r;;
+                -n)    dryrun=1;;
+                -h)    usage; exit 0;;
+                *.tar) image=$1;;
+                *)     ip=$1;;
+        esac
+        shift
+done
+
+test -z $image && { usage 1>&2 ; exit 1; }
+test -r $image || { echo "no such file: $image" 1>&2 ; exit 1; }
+test -z $ip && { usage 1>&2 ; exit 1; }
+
+
+csumfile=`dirname $image`/`basename $image .tar`.sha256sum
+test -r $csumfile || { echo CSUM file $csum not found 1>&2; exit 1;}
+
+remote=/var/media/ftp/`basename $image`_$$.tar
+csum=$(cat $csumfile || exit 1)
+
+cmd=". /etc/init.d/rc.conf; echo +++ Loading; cat > $remote && ffinstall $restart $remote $csum; rc=\$?; rm -f $remote; exit \$rc;"
+
+if [ $dryrun -eq 1 ]; then
+        echo Installation command:
+        echo =====================
+        echo ssh root@$ip \"$cmd\" \< $image
+        echo =====================
+else
+        ping -h 2>&1 | grep -- -c >/dev/null && \
+                ping -c 1 -q $ip || { $ip is not reachable; exit 1; }
+
+        ssh root@$ip "$cmd" < $image
+
+        exit $?
+fi
+
