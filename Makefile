@@ -113,6 +113,7 @@ armfs:	$(ARM_TMP)/filesystem.image
 
 include $(ARM_BASE)/cpu.mk
 
+ARM_PATCHES += $(shell cd $(ARM_BASE); ls user-*.patch 2>/dev/null | sort)
 ARM_PATCHST=$(ARM_PATCHES:%=$(ARM_TMP)/.applied.%)
 
 $(ARM_STAGE):  $(ARM_ROOTIMG) 
@@ -160,6 +161,7 @@ atomfs:	$(ATOM_TMP)/filesystem.image
 
 include $(ATOM_BASE)/cpu.mk
 
+ATOM_PATCHES += $(shell cd $(ATOM_BASE); ls user-*.patch 2>/dev/null | sort)
 ATOM_PATCHST=$(ATOM_PATCHES:%=$(ATOM_TMP)/.applied.%)
 
 $(ATOM_STAGE):  $(ATOM_ROOTIMG)

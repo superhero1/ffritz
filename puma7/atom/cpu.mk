@@ -2,7 +2,7 @@ ATOM_MODFILES = $(shell find $(PLAT_BASE)/atom/mod -type f -o -type d)
 
 ATOM_ROOTIMG = $(PLAT_TMP)/uimage/part_03_ATOM_ROOTFS.bin
 
-ATOM_PATCHES = profile.patch $(shell cd $(ATOM_BASE); ls user-*.patch 2>/dev/null | sort)
+ATOM_PATCHES = profile.patch
 
 ifeq ($(shell test $(FWMAJ) -eq 7 -a $(FWMIN) -lt 19 ; echo $$?),0)
 ATOM_PATCHES += 50-udev-default.patch
