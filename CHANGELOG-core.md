@@ -10,6 +10,15 @@ release 29
 ----------
 - Fix: user patches (like user-oem.patch) were not applied for puma7/arm and puma6 altogether.
 
+release 28
+----------
+- Add support/hack for different DNS/DHCP server in application image
+  (see [README-pihole.md](README-pihole.md)):
+	- Add sbin/ffmultid
+	- Add socat
+	- Add libmultid.so
+
+release 27
 ----------
 - [7.19] Add ffritz.target after multi-user.target to prevent services from starting too early
 - Add /nvram/ffnvram/etc/hotplug/udev-mount-sd hook to control where USB storage devices
