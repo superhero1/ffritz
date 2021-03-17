@@ -20,8 +20,8 @@ endif
 # Determine image type
 #
 ITYPE=$(shell echo $(URL) | sed -e 's/.*\.//')
-INAME=$(shell basename $(URL))
-DLIMAGE=$(DLDIR)/$(INAME)
+FNAME=$(shell basename $(URL))
+DLIMAGE=$(DLDIR)/$(FNAME)
 
 ifeq ($(ITYPE),zip)
 # Fetch and extract labor zip
@@ -29,6 +29,8 @@ INAME=$(shell mkdir -p $(DLDIR); if [ ! -f $(DLIMAGE) ]; then wget -O $(DLIMAGE)
 ifeq ($(INAME),)
 error $(URL) is not a valid firmware zip
 endif
+else
+INAME=$(FNAME)
 endif
 
 FWVER=$(shell echo $(INAME) | sed -e 's/.*\([0-9]*.\.[0-9]*\).*\.image/\1/')
