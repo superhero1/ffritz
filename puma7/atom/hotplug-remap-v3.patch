@@ -1,0 +1,37 @@
+--- orig/etc/hotplug/udev-mount-sd	2021-03-19 11:55:01.000000000 +0100
++++ squashfs-root/etc/hotplug/udev-mount-sd	2021-03-26 10:56:21.598312811 +0100
+@@ -13,6 +13,11 @@
+ MOUNT_RESERVE_DIR=/var/InternerSpeicher/FRITZ/
+ MOUNT_RESERVE_FILE=/var/InternerSpeicher/FRITZ/.mount_reserve
+ MOUNT_RESERVE_SIZE=262144 ## 256kB
++
++## ffritz: allow remapping of storage paths/methods
++NOEXEC=noexec
++test -x /nvram/ffnvram/etc/hotplug/udev-mount-sd && . /nvram/ffnvram/etc/hotplug/udev-mount-sd
++
+ free_mount_reserve() {
+ test -f $MOUNT_RESERVE_FILE && rm $MOUNT_RESERVE_FILE
+ }
+@@ -205,19 +210,19 @@
+ case $filesystem_type in
+ vfat)
+ echo "MOUNT: mount -t 'vfat' $DEVNODE $MNTPATH" >/dev/console
+-if mount -t vfat -o $READMODE,noatime,shortname=winnt,uid=$FTPUID,gid=$FTPGID,utf8,$FMASK,$DMASK,noexec $DEVNODE "$MNTPATH"; then
++if mount -t vfat -o $READMODE,noatime,shortname=winnt,uid=$FTPUID,gid=$FTPGID,utf8,$FMASK,$DMASK,$NOEXEC $DEVNODE "$MNTPATH"; then
+ new_filesystem=true
+ fi
+ ;;
+ ntfs)
+ echo "MOUNT: mount -t 'antfs' $DEVNODE $MNTPATH" >/dev/console
+-if mount -t antfs -o $READMODE,noatime,utf8,noexec $DEVNODE "$MNTPATH"; then
++if mount -t antfs -o $READMODE,noatime,utf8,$NOEXEC $DEVNODE "$MNTPATH"; then
+ new_filesystem=true
+ fi
+ ;;
+ ext2|ext3|ext4)
+ echo "MOUNT:mount -t 'extX' $DEVNODE $MNTPATH" >/dev/console
+-if mount -t $filesystem_type -o noexec $DEVNODE "$MNTPATH"; then
++if mount -t $filesystem_type -o ,$NOEXEC $DEVNODE "$MNTPATH"; then
+ new_filesystem=true
+ chmod 777 "$MNTPATH"
+ fi
