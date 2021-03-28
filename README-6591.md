@@ -6,8 +6,8 @@ Checking branding
 
 The are two variants of "branding", in both cases the retail firmware images (modified or unmodified)  
 will not work out of the box:  
-- Provider branding (firmware_version != avm)
-- International version of the box (firmware_version == avm, retail flag not set).
+- Provider branding (firmware_version != avm)  
+- International version of the box (firmware_version == avm, retail flag not set).  
 
 To safe yourself some trouble (and myself questions) i recommend buying a retail box. Otherwise, read ["Installation on branded/international Boxes"](#markdown-header-Installation-on-branded/international-Boxes) further below.
 
@@ -118,10 +118,10 @@ Problems / Troubleshooting
 --------------------------
 - Under certain circumstances (i have not yet tried to figure out when/why exactly) the
   bootbank switch does not seem to work. It is generally also OK to write to the ACTIVE partition 
-  and not change linux_fs_start.
+  and not change linux_fs_start.  
 - A know issue with some ftp clients is that they sometimes seem to time out during flash 
   update (e.g. ncftp), especially when a partition is not empty.  
-  I never had problems with the native Debian/Ubuntu ftp client.
+  I never had problems with the native Debian/Ubuntu ftp client.  
 - Some ftp clients don't support the special characters in the partition name at all,
   some seem to require putting a backslash before them:
 
@@ -130,10 +130,10 @@ Problems / Troubleshooting
             put part_09_ARM_ROOTFS.bin mtd\=
             put part_08_ARM_KERNEL.bin mtd\>
 
-  I never had problems with the native Ubuntu/Debian ftp client.
+  I never had problems with the native Ubuntu/Debian ftp client.  
 - Most of the linux ftp clients have a problem with the line endings provided by the
   ftp server of the box. Don't be confused if reponses seem to no longer match to a command (press 
-  return some times).
+  return some times).  
 - Also recommended is a switch between your PC and the box to avoid the link going down when
   the box restarts. And/or the IP address of your host on the box network (192.168.178)
   should be configured statically, at least for the time you work with the boot loader.
@@ -192,9 +192,9 @@ Footnote
 As i'm being asked, changing firmware_version permanently is possible by editing the SPI flash
 partitions (see below).
 When you do this wrong, the only way to recover the box is to 
-- have the flash partitions backed up _before_ you did this, 
-- unsolder the flash, 
-- re-program it with a flash programmer and 
+- have the flash partitions backed up _before_ you did this,  
+- unsolder the flash,  
+- re-program it with a flash programmer and  
 - re-solder it.
 
 Or, just buy a retail box (preferrably before you destroyed a provider box).
