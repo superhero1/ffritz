@@ -4,20 +4,12 @@ Notes on first-time installation
 Checking branding
 -----------------
 
-If you run a branded box, the (modified) retail images will not work.
-This can be be patched in the firmware image by just ignoring the firmware_version
-variable. There is some information in the IPPF forum on how to do this if you
-look for it.
+The are two variants of "branding", in both cases the retail firmware images (modified or unmodified)  
+will not work out of the box:  
+- Provider branding (firmware_version != avm)
+- International version of the box (firmware_version == avm, retail flag not set).
 
-Basically, what you need to do is to copy the file user-oem.patch before building an update image:
-
-        cp user-oem.patch puma7/atom/
-        cp user-oem.patch puma7/arm/
-        make
-
-This will allow to boot the image on a branded box, but various features might not be available.
-
-Completely removing the branding is possible, dangerous and i will not document it.
+To safe yourself some trouble (and myself questions) i recommend buying a retail box. Otherwise, read ["Installation on branded/international Boxes"](#markdown-header-Installation-on-branded/international-Boxes) further below.
 
 Checking BIOS version
 ---------------------
@@ -29,7 +21,7 @@ you are running. To do so, restart the box and obtain extended support data
 It is generally a good idea to KEEP this file since it might become helpful
 for recovering a bricked box!
 
-Once the .txt file is downloaded look for the BIOS strings as listed below:
+Once the .txt file is downloaded look for the "BIOS" string and its date code:
 
 For BIOS older CGM2.86C.627075.R.1910091149 10/09/2019 - Update via serial console
 ----------------------------------------------------------------------------------
@@ -129,7 +121,7 @@ Problems / Troubleshooting
   and not change linux_fs_start.
 - A know issue with some ftp clients is that they sometimes seem to time out during flash 
   update (e.g. ncftp), especially when a partition is not empty.  
-  I never had problems with the native Debian/Ubuntu ftp client.  
+  I never had problems with the native Debian/Ubuntu ftp client.
 - Some ftp clients don't support the special characters in the partition name at all,
   some seem to require putting a backslash before them:
 
@@ -140,10 +132,73 @@ Problems / Troubleshooting
 
   I never had problems with the native Ubuntu/Debian ftp client.
 - Most of the linux ftp clients have a problem with the line endings provided by the
-  ftp server of the box. Don't be confused if reponses seem to no longer match to a command.
+  ftp server of the box. Don't be confused if reponses seem to no longer match to a command (press 
+  return some times).
 - Also recommended is a switch between your PC and the box to avoid the link going down when
   the box restarts. And/or the IP address of your host on the box network (192.168.178)
-  should be configured statically.
+  should be configured statically, at least for the time you work with the boot loader.
+
+Installation on branded/international Boxes
+===========================================
+Information about this is stored in firmware variables "firmware_version" and "DMC". Those can be checked either by generating support data or reading them out on the Eva boot loader's command prompt ("quote GETENV firmware_version").
+
+~~~
+firmware_version  DMC       Notes
+----------------- ------------- ----------------------------------------------------------
+avm               RTL=Y         Retail box, no further actions required.
+                  (or nothing)  
+avm               RTL=N,...     International version of box. Can be permanently changed
+                                to RTL=Y.
+something else    RTL=Y         Not seen in the wild.
+something else    RTL=N,..      Provider box. Can not be changed permanently.
+----------------- ------------- ----------------------------------------------------------
+~~~
+
+If anyone sold you an "original box" where firmware_version is not "avm" it's a fraud.
+
+Temporarily modify firmware_version
+-----------------------------------
+To generate a firmware image which will boot on a branded box:
+
+Copy the file user-oem.patch to the atom/arm directories and generate a modified update image:
+
+    cp user-oem.patch puma7/atom/
+    cp user-oem.patch puma7/arm/
+    make
+
+This image can be installed on a branded box, but several features might not work (DVB-C, SIP, ..?).
+In any case, an automatic firmware update will not be offered .. which is good, as this would 
+install an image that can't boot (as it obviously does not contain my patch).
+
+For each new firmware version, you need to re-generate a patched image and install it manually.
+
+You can try to activate missing features by doing the next step, but then 
+
+! **don't ever install an update** offered by AVM via the GUI, and **never activate automatic update** !
+
+To modify the "retail flag" (DMC)
+---------------------------------
+Connect with the eva ftp server of the boot loader (see "Update via EVA" step 2 above). Then execute
+
+    quote SETENV DMC RTL=Y
+    quote REBOOT
+
+The original value of DMC sometimes contains a suffix after "RTL=N". I don't know what it's good for. 
+You might want to retain it ("RTL=Y,suffix"), but i don't see a problem in just omitting it. In any 
+case, you can change it back if there are issues.
+
+Footnote
+--------
+As i'm being asked, changing firmware_version permanently is possible by editing the SPI flash
+partitions (see below).
+When you do this wrong, the only way to recover the box is to 
+- have the flash partitions backed up _before_ you did this, 
+- unsolder the flash, 
+- re-program it with a flash programmer and 
+- re-solder it.
+
+Or, just buy a retail box (preferrably before you destroyed a provider box).
+
 
 Getting Access to the EFI shell
 ===============================
