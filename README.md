@@ -248,4 +248,5 @@ Thanks to
 - Themaister for libmaru [https://github.com/Themaister/libmaru]
 - Bluekitchen for the user space bluetooth stack [https://github.com/bluekitchen]
 - freetz project
+- Nicolas for some insights on 6591 international version
 - AVM, after all
