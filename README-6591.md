@@ -30,7 +30,49 @@ This requires opening the box and connecting a UART adapter. Unless you break th
 box by doing so, this method is relatively safe since it uses the standard AVM
 update method.
 
-Refer to https://www.ip-phone-forum.de/threads/fb-6591-verschiedenes.303332/post-2342169
+Placement of console through-holes (FB6591):
+~~~
+  ┌──────────────────────────────────────────────────────────┐
+  │                       Bottom                             │
+  │                              ┌─────────┐                 │
+  │                              │         │                 │
+  │   ┌───────────────────────┐  │         └──────────┐      │
+  │   │                       │  │      Metal shield  │      │
+  │   │                       │  │                    │      │
+  │   │  CPU/Heatsink         │  └────────────────────┘      │
+  │   │                       │    oooo  <- Atom Console:    │
+  │   │                       │             1.8V,Rx,Tx,GND   │
+  │   │                       │                              │
+  │   │                       │                              │
+  │   └───────────────────────┘oooo   <- ARM console:        │
+  │                                      GND,Tx,Rx,3.3V      │
+  │Front                                                Rear │
+  │ side                                                 side│
+  │                                                          │
+  │                 Top    Antennas                          │
+  └──────────────────────────────────────────────────────────┘
+~~~
+
+The Atom console can be used for updating the box and for the EFI shell, it's operated at 1.8V level. 
+In theory the ARM console can also be used (if you only have a 3.3V RS232 adapter), but there is no 
+access to the EFI shell for recovery.
+
+Connect a RS232 adapter to GND/Tx/Rx, configure terminal program to 115200/8/n/1.
+
+To activate the UART pins:  
+- Connect to the Eva ftp command shell
+- Enter
+
+      quote SETENV kernel_args mute=0
+      quote REBOOT
+
+This will presistently activate the UART. Depending on which console you have connected there 
+should be some some output from the kernel. Press return at the end and you should have a shell
+where you can execute the update (using burnuimg as described in README.md).
+
+If you are connected to the ARM console and want to execute commands on the atom core, use rpc. For example:
+
+rpc "sh -c ls"
 
 Update via EVA (BIOS CGM2.86C.627075.R.1910091149 10/09/2019)
 -------------------------------------------------------------
@@ -107,12 +149,14 @@ Steps:
 
         quote REBOOT
 
-    The modified image should now start, and telnet/ssh login should be possible as described
-    in README.md. Subsequent updates can be done using the burnuimg tool.
+The modified image should now start, and telnet/ssh login should be possible as described
+in README.md. Subsequent updates can be done using the burnuimg tool.
 
-    If something went wrong, the box will either automatically switch back to the old boot bank,
-    or you need to change back linux_fs_start manually, or ....
+If something went wrong, the box will either automatically switch back to the old boot bank,
+or you need to change back linux_fs_start manually, or ....
 
+The part_10_GWFS.bin file can not be written via the bootloader, but so far it was not required. To be 
+on the safe side you might want to re-program everything using burnuimg.
 
 Problems / Troubleshooting
 --------------------------
@@ -140,7 +184,9 @@ Problems / Troubleshooting
 
 Installation on branded/international Boxes
 ===========================================
-Information about this is stored in firmware variables "firmware_version" and "DMC". Those can be checked either by generating support data or reading them out on the Eva boot loader's command prompt ("quote GETENV firmware_version").
+Information about this is stored in firmware variables "firmware_version" and "DMC". Those can be 
+checked either by generating support data or reading them out on the Eva boot loader's command prompt 
+("quote GETENV firmware_version").
 
 ~~~
 firmware_version  DMC       Notes
@@ -191,7 +237,7 @@ Footnote
 --------
 As i'm being asked, changing firmware_version permanently is possible by editing the SPI flash
 partitions (see below).
-When you do this wrong, the only way to recover the box is to 
+When you do this wrong, the only way to recover the box is to  
 - have the flash partitions backed up _before_ you did this,  
 - unsolder the flash,  
 - re-program it with a flash programmer and  
@@ -206,13 +252,9 @@ Getting Access to the EFI shell
 This is only if you know what you can/want to do with it (and you have a serial
 connector attached)...
 
-The generic method for getting access to the EFI shell is to modify the ATOM_KERNEL
-image, which is a EFI boot partition (DOS filesystem). It contains the file
-EFI/BOOT/startup.nsh, which you need to edit.
+If you have an old BIOS, enter "exit" immedeately after the "eva hack ready message" appears, followed by escape several times. 
 
-Note that this works as well for the old firmware which has console access, but
-there it is easier to just type "exit" after the "EVA hack ready" message appears
-on the console.
+On a new BIOS you need to reflash the ATOM_KERNEL partition after having modified the startup script:  
 
 Steps:
 
@@ -247,6 +289,36 @@ Steps:
     You can either program the whole out.img from the shell, or only update 
     part_02_ATOM_KERNEL.bin via EVA/ftp as described above.
 
+To program a firmware image from the EFI shell (recovery)
+---------------------------------------------------------
+
+1. Copy firmware-update.uimg to an USB stick and connect it to the box.
+2. Power on an go to the EFI shell as described
+3. The "map" command will list the default device mappings. The USB stick should appear like
+   this:
+
+      FS2: Alias(s):HD36c0b:;BLK22:
+      PciRoot(0x0)/Pci(0x14,0x0)/USB(0x2,0x0)/HD(1,MBR,0x0047BD56,0x40,0x7807C0)
+
+4. Load the image to memory (here FS2: is the USB stick as listed by map):
+
+      load2mem -f FS2:\firmware-update.uimg
+
+5. Note down the address
+6. To write to the backup boot bank, switch to it first:
+
+      aid toggle
+      aid update
+
+7. Now program the image (with the address from above):
+
+      update -a A -s 0x513A010
+
+9. Reboot on success ("Congrats! Looks like everything went as planned! Your flash has been updated! 
+   Have a good day!"):
+
+      reset
+
 FB6591 eMMC partition information
 =================================
 
@@ -276,6 +348,8 @@ P  I Content           Type         Start End    Size   Start    End
 17   AVM_UPD_TMP      ???          A2800 E27FF  40000  14500000 1C4FFE00
 18   AVM_MEDIA        ext4         E2800 75FFDE 67D7DF 1C500000 EBFFBC00
 ~~~
+
+(Yes, it's "mtd;" / "mtd<" / "mtd=" / "mtd>", not mtd11/12/13/14).
 
 SPI Flash layout
 ================
