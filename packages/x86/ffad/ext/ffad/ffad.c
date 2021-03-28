@@ -40,7 +40,7 @@ SYSCMD(mpc)
 SYSCMD(ffdaemon)
 SYSCMD(irsend)
 
-void ffad_ext_init()
+void cash_ext_init_ffad()
 {
     DECL_PROTO (mpc, PA32, PA64);
     DECL_PROTO (irsend, PA32, PA64);
