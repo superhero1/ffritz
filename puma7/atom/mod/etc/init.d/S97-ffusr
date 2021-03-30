@@ -1,5 +1,7 @@
 #!/bin/sh
 
+export FFLOG=/var/log/ffritz.log
+
 ## run startup script
 ##
 if [ -x /usr/local/etc/init.d/rc.user ]; then
