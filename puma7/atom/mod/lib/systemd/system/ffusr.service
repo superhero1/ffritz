@@ -1,0 +1,7 @@
+[Service]
+ExecStart=/etc/init.d/S97-ffusr
+Type=oneshot
+After=ffstart.service
+RemainAfterExit=yes
+[Install]
+WantedBy=multi-user.target
