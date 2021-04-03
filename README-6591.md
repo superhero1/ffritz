@@ -83,8 +83,22 @@ to push the four required eMMC partition contents.
 There might be LATER BIOS VERSION .. i cant tell if/how it works there, so check twice
 before proceeding!
 
-Required is a ftp client which supports passive mode. I recommend using the native 
+Required is a ftp client which supports passive mode. I recommend using the native
 Ubuntu/Debian ftp client (see troubleshooting section further below).
+Alternatively you can use the [YourFritz/eva_tools](https://github.com/PeterPawn/YourFritz) PowerShell 
+tools to query/change settings and push images to flash partitions.
+
+All examples here use the default address 192.168.178.1.
+
+To enter the EVA bootloader's FTP server:  
+- Repower the box
+- Wait ca 5 seconds
+- Run the ftp client: ftp 192.168.178.1  
+  user/password is adam2/adam2
+
+The corresponding eva_tools command (re-power the box and run it):
+
+      .\EVA-FTP-Client.ps1 -ScriptBlock { Login }
 
 Steps:
 
@@ -105,11 +119,21 @@ Steps:
         tar xf FRITZ.Box_6591_Cable-07.19-80492-Labor.image ./var/firmware-update.uimg
         src/uimg/uimg -u -n part ./var/firmware-update.uimg
 
-2.  Repower the box and connect via ftp client after ca. 5 seconds:  
+2.  Connect to the ftp client and query the current active partition (unless you already know it):
 
-        ffritz/build/puma7/uimage$ ftp 192.168.178.1
+        quote GETENV linux_fs_start
 
-    user/password is adam2/adam2
+    This will provide the currently active partition set (0 or 1). We always
+    want to write the one which is not active, and switch to it afterwards.
+
+    If no value is provided assume partition number 0.
+
+    **As the response to this command will most likely have confused your ftp client,
+    re-power the box and re-enter the ftp server**.
+
+    The corresponding eva_tools command:
+
+        .\EVA-FTP-Client.ps1 -ScriptBlock { GetEnvironmentValue linux_fs_start }
 
 3.  Configure ftp (binary/pasive)  
 
@@ -117,17 +141,9 @@ Steps:
         quote MEDIA FLSH
         passive
 
-4.  Determine the current boot partition set:  
+    (Not required when using eva_tools)
 
-        quote GETENV linux_fs_start
-
-    This will provide the currently active partition set (0 or 1). We always
-    want to write the one which is not active, and switch to it afterwards.
-
-    The next steps, if done wrong, can overwrite the eMMC in a way that the
-    box can no longer start!
-    The write operations (especially part_03_ATOM_ROOTFS.bin) take some
-    minutes, so be patient.
+4.  Write firmware images
 
     To write and switch to partition set I=0 (if linux_fs_start = 1):
 
@@ -145,9 +161,29 @@ Steps:
         put part_08_ARM_KERNEL.bin mtd>
         quote SETENV linux_fs_start 1
 
+    The corresponding eva_tools commands:
+
+        .\EVA-FTP-Client.ps1 -ScriptBlock { UploadFlashFile .\part_03_ATOM_ROOTFS.bin mtd0 }
+        .\EVA-FTP-Client.ps1 -ScriptBlock { UploadFlashFile .\part_02_ATOM_KERNEL.bin mtd1 }
+        .\EVA-FTP-Client.ps1 -ScriptBlock { UploadFlashFile .\part_09_ARM_ROOTFS.bin mtd6 }
+        .\EVA-FTP-Client.ps1 -ScriptBlock { UploadFlashFile .\part_08_ARM_KERNEL.bin mtd7 }
+        .\EVA-FTP-Client.ps1 -ScriptBlock { SetEnvironmentValue linux_fs_start 0 }
+
+      or
+
+        .\EVA-FTP-Client.ps1 -ScriptBlock { UploadFlashFile .\part_03_ATOM_ROOTFS.bin 'mtd;' }
+        .\EVA-FTP-Client.ps1 -ScriptBlock { UploadFlashFile .\part_02_ATOM_KERNEL.bin 'mtd<' }
+        .\EVA-FTP-Client.ps1 -ScriptBlock { UploadFlashFile .\part_09_ARM_ROOTFS.bin 'mtd=' }
+        .\EVA-FTP-Client.ps1 -ScriptBlock { UploadFlashFile .\part_08_ARM_KERNEL.bin 'mtd>' }
+        .\EVA-FTP-Client.ps1 -ScriptBlock { SetEnvironmentValue linux_fs_start 1 }
+
 5.  Reboot
 
         quote REBOOT
+
+    or
+
+        .\EVA-FTP-Client.ps1 -ScriptBlock { RebootTheDevice } 
 
 The modified image should now start, and telnet/ssh login should be possible as described
 in README.md. Subsequent updates can be done using the burnuimg tool.
@@ -155,17 +191,19 @@ in README.md. Subsequent updates can be done using the burnuimg tool.
 If something went wrong, the box will either automatically switch back to the old boot bank,
 or you need to change back linux_fs_start manually, or ....
 
-The part_10_GWFS.bin file can not be written via the bootloader, but so far it was not required. To be 
-on the safe side you might want to re-program everything using burnuimg.
+The part_10_GWFS.bin file can not be written via the bootloader, but so far it was not required. 
+To be on the safe side you might want to re-program everything using burnuimg.
 
 Problems / Troubleshooting
 --------------------------
 - Under certain circumstances (i have not yet tried to figure out when/why exactly) the
   bootbank switch does not seem to work. It is generally also OK to write to the ACTIVE partition 
   and not change linux_fs_start.  
+
 - A know issue with some ftp clients is that they sometimes seem to time out during flash 
   update (e.g. ncftp), especially when a partition is not empty.  
-  I never had problems with the native Debian/Ubuntu ftp client.  
+  I never had problems with the native Debian/Ubuntu ftp client or eva_tools.  
+
 - Some ftp clients don't support the special characters in the partition name at all,
   some seem to require putting a backslash before them:
 
@@ -174,10 +212,13 @@ Problems / Troubleshooting
             put part_09_ARM_ROOTFS.bin mtd\=
             put part_08_ARM_KERNEL.bin mtd\>
 
-  I never had problems with the native Ubuntu/Debian ftp client.  
-- Most of the linux ftp clients have a problem with the line endings provided by the
-  ftp server of the box. Don't be confused if reponses seem to no longer match to a command (press 
-  return some times).  
+  I never had problems with the native Ubuntu/Debian ftp client or eva_tools.  
+
+- The response to the getenv command confuses most ftp clients. Pressing return several times
+  might reveal missing information, but don't assume that actions (setenv/put) will work or
+  have an effect afterwards.  
+  Close and re-start the ftp connection when in doubt.
+
 - Also recommended is a switch between your PC and the box to avoid the link going down when
   the box restarts. And/or the IP address of your host on the box network (192.168.178)
   should be configured statically, at least for the time you work with the boot loader.
@@ -252,7 +293,8 @@ Getting Access to the EFI shell
 This is only if you know what you can/want to do with it (and you have a serial
 connector attached)...
 
-If you have an old BIOS, enter "exit" immedeately after the "eva hack ready message" appears, followed by escape several times. 
+If you have an old BIOS, enter "exit" immedeately after the "eva hack ready message" appears, 
+followed by escape several times. 
 
 On a new BIOS you need to reflash the ATOM_KERNEL partition after having modified the startup script:  
 
