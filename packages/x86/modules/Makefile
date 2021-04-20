@@ -8,6 +8,7 @@ else
 KERNELS	= 4.9.199 4.9.250
 endif
 MODULES_4.9.199=wireguard
+MODULES_4.9.250=wireguard
 
 ifeq ($(DESTDIR),)
 DESTDIR = $(shell pwd)/output
@@ -31,7 +32,10 @@ $(KDIRS):
 module:
 	test -d ../kernel_$(KERNEL)/$(BUILDDIR)
 	for m in $(MODULES_ALL) $(MODULES_$(KERNEL)); do \
-		make -j -C ../$$m KERNELDIR=$(realpath ../kernel_$(KERNEL)/$(BUILDDIR)) DESTDIR=$(TMPDIR) BUILDDIR=build_$(KERNEL)$(BR_VERSION) all install;\
+		make -j -C ../$$m KERNELDIR=$(realpath ../kernel_$(KERNEL)/$(BUILDDIR)) DESTDIR=$(TMPDIR) BUILDDIR=build_$(KERNEL)$(BR_VERSION) all;\
+	done
+	for m in $(MODULES_ALL) $(MODULES_$(KERNEL)); do \
+		make -j -C ../$$m KERNELDIR=$(realpath ../kernel_$(KERNEL)/$(BUILDDIR)) DESTDIR=$(TMPDIR) BUILDDIR=build_$(KERNEL)$(BR_VERSION) install;\
 	done
 
 cleanmodule:

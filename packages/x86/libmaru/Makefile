@@ -9,7 +9,7 @@ SONAME_SHORT := libmaru.so
 PREFIX = /usr/local
 
 export PATH := $(TOOLCHAIN):$(PATH)
-CC=i686-buildroot-linux-gnu-gcc
+CC=i686-linux-gcc
 
 TGT=$(BUILDROOT)/output/target/usr/lib
 TLIB=$(TGT)/usr/lib

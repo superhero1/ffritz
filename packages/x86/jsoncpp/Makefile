@@ -22,7 +22,7 @@ libjsoncpp.a:	$(OBJECTS)
 	ar crus $@ $^
 
 .cpp.o:
-	i686-buildroot-linux-gnu-c++ -I $(BUILDDIR)/include -c $<
+	i686-linux-c++ -I $(BUILDDIR)/include -c $<
 
 $(FILE):
 	@cd $(DLDIR); wget $(URL)

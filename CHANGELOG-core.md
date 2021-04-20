@@ -6,6 +6,10 @@ NEXT
 - Support for puma6 and 7 boxes in one branch
 	- puma6 (6x90) tested up to 7.12
 
+release 30
+----------
+- 6591 firmware 7.26
+
 release 29
 ----------
 - Fix: user patches (like user-oem.patch) were not applied for puma7/arm and puma6 altogether.

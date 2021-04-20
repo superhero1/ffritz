@@ -56,7 +56,7 @@ BUILDROOT   = $(BRBUILDDIR)/build
 SYSROOT	    = $(BUILDROOT)/output/host/usr/$(HOST)/sysroot
 TGTDIR	    = $(BUILDROOT)/output/target
 
-TOOLCHAIN   = $(BUILDROOT)/output/host/opt/ext-toolchain/usr/bin/
+TOOLCHAIN   = $(BUILDROOT)/output/host/usr/bin/
 ifeq ($(realpath $(TOOLCHAIN)),)
 TOOLCHAIN   = $(BUILDROOT)/output/host/usr/bin/
 endif

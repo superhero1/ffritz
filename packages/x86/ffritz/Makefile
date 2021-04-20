@@ -1,4 +1,5 @@
-# Generates application image for atom
+dhairport-sync
+Generates application image for atom
 #
 # Options: conf.mk
 #
@@ -45,7 +46,6 @@ MODULES   += bt
 MODULES   += prtg
 MODULES   += modules
 MODULES   += wireguard-tools
-MODULES   += shairport-sync
 MODULES   += unfs
 MODULES   += cash
 MODULES   += ffad

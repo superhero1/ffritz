@@ -5,7 +5,6 @@ MODULES   += bt
 MODULES   += prtg
 MODULES   += modules
 MODULES   += wireguard-tools
-MODULES   += shairport-sync
 MODULES   += unfs
 MODULES   += cash
 MODULES   += ffad

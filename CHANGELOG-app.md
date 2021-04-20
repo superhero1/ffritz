@@ -5,6 +5,13 @@ NEXT
 ----
 - puma6/7 support in image
 	- puma6 (6490/6590) build not yet supported here, use puma6 branch
+
+Release puma7-20
+----------------
+- Add AVM kernel 4.9.250 for firmware 7.26, wireguard.
+- Replace out of tree shairport-sync with buildroot version.
+- Fix unfs build.
+- Some build chain adaptions.
 - Bump mpd to 0.22.1
 - Added ffudevd
 - Fixed missing fuse-nfs binary

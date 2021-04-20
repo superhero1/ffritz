@@ -2,7 +2,7 @@
 CONFTYPE	= legacy
 
 NO_MAKE_INSTALL = 1
-MAKE_OPTIONS    =  ARCH=x86 CROSS_COMPILE=i686-buildroot-linux-gnu- modules
+MAKE_OPTIONS    =  ARCH=x86 CROSS_COMPILE=i686-linux- modules
 CUSTOM_DEP      = .prep.stamp
 AUDIO_MODULES   = sound/usb/snd-usb-audio.ko sound/usb/snd-usbmidi-lib.ko \
 			sound/core/snd-rawmidi.ko sound/core/snd.ko \
@@ -17,18 +17,18 @@ KCONFIG=x86_avm_defconfig
 
 .prep.stamp:
 	cp $(KCONFIG) $(BUILDDIR)/arch/x86/configs/
-	make -C $(BUILDDIR) ARCH=x86 CROSS_COMPILE=i686-buildroot-linux-gnu- $(KCONFIG)
+	make -C $(BUILDDIR) ARCH=x86 CROSS_COMPILE=i686-linux- $(KCONFIG)
 	touch $@
 
 config:
-	make -C $(BUILDDIR) ARCH=x86 CROSS_COMPILE=i686-buildroot-linux-gnu- menuconfig savedefconfig
+	make -C $(BUILDDIR) ARCH=x86 CROSS_COMPILE=i686-linux- menuconfig savedefconfig
 
 bzImage:
-	PATH=$(TOOLCHAIN):$(PATH) make -C $(BUILDDIR) ARCH=x86 CROSS_COMPILE=i686-buildroot-linux-gnu- bzImage
+	PATH=$(TOOLCHAIN):$(PATH) make -C $(BUILDDIR) ARCH=x86 CROSS_COMPILE=i686-linux- bzImage
 
 
 test:
-	make -C $(BUILDDIR) ARCH=x86 CROSS_COMPILE=i686-buildroot-linux-gnu- puma7-crash-kernel_defconfig
+	make -C $(BUILDDIR) ARCH=x86 CROSS_COMPILE=i686-linux- puma7-crash-kernel_defconfig
 
 $(AUDIO_MODULES):	all
 
