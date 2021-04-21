@@ -1,5 +1,4 @@
-dhairport-sync
-Generates application image for atom
+# Generates application image for atom
 #
 # Options: conf.mk
 #
