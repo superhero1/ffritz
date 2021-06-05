@@ -500,7 +500,7 @@ To speed up build time the latest buildroot version is configured so that
 it uses a toolchain archive loaded from my
 [ftp](ftp://ftp.ffesh.de/pub/ffritz/toolchain-external-custom/) server.
 
-If the download or the server fails you can either  
+If the download or the server fails, or if you face build issues with my sdk archive, you can either  
 
 - set SDK_DOWNLOAD=0 in conf.mk,
 - build it by yourself ("make sdk-atom"),
@@ -509,14 +509,20 @@ If the download or the server fails you can either
 Troubleshooting
 ===============
 
-If the box fails to start due to some issue in the application image, its 
-execution can be prevented by adding the keyword 'ffimage=0' to the 
-kernel_args nvram variable in the EVA bootloader:
+- If the box fails to start due to some issue in the application image, its 
+  execution can be prevented by adding the keyword 'ffimage=0' to the 
+  kernel_args nvram variable in the EVA bootloader:
 
-Log in to the bootloader ca. 5 seconds after starting the box
-("ftp 192.168.178.1", password adam2/adam2) and run this command:
+  Log in to the bootloader ca. 5 seconds after starting the box
+  ("ftp 192.168.178.1", password adam2/adam2) and run this command:
 
-	quote SETENV kernel_args ffimage=0
-	quote REBOOT
+        quote SETENV kernel_args ffimage=0
+        quote REBOOT
 
-And restart the box.
+  And restart the box.
+
+- If building the application image fails in the buildroot stage with strange errors
+  (like a SSP imcompatibility, or a complaint that the compiler can not generate executables)
+  the reason ight be that my pre-built toolchanin does not work ou your build machine.  
+  Try setting SDK_DOWNLOAD=0 in conf.mk (see previous chapter) so that the toolchain is
+  built locally.
