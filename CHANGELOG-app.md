@@ -1,10 +1,14 @@
 Change history of application package
 =====================================
 
-NEXT
-----
-- puma6/7 support in image
-	- puma6 (6490/6590) build not yet supported here, use puma6 branch
+Release puma7-21
+----------------
+- volmgt/ffvolume
+  - Add -F switch to do start/stop of services unconditionally
+  - Add -i to try start all services on all volumes
+  - Fix locking
+- fix ffstart
+  - Add some notes
 
 Release puma7-20
 ----------------

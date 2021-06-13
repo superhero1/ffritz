@@ -20,7 +20,7 @@ DAEMONS="ffvolume"
 
 case $1 in
 	start)
-		ffvolume $FFVOLUME_ARGS
+		ffvolume -i $FFVOLUME_ARGS
 		ffdaemon -i $FFVOLUME_INTERVAL ffvolume $FFVOLUME_ARGS
 		break
 		;;
@@ -35,10 +35,12 @@ case $1 in
 	getconfig)
 cat <<EOF
 ## 
-## Arguments for ffvolume (see ffvolume -h).
-## Default: -f to restart services for remount operation
+## Arguments for ffvolume (see ffvolume -h):
+## -f to restart running services in .ffsvc for remount operation
+## -F to start services in .ffsvc for mount and remount operation
 #
 #FFVOLUME_ARGS="-f"
+#FFVOLUME_ARGS="-F"
 
 ## Execution interval in seconds
 #

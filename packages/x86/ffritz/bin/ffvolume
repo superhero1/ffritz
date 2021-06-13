@@ -36,17 +36,26 @@ When executed, the script will handle
 
 Services bound to a specific storage can be specified within the file
 ".ffsvc" in the the storage directory. Just add a newline separated
-list of service # names as known by ffservice.
+list of service # names as known by ffservice. If -f or -F is given as
+option, these services will be stopped/restarted if the volume is (un)mounted.
 The order is important! Services are started in the order given in the file,
-and stopped in the reverse order. 
-For the remount operation, only services known to be running (ffservice running
-returning 0) will be affected.
+and stopped in the reverse order.
+
+For the remount operation (existing storage has moved), only services known to be 
+running ("ffservice running" returning 0) will be affected. If -F is given the
+listed services are restarted unconditionally.
+
+For the mount operation (new storage is being mounted) services in .ffsvc will only 
+be started if the -F switch is given.
+
 
 Options
 -------
 -v verbose
 -s Show mount status
--f Restart services for remount
+-f Restart running services for remount listed in .ffsvc
+-F Start services listed in .ffsvc unconditionally for mount and remount operation.
+-i Start services listed in .ffsvc even if nothing has changed (init mode)
 -n Don't execute mount operations, just print commands
 EOF
 }
@@ -54,29 +63,38 @@ EOF
 ECHO=
 FFSERVICE=ffservice
 LOGFILE=/var/log/ffritz.log
+
+
 verbose=0
-restart_services=0
+svc_restart=0
+svc_start=0
+svc_stop=0
+initial=0
 dryrun=0
 
 log()
 {
-	test $verbose -ne 0 && echo $* 1>&2
-	echo ffvolume :: `date` :: $* >> $LOGFILE
+  test $verbose -ne 0 && echo $* 1>&2
+  echo ffvolume :: `date` :: $* >> $LOGFILE
 }
 
+vprint()
+{
+  test $verbose -ne 0 && echo $*
+}
 
 # use default array
 array_dfl()
 {
-	ARY_NAME=VOL_ARRAY
-	ARY_KEYS=VOL_LIST
+  ARY_NAME=VOL_ARRAY
+  ARY_KEYS=VOL_LIST
 }
 
 # use temporary array
 array_tmp()
 {
-	ARY_NAME=VOL_ARRAY_TMP
-	ARY_KEYS=VOL_LIST_TMP
+  ARY_NAME=VOL_ARRAY_TMP
+  ARY_KEYS=VOL_LIST_TMP
 }
 
 ## Array emulation
@@ -86,81 +104,80 @@ array_tmp()
 # Clear array
 vol_clr()
 {
-	eval keys=\$${ARY_KEYS}
-	for v in ${keys}; do
-		eval ${ARY_NAME}_${v}=
-	done
-	eval $ARY_KEYS=
+  eval keys=\$${ARY_KEYS}
+  for v in ${keys}; do
+    eval ${ARY_NAME}_${v}=
+  done
+  eval $ARY_KEYS=
 }
 
 # set entry key=$1 to value=$2
 vol_set()
 {
-	name=${1}
-	value=${2}
-	eval ${ARY_NAME}_${name}=${value}
-	eval keys=\$${ARY_KEYS}
-	keys=`(echo ${keys} | sed -e 's/ /\n/g'; echo ${name}) | sort -u`
-	eval $ARY_KEYS=\"${keys}\"
+  name=${1}
+  value=${2}
+  eval ${ARY_NAME}_${name}=${value}
+  eval keys=\$${ARY_KEYS}
+  keys=`(echo ${keys} | sed -e 's/ /\n/g'; echo ${name}) | sort -u`
+  eval $ARY_KEYS=\"${keys}\"
 }
 
 # get entry key=$1
 vol_get()
 {
-	eval echo \$${ARY_NAME}_${1}
+  eval echo \$${ARY_NAME}_${1}
 }
 
 # Dump current array (key value pairs)
 vol_all()
 {
-	eval keys=\$${ARY_KEYS}
-	for v in ${keys}; do
-		echo ${v} `vol_get ${v}`
-	done
+  eval keys=\$${ARY_KEYS}
+  for v in ${keys}; do
+    echo ${v} `vol_get ${v}`
+  done
 }
 
 # Dump all keys
 vol_keys()
 {
-	eval echo \$${ARY_KEYS}
+  eval echo \$${ARY_KEYS}
 }
 
 
 # Get services listed in $1 which are currently running
 running_services()
 {
-	test -r "$1" || return 0
+  test -r "$1" || return 0
 
-	for svc in `cat $1`; do
-		$FFSERVICE running $svc && echo $svc
-	done
+  if [ $svc_start -eq 1 ]; then
+    cat $1
+  else
+    for svc in `cat $1`; do
+      $FFSERVICE running $svc && echo $svc
+    done
+  fi
 }
 
 # start services in arg list
+# close lock file to prevent holding it endlessly
+#
 start_services()
 {
-	if [ $restart_services -ne 1 ]; then
-		return 0
-	fi
-
-	for svc in $*; do
-		$ECHO $FFSERVICE start $svc
-	done
+  for svc in $*; do
+    $ECHO $FFSERVICE start $svc
+    vprint start $svc
+  done
 }
 
 
 # stop services in arg list
 stop_services()
 {
-	if [ $restart_services -ne 1 ]; then
-		return 0
-	fi
-
-	for svc in $*; do
-		$ECHO $FFSERVICE stop $svc
-	done
+  for svc in $*; do
+    $ECHO $FFSERVICE stop $svc
+    vprint stop $svc
+  done
 }
-
 
 # Get all volumes with a top-level ffstorage subdirectory.
 # Get all subdirectories one level below and handle as storage.
@@ -169,56 +186,83 @@ stop_services()
 #
 collect_storages()
 {
-	tmp=/tmp/$$.stor
+  tmp=/tmp/$$.stor
 
-	mount| grep ^/dev | grep -v /var/tmp/br | awk '{print $1,$3"/ffstorage"}' > $tmp
-	while read line; do
+  mount| grep ^/dev | grep -v /var/tmp/br | awk '{print $1,$3"/ffstorage"}' > $tmp
+  while read line; do
 
-		set $line xxx
-	
-		if [ ! -d "$2" ]; then
-			continue
-		fi
-	
-		cd $2 || continue
-		volumes=`find . -type d -regex './[a-zA-Z0-9_]*' -mindepth 1 -maxdepth 1 | xargs -n1 basename 2>/dev/null`
-	
-		test "$volumes" = "" && continue
-	
-		for v in $volumes; do
-			if [ "`vol_get $v`" != "" ]; then
-				log duplicate $v : $2/$v 
-				log "   other: `vol_get $v`" 
-				eval DUP_${v}=yes
-			else
-				vol_set ${v} ${2}/${v}
-				eval DUP_${v}=no
-			fi
-		done
-	done < $tmp
+    set $line xxx
+  
+    if [ ! -d "$2" ]; then
+      continue
+    fi
+  
+    cd $2 || continue
+    volumes=`find . -type d -regex './[a-zA-Z0-9_]*' -mindepth 1 -maxdepth 1 | xargs -n1 basename 2>/dev/null`
+  
+    test "$volumes" = "" && continue
+  
+    for v in $volumes; do
+      if [ "`vol_get $v`" != "" ]; then
+        log duplicate $v : $2/$v 
+        log "   other: `vol_get $v`" 
+        eval DUP_${v}=yes
+      else
+        vol_set ${v} ${2}/${v}
+        eval DUP_${v}=no
+      fi
+    done
+  done < $tmp
 
-	rm -f $tmp
+  rm -f $tmp
 }
 
 ##############################################################
 
-lock=1
+nolock=0
 args=$*
+lockfile=/var/lock/ffvolume.lck
+
 while [ "$1" != "" ]; do
-	case $1 in
-		-X) lock=0;;
-		-n) dryrun=1; ECHO='echo ### ';;
-		-v) verbose=1;; 
-		-f) restart_services=1;;
-		-h) help; exit 0;;
-		-s) show=1;;
-	esac
-	shift
+  case $1 in
+    -X) nolock=1;;
+    -n) dryrun=1; ECHO='echo ### ';;
+    -v) verbose=1;; 
+    -f) svc_stop=1;
+        svc_restart=1;;
+    -F) svc_start=1;
+        svc_stop=1;
+        svc_restart=1;;
+    -i) initial=1;;
+    -h) help; exit 0;;
+    -s) show=1;;
+  esac
+  shift
+
+
 done
 
-if [ $lock -eq 1 ]; then
-	flock /var/lock/ffvolume.lck $0 $args -X
-	exit $?
+# prevent recurion by holding lock at FD 3
+# whill get closed before services are started to prevent
+# sub-processes holding it
+#
+exec 3>$lockfile
+if [ $nolock -eq 0 ]; then
+    flock 3 || exit 1
+    $0 -X $args
+    exit $?
+fi
+
+# running as sub-process holding lock. close lock to prevent sub-processes 
+# to hold it.
+echo $$ > $lockfile
+exec 3<&-
+
+# in initial mode, remove remembered storage list so that
+# remount is forced (unless already in place) and services are restarted (if requested)
+#
+if [ $initial -eq 1 ]; then
+  $ECHO rm -f /tmp/ffstorage.lst
 fi
 
 # read last storage list into temporary storage
@@ -226,16 +270,16 @@ fi
 old_keys=
 old_list=""
 if [ -r /tmp/ffstorage.lst ]; then
-	array_tmp
-	while read line; do
-		set $line x
-		test $# -ne 3 && continue
+  array_tmp
+  while read line; do
+    set $line x
+    test $# -ne 3 && continue
 
-		vol_set $1 $2
-	done < /tmp/ffstorage.lst
+    vol_set $1 $2
+  done < /tmp/ffstorage.lst
 
-	old_list=`vol_all`
-	old_keys=`vol_keys`
+  old_list=`vol_all`
+  old_keys=`vol_keys`
 fi
 
 # Collect current storages on all partitions
@@ -247,21 +291,21 @@ cur_list=`vol_all`
 cur_keys=`vol_keys`
 
 if [ "$show" = "1" ]; then
-	echo Current storage list
-	array_dfl
-	vol_all
+  echo Current storage list
+  array_dfl
+  vol_all
 
-	echo
-	echo Saved storage list
-	array_tmp
-	vol_all
+  echo
+  echo Saved storage list
+  array_tmp
+  vol_all
 
-	exit 0
+  exit 0
 fi
 
 
 if [ "$old_list" = "$cur_list" ]; then
-	exit 0
+  exit 0
 fi
 
 log old storage list: $old_list
@@ -270,97 +314,128 @@ log new storage list: $cur_list
 
 # Check if current storages have moved
 for vol in $cur_keys; do
-	mountpath=/tmp/storage/$vol
-	svc_copy=/tmp/storage/$vol.svc
+  mountpath=/tmp/storage/$vol
+  svc_copy=/tmp/storage/$vol.svc
 
-	array_dfl
-	cur_path=`vol_get $vol`
-	
-	array_tmp
-	old_path=`vol_get $vol`
+  array_dfl
+  cur_path=`vol_get $vol`
+  
+  array_tmp
+  old_path=`vol_get $vol`
 
-	# New storage. Mount it and remember services which may need it
-	#
-	if [ "$old_path" = "" ]; then
-		log new storage: $vol on $cur_path
-		$ECHO mkdir -p $mountpath
-		$ECHO mount --redir $cur_path $mountpath || continue
-		$ECHO rm -f $svc_copy
-		if [ -r $cur_path/.ffsvc ]; then
-			$ECHO cp $cur_path/.ffsvc $svc_copy
-			log Services: `cat $svc_copy`
-		fi
-		continue
-	fi
+  # New storage. Mount it and remember services which may need it
+  #
+  if [ "$old_path" = "" ]; then
+    log new storage: $vol on $cur_path
 
-	eval is_duplicate=\$DUP_${vol}
-	if [ "$is_duplicate" = "yes" ]; then
-		log Leaving duplicate $vol untouched
-		continue
-	fi
+    # Check if target directory exists and is already mounted.
+    #
+    skip_mount=0
+    if [ -d $mountpath ]; then 
+      inode_mountpath=`ls -id $mountpath | awk '{print $1}'`
+      inode_src=`ls -id $cur_path | awk '{print $1}'`
+      if [ $inode_mountpath -eq $inode_src ]; then
+        # mount path exists and is already mounted correctly, don't remount
+        #
+        vprint $mountpath is already mounted
+        skip_mount=1
+      else
+        # mount path exists .. try unmount
+        #
+        vprint $mountpath exists, try unmount
+        $ECHO umount $mountpath 2>/dev/null
+        $ECHO umount $mountpath 2>/dev/null
+      fi
+    fi
 
-	# remount unless it is a duplicate (then leave the existing mapping)
-	if [ $old_path != $cur_path ]; then
-		log storage has moved from $old_path to $cur_path
-		running=`running_services $svc_copy`
-		log running services: $running
-		if [ -r "$svc_copy" ]; then
-			stop_services `cat $svc_copy | sort -nr`
-		fi
-		
-		if [ -d $mountpath ]; then
-			$ECHO umount $mountpath 2>/dev/null
-			$ECHO umount $mountpath 2>/dev/null 
-		else
-			$ECHO mkdir -p $mountpath 
-		fi
+    if [ $skip_mount -eq 0 ]; then
+      vprint mount: $cur_path $mountpath
+      $ECHO mkdir -p $mountpath
+      $ECHO mount --redir $cur_path $mountpath || continue
+    fi
 
-		$ECHO mount --redir $cur_path $mountpath
-		if [ $? -ne 0 ]; then
-			# remount failed, keep old path in db
-			log remount failed: $mountpath
-			array_dfl
-			vol_set $vol REMOUNT_FAILED
-			continue
-		fi
+    $ECHO rm -f $svc_copy
+    if [ -r $cur_path/.ffsvc ]; then
+      $ECHO cp $cur_path/.ffsvc $svc_copy
+      log Services: `cat $svc_copy`
 
-		# try to restart services
-		$ECHO rm -f $svc_copy
-		if [ -r $cur_path/.ffsvc ]; then
-			$ECHO cp $cur_path/.ffsvc $svc_copy
-			if [ "$running" != "" ]; then
-				start_services $running
-			fi
-		fi
-		continue
-	fi
+      if [ $svc_start -eq 1 ]; then
+        start_services `cat $svc_copy`
+      fi
+    fi
+    continue
+  fi
+
+  eval is_duplicate=\$DUP_${vol}
+  if [ "$is_duplicate" = "yes" ]; then
+    log Leaving duplicate $vol untouched
+    continue
+  fi
+
+  # remount unless it is a duplicate (then leave the existing mapping)
+  #
+  if [ $old_path != $cur_path ]; then
+    log storage has moved from $old_path to $cur_path
+    running=`running_services $svc_copy`
+    log running services: $running
+    if [ -r "$svc_copy" ]; then
+      stop_services `cat $svc_copy | sort -nr`
+    fi
+
+    if [ -d $mountpath ]; then
+      $ECHO umount $mountpath 2>/dev/null
+      $ECHO umount $mountpath 2>/dev/null 
+    else
+      $ECHO mkdir -p $mountpath 
+    fi
+
+    $ECHO mount --redir $cur_path $mountpath
+    if [ $? -ne 0 ]; then
+      # remount failed, keep old path in db
+      log remount failed: $mountpath
+      array_dfl
+      vol_set $vol REMOUNT_FAILED
+      continue
+    fi
+
+    # try to restart running services
+    #
+    $ECHO rm -f $svc_copy
+    if [ -r $cur_path/.ffsvc ]; then
+      $ECHO cp $cur_path/.ffsvc $svc_copy
+      if [ $svc_restart -eq 1 -a "$running" != "" ]; then
+        start_services $running
+      fi
+    fi
+    continue
+  fi
 done
 
 # handle the case that a storage has been removed
 for vol in $old_keys; do
-	mountpath=/tmp/storage/$vol
+  mountpath=/tmp/storage/$vol
 
-	array_dfl
-	cur_path=`vol_get $vol`
-	
-	array_tmp
-	old_path=`vol_get $vol`
+  array_dfl
+  cur_path=`vol_get $vol`
+  
+  array_tmp
+  old_path=`vol_get $vol`
 
-	# unmount
-	if [ "$cur_path" = "" -a "$is_duplicate" != "yes" ]; then
-		log storage has been removed: $vol on $old_path
-		if [ -r "$svc_copy" ]; then
-			stop_services `cat $svc_copy | sort -nr`
-		fi
-		$ECHO umount $mountpath || log umount $mountpath failed
-		$ECHO rm -f $svc_copy
-	fi
+  # unmount
+  if [ "$cur_path" = "" -a "$is_duplicate" != "yes" ]; then
+    log storage has been removed: $vol on $old_path
+    if [ -r "$svc_copy" ]; then
+      stop_services `cat $svc_copy | sort -nr`
+    fi
+    $ECHO umount $mountpath || log umount $mountpath failed
+    $ECHO rm -f $svc_copy
+  fi
 done
-	
+  
 
 # save current state
 #
 if [ "$dryrun" != "1" ]; then
-	array_dfl
-	vol_all > /tmp/ffstorage.lst
+  array_dfl
+  vol_all > /tmp/ffstorage.lst
 fi

@@ -116,7 +116,7 @@ include $(ARM_BASE)/cpu.mk
 ARM_PATCHES += $(shell cd $(ARM_BASE); ls user-*.patch 2>/dev/null | sort)
 ARM_PATCHST=$(ARM_PATCHES:%=$(ARM_TMP)/.applied.%)
 
-$(ARM_STAGE):  $(ARM_ROOTIMG) 
+$(ARM_STAGE):  $(ARM_ROOTIMG) $(RELDIR)
 	@if [ ! -d $(ARM_STAGE) ]; then cd $(ARM_TMP); $(SUDO) $(HOSTTOOLS)/unsquashfs4-avm-be $(ARM_ROOTIMG); fi
 	@if [ $(KEEP_ORIG) -eq 1 -a ! -d $(ARM_ORIG) ]; then cd $(ARM_TMP); $(SUDO) $(HOSTTOOLS)/unsquashfs4-avm-be -d orig $(ARM_ROOTIMG); fi
 
@@ -164,7 +164,7 @@ include $(ATOM_BASE)/cpu.mk
 ATOM_PATCHES += $(shell cd $(ATOM_BASE); ls user-*.patch 2>/dev/null | sort)
 ATOM_PATCHST=$(ATOM_PATCHES:%=$(ATOM_TMP)/.applied.%)
 
-$(ATOM_STAGE):  $(ATOM_ROOTIMG)
+$(ATOM_STAGE):  $(ATOM_ROOTIMG) $(RELDIR)
 	@if [ ! -d $(ATOM_STAGE) ]; then cd $(ATOM_TMP); $(SUDO) unsquashfs $(ATOM_ROOTIMG); fi
 	@if [ $(KEEP_ORIG) -eq 1 -a ! -d $(ATOM_ORIG) ]; then cd $(ATOM_TMP); $(SUDO) unsquashfs -d orig $(ATOM_ROOTIMG); fi
 
@@ -235,10 +235,10 @@ ifneq ($(SOC),puma6)
 package: package-atom package-arm
 
 package-arm:
-	make -C packages/arm
+	make -C packages/arm/ffritz
 
 package-atom:	$(ATOM_STAGE)
-	make -C packages/x86
+	make -C packages/x86/ffritz
 
 sdk-atom:	$(ATOM_STAGE)
 	make -C packages/x86 sdk

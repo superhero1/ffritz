@@ -20,7 +20,10 @@
 
 usage()
 {
-        echo "usage: ffinstall [-r] [-n] [-h] image.tar ipaddress"
+        echo "usage: ffinstall [-r] [-l] [-n] [-h] image.tar ipaddress"
+        echo "       -r install and restart image"
+        echo "       -l install only"
+        echo "       -n dry-run mode"
 }
 
 restart=
@@ -28,7 +31,9 @@ dryrun=0
 
 while [ "$1" != "" ]; do
         case $1 in
-                -r)    restart=-r;;
+                -l)    load=y;;
+                -r)    load=y;
+                       restart=-r;;
                 -n)    dryrun=1;;
                 -h)    usage; exit 0;;
                 *.tar) image=$1;;
@@ -40,6 +45,8 @@ done
 test -z $image && { usage 1>&2 ; exit 1; }
 test -r $image || { echo "no such file: $image" 1>&2 ; exit 1; }
 test -z $ip && { usage 1>&2 ; exit 1; }
+
+test -z $load && { usage 1>&2 ; exit 1; }
 
 
 csumfile=`dirname $image`/`basename $image .tar`.sha256sum

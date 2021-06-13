@@ -13,5 +13,4 @@ if [ $? -eq 0 ]; then
 	exit 1
 fi
 
-cd /tmp
-../etc/ff_atom_startup
+/usr/local/etc/ff_atom_startup

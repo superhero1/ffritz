@@ -109,6 +109,8 @@ The tool "ffservice" provides a means to operate services:
 - ffservice enable _servicename_
 - ffservice disable _servicename_
 	- Enable/disable a service at startup
+  - NOTE: If a service is depending on an external storage it is
+    recommended to enable it via the ffvolume/volmgt service (see below).
 - ffservice edit _servicename_
 	- Edit the service script in $NVRAM/etc/init.d.
 	  If it was a symlink, the link will be broken.
@@ -425,17 +427,18 @@ Requires a specific buildroot setup. See [README-pihole.md](README-pihole.md).
 Volume manager daemon (volmgt)
 ------------------------------
 
-This is a periodic services calling the ffvolume script:
+This is a periodic service calling the ffvolume script:
 
 The script manages "ffritz volumes" on internal or (more likely external)
-filesystems. The motivation was to become independent from directory names
-assigned by FritzOS for mounted drives without having to hook deeply into udev
-rules.  
-Especially when they are surprise extracted the mount point might changes,
-which in turn might require services to get reconfigured/restarted.
+filesystems. The motivation was to  
+- become independent from directory names assigned by FritzOS for mounted 
+  drives without having to hook deeply into udev rules.
+- Handle surprise extraction and re-insertion of USB devices, which usually
+  causes a different USB device name/mount point to be assigned.
+- Handle start/stop of services requiring the external storage.
 
-For this purpose volmgt manages directories below the "ffstorage" directory
-in the top level of a filesystem on either the internal NAS storage or external 
+For this purpose ffvolume manages directories below the "ffstorage" directory
+in the top level of a filesystem on either the internal NAS storage or external
 storage devices.
 Directories below ffstorage are handled as volumes whose name must be unique
 over all used partitions (multiple occurences are completely ignored). These
@@ -446,31 +449,85 @@ The script is called periodically by the volmgt service (use `ffservice config
 volmgt` to configure).
 
 When executed, ffvolume will handle  
-- So far unknown volumes by mounting them as described.
+- So far unknown volumes by  
+       - mounting them as described.
+       - (Re)starting services known to use them (optional)
 - Removed volumes by  
-       - Stopping services known to use them (if enabled)  
+       - Stopping services known to use them (optional)
        - Attempting to remove the redir mount
 - Changed volume paths by  
-       - Stopping running services known to use them (if enabled)  
-       - Attempting to rebind the volume directory to the new path  
-       - Restarting all stopped services  
+       - Stopping running services known to use them (optional)
+       - Attempting to rebind the volume directory to the new path
+       - Restarting all stopped services
 
-Services bound to a specific volume can be specified within the file
+Services bound to a specific volume can be listed in the file
 ".ffsvc" in the the volume directory. Just add a newline separated
-list of service # names as known by ffservice.
+list of service names as known by ffservice.  
 The order is important! Services are started in the order given in the file,
-and stopped in the reverse order. 
-For the remount operation, only services known to be running (ffservice running
-returning 0) will be affected.
+and stopped in the reverse order.
+
+The handling of those services depends on the parameter given to the ffvolume
+script:  
+  - If -f is given, _running_ services will be restarted when a volume is being 
+    remounted (e.g. for the case of a surprise extraction/re-insertion).
+    Running services will be stopped if the device is removed.
+  - If -F is given, services listed in .ffsvc are started/stopped unconditionally
+    when the storage is mounted, re-mounted or unmounted.
 
 Options:  
 - -v verbose
 - -s Show mount status
-- -f Restart services for remount
+- -f Restart running services for remount
+- -F Restart services for mount/remount
 - -n Don't execute mount operations, just print commands
 - -X Used internally to not call flock. By default the script makes itself 
    "reentrant" by calling itself with flock (lock file is
    /var/lock/ffvolume.lck) and -X set.
+
+Example to configure a buildroot environment stored on an external USB drive. 
+This assumes that the drive is mounted to the default location, e.g.
+/var/media/ftp/TOSHIBA-ExternalUSB3-0-01:
+
+1. Create storage directory on USB drive
+
+        mkdir -p /var/media/ftp/TOSHIBA-ExternalUSB3-0-01/ffstorage/buildroot
+
+2. Run ffvolume for the first time
+
+        ffvolume -v
+
+    This will make the "buildroot" directory available as "/tmp/storage/buildroot"
+
+2. Configure buildroot in "copy mode" and set the BR_USER_COPY option:
+
+        ffservice config buildroot
+
+        BR_USER_COPY=/tmp/storage/buildroot/br_copy
+
+3. Start the buildroot service to populate br_copy and activate it:
+
+        ffservice start buildroot
+
+4. Set the services to be started(stopped) when the volume is mounted (unmounted):
+
+        echo buildroot > /tmp/storage/buildroot/.ffsvc
+
+5. Configure the volmgt service and set FFVOLUME_ARGS:
+
+        ffservice config volmgt
+
+        FFVOLUME_ARGS="-F"
+
+6. Enable the volmgt service so that ffvolme runs in background.
+
+        ffservice enable volmgt
+        ffservice start volmgt
+
+Other services depending on buildroot (like pihole) can be put into .ffsvc after
+buildroot so that they will be started/stopped automatically as well:
+
+        echo pihole >> /tmp/storage/buildroot/.ffsvc
+
 
 Building the application image
 ==============================

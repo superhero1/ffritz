@@ -46,7 +46,6 @@ while : ; do
 #
 rm -f $tmp
 socat -T3 PIPE:$pipe,rdonly CREATE:$tmp || { sleep 3; continue; }
-echo `date` :: $0 :: >> $FFLOG
 cat $tmp >> $FFLOG
 
 # collect all affected devices, don't care about removed stuff
@@ -91,8 +90,10 @@ for service in $services; do
 	done
 done
 
-echo `date` :: $0 :: Services: $restart >> $FFLOG
-test -z "$restart" || $ffservice restart $restart
+if [ "$restart" != "" ]; then
+	echo `date` :: $0 :: Services: $restart >> $FFLOG
+	$ffservice restart $restart
+fi
 
 sleep 1
 
