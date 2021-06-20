@@ -1,0 +1,12 @@
+--- shairport-sync-orig/tinysvcmdns.c   2021-06-20 15:33:08.354377744 +0200
++++ shairport-sync-3.3.5/tinysvcmdns.c  2021-06-20 15:40:32.591693378 +0200
+@@ -735,7 +735,8 @@
+   if (name == NULL)
+     goto err;
+ 
+-  // parse the MDNS RR section  p += label_len(pkt_buf, pkt_len, off);
++  // parse the MDNS RR section  
++  p += label_len(pkt_buf, pkt_len, off);
+   rr->name = name;
+ 
+   rr->type = mdns_read_u16(p);

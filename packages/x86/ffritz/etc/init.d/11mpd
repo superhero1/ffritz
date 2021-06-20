@@ -11,11 +11,33 @@ ENABLE_YMPD=1
 
 test -z $2 || . $2
 
+# A deamon which runs scripts when mpd starts/stop playing
+#
+mpd_status_loop()
+{
+	while true; do
+		mpc idle player || sleep 1
+
+		mpc status | grep '\[playing\]' >/dev/null 2>&1
+		if [ $? -eq 0 ]; then
+			test -r $NVRAM/etc/mpd-play-start && $NVRAM/etc/mpd-play-start
+		else
+			test -r $NVRAM/etc/mpd-play-stop && $NVRAM/etc/mpd-play-stop
+		fi
+	done
+}
+
 BR_DIR=/tmp/br
+
+if [ "$1" = "status_loop" ]; then
+	mpd_status_loop
+	exit 1
+fi
 
 if [ "x$1" = "xstop" ]; then
     ffdaemon -K upmpdcli
     ffdaemon -K ympd
+    ffdaemon -K mpd_status
     ffdaemon -K mpd
     exit
 fi
@@ -96,3 +118,7 @@ if [ $ENABLE_YMPD -eq 1 ]; then
 	sleep 1
 	ffdaemon $FFINSTDIR/bin/ympd -w 82 -u ffritz
 fi
+
+# Run mpd status loop
+#
+ffdaemon -N mpd_status sh -c "$0 status_loop"

@@ -222,10 +222,35 @@ The ympd http frontend for mpd is started at http port 82:
 
 	http://192.168.178.1:82
 
+Start/stop trigger
+------------------
+The mpd service starts a service ("mpd_status") which will trigger execution whenever play is started/paused:
+
+- /tmp/ffnvram/etc/mpd-play-start  
+  Gets executed if play is started
+
+- /tmp/ffnvram/etc/mpd-play-stop  
+  Gets executed if play is stopped
+
+Example: i use this mpd-play-start to stop playing other sources and power on/configure my amplifier:
+~~~
+#!/bin/sh
+
+# Stop shairport by restarting service, if running
+ffservice running shairport && ffservice restart shairport
+
+# Power on amplifier, wait some and set input
+irsend SEND_ONCE RAX16 AMP_POWER
+irsend SEND_ONCE RAX16 AMP_POWER
+usleep 250000
+irsend SEND_ONCE RAX16 AMP_AUX
+~~~
+
 Shairport-sync
 ==============
 shairport-sync is a server implementation for the AirPort protocol.
-It announces itself as "FritzBox". It will output data to
+It announces itself as "FritzBox". 
+If ALSA is not used, it will output data to
 /var/tmp/shairport.fifo and has precedence over the MPD audio pipe.
 
 shairport-sync is started via the shairport service.
@@ -295,7 +320,7 @@ web radio stations via mpd/mpc:
   existing one.
 
 - Put the configuration file to /var/media/ftp/ffritz/etc/lirc/lircd.conf.d and 
-  restart lirc (ffdaemon -R lircd).
+  restart lirc (ffservice restart lirc).
 
 - Edit the irexec definition file (/var/media/ftp/ffritz/etc/lirc/irexec.lircrc) to
   assign keys on the remote control to actions.  
@@ -338,4 +363,4 @@ web radio stations via mpd/mpc:
 	end                                    
 ```
 
-- Restart irexec daemon (ffdaemon -R irexec)
+- Restart service (ffservice restart lirc)

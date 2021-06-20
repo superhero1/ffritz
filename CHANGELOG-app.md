@@ -1,6 +1,11 @@
 Change history of application package
 =====================================
 
+Release puma7-22
+----------------
+- Fix "shairport service vanishing'" issue
+- Add trigger scripts for mpd play start/stop (see 'Start/stop trigger' in AUDIO.md)
+
 Release puma7-21
 ----------------
 - volmgt/ffvolume
